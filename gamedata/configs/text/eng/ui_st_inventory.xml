@@ -300,4 +300,7 @@
 	<string id="st_dress_helmet">
 		<text>remove helmet</text>
 	</string>
+	<string id="st_proc">
+		<text>%</text>
+	</string>
 </string_table>
