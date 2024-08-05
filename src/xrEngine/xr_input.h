@@ -34,17 +34,19 @@ public:
 private:
 	bool						mouseMoved = false;
 	bool						mouseScrolled = false;
-	char						mouseState[COUNT_MOUSE_BUTTONS] = {};
-	char						KBState[COUNT_KB_BUTTONS] = {};
+	volatile char				mouseState[COUNT_MOUSE_BUTTONS] = {};
+	volatile char				KBState[COUNT_KB_BUTTONS] = {};
 	char						GPState[COUNT_GP_BUTTONS] = {};
 	int 						offs[COUNT_MOUSE_AXIS] = {};
-	char						old_mouseState[COUNT_MOUSE_BUTTONS] = {};
-	char						old_KBState[COUNT_KB_BUTTONS] = {};
+	volatile char				old_mouseState[COUNT_MOUSE_BUTTONS] = {};
+	volatile char				old_KBState[COUNT_KB_BUTTONS] = {};
 	char						old_GPState[COUNT_GP_BUTTONS] = {};
 
+	volatile bool UpdateMouseStage = false;
+	volatile bool UpdateKeyboardStage = false;
+		;
 	Fvector2 LeftAxis = { 0, 0 };
 	Fvector2 RightAxis = { 0, 0 };
-
 	Fvector2 AdaptiveTrigger = { 0, 0 };
 
 	xr_vector<IInputReceiver*>	cbStack;

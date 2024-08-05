@@ -123,7 +123,24 @@ void CRenderDevice::End		(void)
 
 #ifndef _EDITOR
 volatile u32 mt_Thread_marker = 0x12345678;
-void mt_Thread(void* ptr)
+volatile bool quiting = false;
+static volatile bool GameThreadSyncEnd = false;
+
+void mtGameThread(void* ptr)
+{
+	CRenderDevice* pDevice = (CRenderDevice*)ptr;
+
+	while (!quiting)
+	{
+		GameThreadSyncEnd = false;
+
+		pDevice->on_idle();
+
+		GameThreadSyncEnd = true;
+	}
+}
+
+void mtSecondaryThread(void* ptr)
 {
 	g_AppInfo.SecondaryThread = GetCurrentThread();
 	while (true)
@@ -287,8 +304,13 @@ void CRenderDevice::on_idle		()
 
 	m_pRender->SetCacheXformOld(mView_old, mProject_old);
 
-	mProject_hud.build_projection(deg2rad(psHUD_FOV), Device.fASPECT, 
-		HUD_VIEWPORT_NEAR, g_pGamePersistent->Environment().CurrentEnv->far_plane);
+	float FarPlane = 0.1;
+	if (g_pGamePersistent->Environment().CurrentEnv)
+	{
+		FarPlane = g_pGamePersistent->Environment().CurrentEnv->far_plane;
+	}
+
+	mProject_hud.build_projection(deg2rad(psHUD_FOV), Device.fASPECT, HUD_VIEWPORT_NEAR, FarPlane);
 
 	mView_hud.set(mView);
 	mFullTransform_hud.mul(mProject_hud, mView_hud);
@@ -345,25 +367,25 @@ void CRenderDevice::on_idle		()
 #endif
 }
 
-bool quiting = false;
-
 void CRenderDevice::message_loop()
 {
 #ifndef _EDITOR
 	while (!quiting) {
 		SDL_Event event;
-		while (SDL_PollEvent(&event)) {
-			if (!on_event(event)) {
+		while (SDL_PollEvent(&event))
+		{
+			if (!on_event(event)) 
+			{
 				quiting = true;
 				break;
 			}
 		}
 
-		if (quiting) {
+		if (quiting && GameThreadSyncEnd) {
 			break;
 		}
 
-		on_idle();
+	//	on_idle();
 	}
 #endif
 }
@@ -391,8 +413,8 @@ void CRenderDevice::Run()
 	mt_csEnter.Enter();
 	mt_bMustExit = FALSE;
 
-	g_AppInfo.MainThread = GetCurrentThread();
-	thread_spawn(mt_Thread, "X-RAY Secondary thread", 0, 0);
+	g_AppInfo.MainThread = thread_spawn(mtGameThread, "X-Ray Game thread", 0, this);
+	thread_spawn(mtSecondaryThread, "X-Ray Secondary thread", 0, 0);
 
 	// Message cycle
 	seqAppStart.Process(rp_AppStart);

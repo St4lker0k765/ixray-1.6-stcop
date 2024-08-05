@@ -69,7 +69,7 @@ CApplication::~CApplication()
 	g_pEventManager->Detach(this);
 }
 
-extern bool quiting;
+extern volatile bool quiting;
 
 void CApplication::OnEvent(EVENT E, u64 P1, u64 P2)
 {

@@ -132,16 +132,16 @@ static void on_error_dialog			(bool before)
 	pInput->acquire();
 }
 
-CInput::CInput						( BOOL bExclusive, int deviceForInit)
+CInput::CInput(BOOL bExclusive, int deviceForInit)
 {
-	g_exclusive							= !!bExclusive;
+	g_exclusive = !!bExclusive;
 
 	Log("Starting INPUT device...");
 
-	ZeroMemory							( mouseState,	sizeof(mouseState) );
-	ZeroMemory							( KBState,		sizeof(KBState) );
+	ZeroMemory((void*)mouseState,	sizeof(mouseState) );
+	ZeroMemory((void*)KBState,		sizeof(KBState) );
 
-	iCapture	(&dummyController);
+	iCapture(&dummyController);
 	Debug.set_on_dialog				(&on_error_dialog);
 
 #ifdef ENGINE_BUILD
@@ -168,6 +168,7 @@ CInput::~CInput()
 
 void CInput::MouseMotion(float dx, float dy)
 {
+	while (UpdateMouseStage);
 	mouseMoved = true;
 	offs[0] += (int)dx;
 	offs[1] += (int)dy;
@@ -175,27 +176,32 @@ void CInput::MouseMotion(float dx, float dy)
 
 void CInput::MouseScroll(float d)
 {
+	while (UpdateMouseStage);
 	mouseScrolled = true;
 	offs[2] += (int)d;
 }
 
 void CInput::MousePressed(int button)
 {
+	while (UpdateMouseStage);
 	mouseState[button] = 1;
 }
 
 void CInput::MouseReleased(int button)
 {
+	while (UpdateMouseStage);
 	mouseState[button] = 0;
 }
 
 void CInput::KeyboardButtonUpdate(SDL_Scancode scancode, bool IsPressed)
 {
+	while (UpdateKeyboardStage);
 	KBState[scancode] = IsPressed;
 }
 
 void CInput::GamepadButtonUpdate(int SDLCode, bool IsPressed)
 {
+	while (UpdateKeyboardStage);
 	GPState[SDLCode] = IsPressed;
 }
 
@@ -237,6 +243,8 @@ void CInput::AdaptiveTriggerUpdate(bool IsX, float value)
 
 void CInput::KeyboardUpdate()
 {
+	UpdateKeyboardStage = true;
+
 	for (size_t i = 0; i < COUNT_KB_BUTTONS; i++)
 	{
 		bool Pressed = !!KBState[i];
@@ -261,6 +269,8 @@ void CInput::KeyboardUpdate()
 			cbStack.back()->IR_OnKeyboardHold((int)i);
 		}
 	}
+
+	UpdateKeyboardStage = false;
 }
 
 bool dsEnableGamepad = false;
@@ -377,6 +387,8 @@ BOOL CInput::iGetAsyncBtnState( int btn )
 #pragma warning(disable: 4644)
 void CInput::NoInputUpdate()
 {
+	UpdateKeyboardStage = true;
+
 	for (size_t i = 0; i < COUNT_KB_BUTTONS; i++) 
 	{
 		bool Pressed = !!KBState[i];
@@ -390,6 +402,9 @@ void CInput::NoInputUpdate()
 			old_KBState[i] = KBState[i];
 		}
 	}
+
+	UpdateKeyboardStage = false;
+	UpdateMouseStage = true;
 
 	for (size_t i = 0; i < COUNT_MOUSE_BUTTONS; i++) 
 	{
@@ -406,12 +421,16 @@ void CInput::NoInputUpdate()
 	}
 
 	offs[0] = offs[1] = offs[2] = 0;
+
+	UpdateMouseStage = false;
 }
 
 void CInput::MouseUpdate( )
 {
 	if (Device.dwPrecacheFrame)
 		return;
+
+	UpdateMouseStage = true;
 
 	for (size_t i = 0; i < COUNT_MOUSE_BUTTONS; i++) {
 		bool Pressed = !!mouseState[i];
@@ -440,8 +459,10 @@ void CInput::MouseUpdate( )
 		mouseScrolled = false;
 	}
 
-	std::memcpy(old_mouseState, mouseState, sizeof(mouseState));
+	std::memcpy((void*)old_mouseState, (void*)mouseState, sizeof(mouseState));
 	offs[0] = offs[1] = offs[2] = 0;
+
+	UpdateMouseStage = false;
 }
 
 #pragma warning(pop)
@@ -503,8 +524,8 @@ void CInput::OnAppActivate		(void)
 
 	acquire();
 
-	ZeroMemory		( mouseState,	sizeof(mouseState) );
-	ZeroMemory		( KBState,		sizeof(KBState) );
+	ZeroMemory		((void*)mouseState,	sizeof(mouseState) );
+	ZeroMemory		((void*)KBState,	sizeof(KBState) );
 }
 
 void CInput::OnAppDeactivate	(void)
@@ -514,8 +535,8 @@ void CInput::OnAppDeactivate	(void)
 
 	unacquire();
 
-	ZeroMemory		( mouseState,	sizeof(mouseState) );
-	ZeroMemory		( KBState,		sizeof(KBState) );
+	ZeroMemory		((void*)mouseState,	sizeof(mouseState) );
+	ZeroMemory		((void*)KBState,	sizeof(KBState) );
 }
 
 void CInput::OnFrame()

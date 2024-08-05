@@ -180,18 +180,6 @@ static void full_memory_stats	( )
 #endif // DEBUG
 }
 
-class CCC_MemStats : public IConsole_Command
-{
-public:
-	CCC_MemStats(LPCSTR N) : IConsole_Command(N)  {
-		bEmptyArgsHandled = TRUE;
-		g_full_memory_stats_callback	= &full_memory_stats;
-	};
-	virtual void Execute(LPCSTR args) {
-		full_memory_stats( );
-	}
-};
-
 // console commands
 class CCC_GameDifficulty : public CCC_Token {
 public:
@@ -2185,7 +2173,6 @@ void CCC_RegisterCommands()
 	CMD1(CCC_Particle_TEST,     "g_ps_test");
 #endif
 
-	CMD1(CCC_MemStats,			"stat_memory"			);
 	// game
 	CMD3(CCC_Mask,				"g_crouch_toggle",		&psActorFlags,	AF_CROUCH_TOGGLE);
 	CMD1(CCC_GameDifficulty,	"g_game_difficulty"		);

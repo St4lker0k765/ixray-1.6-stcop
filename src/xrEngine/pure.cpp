@@ -10,14 +10,17 @@
 //	return (p2->Prio - p1->Prio);
 //}
 
-DECLARE_RP(Frame);
-DECLARE_RP(Render);
-DECLARE_RP(AppActivate);
-DECLARE_RP(AppDeactivate);
-DECLARE_RP(AppStart);
-DECLARE_RP(DrawUI);
-DECLARE_RP(AppEnd);
-DECLARE_RP(DeviceReset);
-DECLARE_RP(ScreenResolutionChanged);
+static xrCriticalSection PureGuard;
+#define DECLARE_RP_SAFE(name) void  rp_##name(void *p) { xrCriticalSectionGuard guard(PureGuard); ((pure##name *)p)->On##name(); }
+
+DECLARE_RP_SAFE(Frame);
+DECLARE_RP_SAFE(Render);
+DECLARE_RP_SAFE(AppActivate);
+DECLARE_RP_SAFE(AppDeactivate);
+DECLARE_RP_SAFE(AppStart);
+DECLARE_RP_SAFE(DrawUI);
+DECLARE_RP_SAFE(AppEnd);
+DECLARE_RP_SAFE(DeviceReset);
+DECLARE_RP_SAFE(ScreenResolutionChanged);
 
 

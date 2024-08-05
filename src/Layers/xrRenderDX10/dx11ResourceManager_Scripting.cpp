@@ -255,8 +255,12 @@ BOOL	CResourceManager::_lua_HasShader	(LPCSTR s_shader)
 #endif
 }
 
-Shader*	CResourceManager::_lua_Create		(LPCSTR d_shader, LPCSTR s_textures)
+static xrCriticalSection LuaShaderuard;
+
+Shader*	CResourceManager::_lua_Create(LPCSTR d_shader, LPCSTR s_textures)
 {
+	xrCriticalSectionGuard guard(LuaShaderuard);
+
 	CBlender_Compile	C;
 	Shader				S;
 
