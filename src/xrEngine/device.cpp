@@ -130,13 +130,18 @@ void mtGameThread(void* ptr)
 {
 	CRenderDevice* pDevice = (CRenderDevice*)ptr;
 
-	while (!quiting)
+	while (true)
 	{
 		GameThreadSyncEnd = false;
 
 		pDevice->on_idle();
 
 		GameThreadSyncEnd = true;
+
+		if (quiting)
+		{
+			break;
+		}
 	}
 }
 
@@ -370,7 +375,7 @@ void CRenderDevice::on_idle		()
 void CRenderDevice::message_loop()
 {
 #ifndef _EDITOR
-	while (!quiting) {
+	while (true) {
 		SDL_Event event;
 		while (SDL_PollEvent(&event))
 		{
