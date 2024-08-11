@@ -300,7 +300,4 @@
 	<string id="st_dress_helmet">
 		<text>retirer casque</text>
 	</string>
-	<string id="st_proc">
-		<text>%</text>
-	</string>
 </string_table>

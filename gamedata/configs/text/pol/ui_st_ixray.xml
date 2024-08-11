@@ -59,4 +59,7 @@
     <string id="ui_rs_device_active">
         <text>Zawsze aktywny</text>
     </string>
+	<string id="st_proc">
+		<text>%</text>
+	</string>
 </string_table>
