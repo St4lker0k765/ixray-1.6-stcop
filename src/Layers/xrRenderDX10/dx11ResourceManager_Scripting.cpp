@@ -90,6 +90,8 @@ public:
 	adopt_compiler&			_dx10Stencil	(bool Enable, u32 Func, u32 Mask, u32 WriteMask, u32 Fail, u32 Pass, u32 ZFail) {C->r_Stencil(Enable, Func, Mask, WriteMask, Fail, Pass, ZFail);		return	*this;		}
 	adopt_compiler&			_dx10StencilRef	(u32 Ref) {C->r_StencilRef(Ref);		return	*this;		}
 	adopt_compiler&			_dx10ZFunc		(u32 Func)								{	C->RS.SetRS	( D3DRS_ZFUNC, Func);			return	*this;		}
+	adopt_compiler&			_dx10CullMode	(u32 Ref)								{	C->r_CullMode((D3DCULL)Ref);				return *this;		}
+
 	//adopt_dx10texture		_dx10texture	(LPCSTR _name)							{	u32 s = C->r_dx10Texture(_name,0);			return	adopt_dx10sampler(C,s);	}
 };
 #pragma warning( pop )
@@ -165,7 +167,7 @@ void	CResourceManager::LS_Load			()
 			.def("dx10stencil",					&adopt_compiler::_dx10Stencil	,return_reference_to<1>())
 			.def("dx10stencil_ref",				&adopt_compiler::_dx10StencilRef,return_reference_to<1>())
 			.def("dx10zfunc",					&adopt_compiler::_dx10ZFunc		,return_reference_to<1>())			
-
+			.def("dx10cullmode",				&adopt_compiler::_dx10CullMode	,return_reference_to<1>())
 			.def("dx10sampler",					&adopt_compiler::_dx10sampler		),	// returns sampler-object
 
 		class_<adopt_blend>("blend")
