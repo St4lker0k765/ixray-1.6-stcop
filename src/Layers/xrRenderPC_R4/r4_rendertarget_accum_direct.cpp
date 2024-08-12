@@ -298,7 +298,7 @@ void CRenderTarget::accum_direct_volumetric	(u32 sub_phase, const u32, const u32
 	RCache.set_ColorWriteEnable();
 
 	u32 Offset;
-	u32 vertex_color = color_rgba(255, 255, 255, 255);
+    constexpr u32 vertex_color = color_rgba(255, 255, 255, 255);
 
 	// Fill vertex buffer
 	FVF::TL* pv = (FVF::TL*)RCache.Vertex.Lock(3, g_combine->vb_stride, Offset);
