@@ -294,58 +294,22 @@ void CRenderTarget::accum_direct_volumetric	(u32 sub_phase, const u32, const u32
 	if (!need_to_render_sunshafts())
 		return;
 
-	if((sub_phase != SE_SUN_NEAR) && (sub_phase != SE_SUN_FAR)) return;
-
 	phase_vol_accumulator();
 	RCache.set_ColorWriteEnable();
 
 	u32 Offset;
-	u32 C = color_rgba(255, 255, 255, 255);
-	float _w = float(dwWidth);
-	float _h = float(dwHeight);
-	Fvector2 p0, p1;
-	p0.set(.5f / _w, .5f / _h);
-	p1.set((_w + .5f) / _w, (_h + .5f) / _h);
-	float d_Z = EPS_S, d_W = 1.f;
+	u32 vertex_color = color_rgba(255, 255, 255, 255);
 
 	// Fill vertex buffer
-	FVF::TL2uv* pv = (FVF::TL2uv*)RCache.Vertex.Lock(4, g_combine_2UV->vb_stride, Offset);
-	pv->set(-1, -1, 0, d_W, C, 0, 1, 0, 0);	pv++;
-	pv->set(-1, 1, d_Z, d_W, C, 0, 0, 0, 0); pv++;
-	pv->set(1, -1, d_Z, d_W, C, 1, 1, 0, 0); pv++;
-	pv->set(1, 1, d_Z, d_W, C, 1, 0, 0, 0);	pv++;
-	RCache.Vertex.Unlock(4, g_combine_2UV->vb_stride);
-	RCache.set_Geometry(g_combine_2UV);
-
-	ref_selement Element = s_accum_direct_volumetric->E[0];
-
-	//	Set correct depth surface
-	//	It's slow. Make this when shader is created
-	{
-		const char* pszSMapName;
-		BOOL b_HW_smap = RImplementation.o.HW_smap;
-		BOOL b_HW_PCF = RImplementation.o.HW_smap_PCF;
-		if(b_HW_smap) {
-			if(b_HW_PCF) pszSMapName = r2_RT_smap_depth;
-			else pszSMapName = r2_RT_smap_depth;
-		}
-		else pszSMapName = r2_RT_smap_surf;
-		//s_smap
-		STextureList* _T = &*Element->passes[0]->T;
-
-		STextureList::iterator	_it = _T->begin();
-		STextureList::iterator	_end = _T->end();
-
-		for(; _it != _end; _it++) {
-			std::pair<u32, ref_texture>& loader = *_it;
-			u32			load_id = loader.first;
-			//	Shadowmap texture always uses 0 texture unit
-			if(load_id == 0) {
-				//	Assign correct texture
-				loader.second.create(pszSMapName);
-			}
-		}
-	}
+	FVF::TL* pv = (FVF::TL*)RCache.Vertex.Lock(3, g_combine->vb_stride, Offset);
+	pv->set(-1.0, 1.0, 1.0, 1.0, vertex_color, 0.0, 0.0);
+	pv++;
+	pv->set(3.0, 1.0, 1.0, 1.0, vertex_color, 2.0, 0.0);
+	pv++;
+	pv->set(-1.0, -3.0, 1.0, 1.0, vertex_color, 0.0, 2.0);
+	pv++;
+	RCache.Vertex.Unlock(3, g_combine->vb_stride);
+	RCache.set_Geometry(g_combine);
 
 	// Perform lighting
 	{
@@ -355,44 +319,15 @@ void CRenderTarget::accum_direct_volumetric	(u32 sub_phase, const u32, const u32
 		L_clr.set(fuckingsun->color.r, fuckingsun->color.g, fuckingsun->color.b);
 		
 		Fvector L_dir;
-		L_clr.set(fuckingsun->color.r, fuckingsun->color.g, fuckingsun->color.b);
 		Device.mView.transform_dir(L_dir, fuckingsun->direction);
 		L_dir.normalize();
 
-		RCache.set_Element(Element);
+		RCache.set_Element(s_accum_direct_volumetric->E[0]);
 		RCache.set_CullMode(CULL_CCW);
-		RCache.set_c("Ldynamic_dir", L_dir.x, L_dir.y, L_dir.z, 0);
-		RCache.set_c("Ldynamic_color", L_clr.x, L_clr.y, L_clr.z, 0);
+
+		RCache.set_c("Ldynamic_dir", L_dir.x, L_dir.y, L_dir.z, 0.f);
+		RCache.set_c("Ldynamic_color", L_clr.x, L_clr.y, L_clr.z, 0.f);
 		RCache.set_c("m_shadow", mShadow);
-
-		Fmatrix m_Texgen;
-		m_Texgen.identity();
-
-		RCache.xforms.set_W(m_Texgen);
-		RCache.xforms.set_V(Device.mView);
-		RCache.xforms.set_P(Device.mProject);
-		u_compute_texgen_screen(m_Texgen);
-
-		RCache.set_c ("m_texgen", m_Texgen);
-
-		// nv-DBT
-		float zMin = 0, zMax = ps_r2_sun_far;
-
-		if(SE_SUN_NEAR == sub_phase) {
-			zMax = ps_r2_sun_near;
-		}
-
-		RCache.set_c("volume_range", zMin, zMax, 0, 0);
-
-		Fvector	center_pt = {};
-
-		center_pt.mad(Device.vCameraPosition, Device.vCameraDirection, zMin);
-		Device.mFullTransform.transform(center_pt);
-		zMin = center_pt.z;
-
-		center_pt.mad(Device.vCameraPosition, Device.vCameraDirection, zMax);
-		Device.mFullTransform.transform(center_pt);
-		zMax = center_pt.z;
 
 		if(SE_SUN_NEAR == sub_phase) {
 			RCache.set_ZFunc(D3DCMP_GREATER);
@@ -401,6 +336,6 @@ void CRenderTarget::accum_direct_volumetric	(u32 sub_phase, const u32, const u32
 			RCache.set_ZFunc(D3DCMP_ALWAYS);
 		}
 
-		RCache.Render(D3DPT_TRIANGLELIST, Offset, 0, 4, 0, 2);
+		RCache.Render(D3DPT_TRIANGLELIST, Offset, 0, 3, 0, 1);
 	}
 }

@@ -22,16 +22,21 @@
 
 #include "shadow.hlsli"
 
-float4 volume_range; //	x - near plane, y - far plane
 float4 sun_shafts_intensity;
 
-float4 main(v2p_TL I) : SV_Target
+struct PSInput
+{
+    float4 hpos : SV_Position;
+    float4 texcoord : TEXCOORD0;
+};
+
+float4 main(PSInput I) : SV_Target
 {
 #ifndef SUN_SHAFTS_QUALITY
     return float4(0, 0, 0, 0);
 #else //	SUN_SHAFTS_QUALITY
     IXrayGbuffer O;
-    GbufferUnpack(I.Tex0.xy, I.HPos, O);
+    GbufferUnpack(I.texcoord.xy, I.hpos, O);
 
     float3 P = O.Point;
 
@@ -42,7 +47,7 @@ float4 main(v2p_TL I) : SV_Target
 	float3 direction = P / RAY_SAMPLES;
 #else //	JITTER_SUN_SHAFTS
 	//	Variable ray length, variable step dencity, use jittering
-	float4 J0 = jitter0.Sample(smp_jitter, I.HPos.xy / JITTER_TEXTURE_SIZE);
+	float4 J0 = jitter0[uint2(I.hpos.xy) % 64];
 	float coeff = (RAY_SAMPLES - J0.x) / (RAY_SAMPLES * RAY_SAMPLES);
 	float3 direction = P * coeff;
 #endif //	JITTER_SUN_SHAFTS
@@ -89,4 +94,3 @@ float4 main(v2p_TL I) : SV_Target
     return res * Ldynamic_color;
 #endif // SUN_SHAFTS_QUALITY
 }
-
