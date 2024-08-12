@@ -494,7 +494,7 @@ void CRenderTarget::phase_combine_volumetric()
 	u32 Offset = 0;
     constexpr u32 vertex_color = color_rgba(0, 0, 0, 255);
 
-	u_setrt(rt_Generic_0, 0, 0, RDepth);
+	u_setrt(rt_Generic_0, 0, 0, 0);
 
 	//	Sets limits to both render targets
 	RCache.set_ColorWriteEnable(D3DCOLORWRITEENABLE_RED|D3DCOLORWRITEENABLE_GREEN|D3DCOLORWRITEENABLE_BLUE);
