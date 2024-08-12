@@ -1,13 +1,14 @@
 #include "common.hlsli"
+
 Texture2D s_vollight;
 
-struct _input
+struct PSInput
 {
-    float4 tc0 : TEXCOORD0;
+    float4 hpos : SV_Position;
+    float4 texcoord : TEXCOORD0;
 };
 
-float4 main(_input I) : SV_Target
+float4 main(PSInput I) : SV_Target
 {
-    return s_vollight.Load(int3(I.tc0.xy * pos_decompression_params2.xy, 0));
+    return s_vollight[uint2(I.hpos.xy)];
 }
-

@@ -490,33 +490,28 @@ void CRenderTarget::phase_wallmarks		()
 void CRenderTarget::phase_combine_volumetric()
 {
 	PIX_EVENT(phase_combine_volumetric);
-	u32			Offset					= 0;
-	//Fvector2	p0,p1;
 
-	//	TODO: DX10: Remove half pixel offset here
+	u32 Offset = 0;
+    constexpr u32 vertex_color = color_rgba(0, 0, 0, 255);
 
-	//u_setrt(rt_Generic_0,0,0,RDepth );			// LDR RT
 	u_setrt(rt_Generic_0, 0, 0, RDepth);
+
 	//	Sets limits to both render targets
 	RCache.set_ColorWriteEnable(D3DCOLORWRITEENABLE_RED|D3DCOLORWRITEENABLE_GREEN|D3DCOLORWRITEENABLE_BLUE);
 	{
-		// Fill VB
-		float	scale_X				= RCache.get_width() / float(TEX_jitter);
-		float	scale_Y				= RCache.get_height() / float(TEX_jitter);
+		FVF::TL* pv = (FVF::TL*)RCache.Vertex.Lock(3, g_combine->vb_stride, Offset);
+		pv->set(-1.0, 1.0, 1.0, 1.0, vertex_color, 0.0, 0.0);
+		pv++;
+		pv->set(3.0, 1.0, 1.0, 1.0, vertex_color, 2.0, 0.0);
+		pv++;
+		pv->set(-1.0, -3.0, 1.0, 1.0, vertex_color, 0.0, 2.0);
+		pv++;
+		RCache.Vertex.Unlock(3, g_combine->vb_stride);
 
-		// Fill vertex buffer
-		FVF::TL* pv					= (FVF::TL*)	RCache.Vertex.Lock	(4,g_combine->vb_stride,Offset);
-		pv->set						(-1,	1,	0, 1, 0, 0,			scale_Y	);	pv++;
-		pv->set						(-1,	-1,	0, 0, 0, 0,			0		);	pv++;
-		pv->set						(1,		1,	1, 1, 0, scale_X,	scale_Y	);	pv++;
-		pv->set						(1,		-1,	1, 0, 0, scale_X,	0		);	pv++;
-		RCache.Vertex.Unlock		(4,g_combine->vb_stride);
-
-		// Draw
-		RCache.set_Element			(s_combine_volumetric->E[0]	);
-		//RCache.set_Geometry			(g_combine_VP		);
-		RCache.set_Geometry			(g_combine		);
-		RCache.Render				(D3DPT_TRIANGLELIST,Offset,0,4,0,2);
+		//Draw
+		RCache.set_Element(s_combine_volumetric->E[0]);
+		RCache.set_Geometry(g_combine);
+		RCache.Render(D3DPT_TRIANGLELIST, Offset, 0, 3, 0, 1);
 	}
 	RCache.set_ColorWriteEnable();
 }
