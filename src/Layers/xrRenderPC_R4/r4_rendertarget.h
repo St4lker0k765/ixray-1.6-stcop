@@ -44,6 +44,7 @@ public:
 	IBlender*					b_scale;
 	IBlender*					b_cas;
 	IBlender*					b_gtao;
+	IBlender*					b_depth_downsample;
 
     // compute shader for hdao
     IBlender*                   b_hdao_cs;
@@ -112,6 +113,7 @@ private:
 	ref_shader					s_scale;
 	ref_shader					s_cas;
 	ref_shader					s_gtao;
+	ref_shader					s_depth_downsample;
 
 	// OCCq
 	ref_shader					s_occq;
@@ -260,7 +262,7 @@ public:
 	void						phase_occq				();
 	void						phase_ssao				();
 	void						phase_hdao				();
-	void						phase_downsamp			();
+	void						phase_depth_downsample	();
 	void						phase_wallmarks			();
 	void						phase_smap_direct		(light* L,	u32 sub_phase);
 	void						phase_smap_direct_tsh	(light* L,	u32 sub_phase);

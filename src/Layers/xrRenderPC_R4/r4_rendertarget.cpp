@@ -15,6 +15,7 @@
 #include "blender_scale.h"
 #include "blender_cas.h"
 #include "blender_gtao.h"
+#include "blender_depth_downsample.h"
 #include "dx11HDAOCSBlender.h"
 #include "../xrRenderDX10/DX10 Rain/dx10RainBlender.h"
 #include "../xrRender/blender_fxaa.h"
@@ -549,6 +550,14 @@ CRenderTarget::CRenderTarget()
 		rt_gtao_0.create("$user$gtao_0", s_dwWidth, s_dwHeight, DxgiFormat::DXGI_FORMAT_R32_UINT); //AO.view-z
 	}
 
+	//Downsampled view-z
+	{
+		b_depth_downsample = new CBlender_depth_downsample();
+		s_depth_downsample.create(b_depth_downsample);
+
+		rt_half_depth.create(r2_RT_half_depth, s_dwWidth / 2, s_dwHeight / 2, DxgiFormat::DXGI_FORMAT_R16_FLOAT);
+	}
+
 	// OCCLUSION
 	s_occq.create(b_occq, "r2\\occq");
 
@@ -642,26 +651,6 @@ CRenderTarget::CRenderTarget()
 		}
 
 		u_setrt(Device.TargetWidth, Device.TargetHeight, RTarget, nullptr, nullptr, nullptr);
-	}
-
-	// HBAO
-	{
-		u32 w = 0;
-		u32 h = 0;
-
-		if (RImplementation.SSAO.test(ESSAO_DATA::SSAO_HALF_DATA))
-		{
-			w = s_dwWidth / 2;
-			h = s_dwHeight / 2;
-		}
-		else
-		{
-			w = s_dwWidth;
-			h = s_dwHeight;
-		}
-
-		DxgiFormat fmt = DxgiFormat::DXGI_FORMAT_R16_FLOAT;
-		rt_half_depth.create(r2_RT_half_depth, w, h, fmt);
 	}
 
 	s_ssao.create(b_ssao, "r2\\ssao");
