@@ -376,6 +376,7 @@ public:
 	ICF	void						Render				(D3DPRIMITIVETYPE T, u32 startV, u32 PC);
 
 #ifdef USE_DX11
+	ICF void Render_noIA(D3DPRIMITIVETYPE T, u32 iVertexCount);
 	ICF	void						Compute				(UINT ThreadGroupCountX, UINT ThreadGroupCountY, UINT ThreadGroupCountZ);
 #endif //USE_DX11
 

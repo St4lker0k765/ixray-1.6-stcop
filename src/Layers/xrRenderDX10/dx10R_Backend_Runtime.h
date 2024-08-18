@@ -266,6 +266,26 @@ IC void CBackend::Compute(UINT ThreadGroupCountX, UINT ThreadGroupCountY, UINT T
 	RContext->Dispatch(ThreadGroupCountX,ThreadGroupCountY,ThreadGroupCountZ);
 }
 
+IC void CBackend::Render_noIA(D3DPRIMITIVETYPE T, u32 iVertexCount)
+{
+	stat.calls++;
+	stat.verts += iVertexCount;
+
+	SRVSManager.Apply();
+	ApplyRTandZB();
+
+	//Unbind IA (VB, IB)
+	RContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	RContext->IASetInputLayout(nullptr);
+
+	StateManager.Apply();
+
+	//State manager may alter constants
+	constants.flush();
+
+	RContext->Draw(iVertexCount, 0);
+}
+
 IC void CBackend::Render(D3DPRIMITIVETYPE T_, u32 baseV, u32 startV, u32 countV, u32 startI, u32 PC)
 {
 	//VERIFY(vs);
