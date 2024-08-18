@@ -266,7 +266,7 @@ IC void CBackend::Compute(UINT ThreadGroupCountX, UINT ThreadGroupCountY, UINT T
 	RContext->Dispatch(ThreadGroupCountX,ThreadGroupCountY,ThreadGroupCountZ);
 }
 
-IC void CBackend::Render_noIA(D3DPRIMITIVETYPE T, u32 iVertexCount)
+IC void CBackend::Render_noIA(u32 iVertexCount)
 {
 	stat.calls++;
 	stat.verts += iVertexCount;
