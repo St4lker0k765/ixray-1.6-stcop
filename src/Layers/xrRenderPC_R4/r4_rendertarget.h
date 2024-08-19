@@ -45,6 +45,7 @@ public:
 	IBlender*					b_cas;
 	IBlender*					b_gtao;
 	IBlender*					b_depth_downsample;
+	IBlender*					b_combine_volumetric;
 
     // compute shader for hdao
     IBlender*                   b_hdao_cs;
@@ -91,6 +92,9 @@ public:
 	//GTAO
 	ref_rt						rt_gtao_0;
 
+	//Volumetrics
+	ref_rt						rt_volumetric_0;
+	
 	// smap
 	ref_rt						rt_smap_surf;	// 32bit,		color
 	ref_rt						rt_smap_depth;	// 24(32) bit,	depth 
@@ -114,6 +118,7 @@ private:
 	ref_shader					s_cas;
 	ref_shader					s_gtao;
 	ref_shader					s_depth_downsample;
+	ref_shader					s_combine_volumetric;
 
 	// OCCq
 	ref_shader					s_occq;
@@ -181,7 +186,7 @@ private:
 	ref_shader				s_combine_dbg_1;
 	ref_shader				s_combine_dbg_Accumulator;
 	ref_shader				s_combine;
-	ref_shader				s_combine_volumetric;
+
 public:
 	ref_shader				s_postprocess;
 	ref_geom					g_postprocess;

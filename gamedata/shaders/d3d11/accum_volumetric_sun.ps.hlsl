@@ -36,7 +36,7 @@ float4 main(PSInput I) : SV_Target
     return float4(0, 0, 0, 0);
 #else //	SUN_SHAFTS_QUALITY
     IXrayGbuffer O;
-    GbufferUnpack(I.texcoord.xy, I.hpos, O);
+    GbufferUnpack(I.texcoord.xy, I.hpos * 2, O);
 
     float3 P = O.Point;
 

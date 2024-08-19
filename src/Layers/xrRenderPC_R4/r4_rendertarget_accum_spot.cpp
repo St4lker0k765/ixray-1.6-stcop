@@ -164,6 +164,12 @@ void CRenderTarget::accum_volumetric(light* L) {
 	//if (L->flags.type != IRender_Light::SPOT) return;
 	if(!L->flags.bVolumetric) return;
 
+	//Set the viewport
+	D3D_VIEWPORT viewport[1] = { 0, 0, 0, 0, 0.f, 1.f };	
+	viewport[0].Width = RCache.get_width() * 0.5f;
+	viewport[0].Height = RCache.get_height() * 0.5f;
+	RContext->RSSetViewports(1, viewport);
+
 	phase_vol_accumulator();
 
 	ref_shader			shader;
@@ -357,6 +363,11 @@ void CRenderTarget::accum_volumetric(light* L) {
 		//	Restore clip planes
 		RCache.set_ClipPlanes(FALSE, (Fmatrix*)0, 0);
 	}
+
+	//Restore the viewport
+	viewport[0].Width = RCache.get_width();
+	viewport[0].Height = RCache.get_height();
+	RContext->RSSetViewports(1, viewport);
 
 	RCache.set_Scissor(0);
 }

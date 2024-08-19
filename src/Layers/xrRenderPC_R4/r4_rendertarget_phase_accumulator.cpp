@@ -48,15 +48,15 @@ void	CRenderTarget::phase_vol_accumulator()
 	if (!m_bHasActiveVolumetric)
 	{
 		m_bHasActiveVolumetric = true;
-		u_setrt(rt_Generic_2, nullptr, nullptr, RDepth);
+		u_setrt(rt_volumetric_0, nullptr, nullptr, nullptr);
 		//u32		clr4clearVol				= color_rgba(0,0,0,0);	// 0x00
 		//CHK_DX	(RDevice->Clear			( 0L, nullptr, D3DCLEAR_TARGET, clr4clearVol, 1.0f, 0L));
 		FLOAT ColorRGBA[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-		RContext->ClearRenderTargetView( rt_Generic_2->pRT, ColorRGBA);
+		RContext->ClearRenderTargetView( rt_volumetric_0->pRT, ColorRGBA);
 	}
 	else
 	{
-		u_setrt(rt_Generic_2, nullptr, nullptr, RDepth);
+		u_setrt(rt_volumetric_0, nullptr, nullptr, nullptr);
 	}
 
 	RCache.set_Stencil							(FALSE);

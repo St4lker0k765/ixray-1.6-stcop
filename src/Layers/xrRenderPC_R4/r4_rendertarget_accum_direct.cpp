@@ -294,6 +294,13 @@ void CRenderTarget::accum_direct_volumetric	(u32 sub_phase, const u32, const u32
 	if (!need_to_render_sunshafts())
 		return;
 
+	
+	//Set the viewport
+	D3D_VIEWPORT viewport[1] = { 0, 0, 0, 0, 0.f, 1.f };	
+	viewport[0].Width = RCache.get_width() * 0.5f;
+	viewport[0].Height = RCache.get_height() * 0.5f;
+	RContext->RSSetViewports(1, viewport);
+
 	phase_vol_accumulator();
 	RCache.set_ColorWriteEnable();
 
@@ -338,4 +345,9 @@ void CRenderTarget::accum_direct_volumetric	(u32 sub_phase, const u32, const u32
 
 		RCache.Render(D3DPT_TRIANGLELIST, Offset, 0, 3, 0, 1);
 	}
+
+	//Restore the viewport
+	viewport[0].Width = RCache.get_width();
+	viewport[0].Height = RCache.get_height();
+	RContext->RSSetViewports(1, viewport);
 }

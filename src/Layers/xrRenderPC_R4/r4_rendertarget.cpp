@@ -16,6 +16,7 @@
 #include "blender_cas.h"
 #include "blender_gtao.h"
 #include "blender_depth_downsample.h"
+#include "blender_combine_volumetric.h"
 #include "dx11HDAOCSBlender.h"
 #include "../xrRenderDX10/DX10 Rain/dx10RainBlender.h"
 #include "../xrRender/blender_fxaa.h"
@@ -558,6 +559,14 @@ CRenderTarget::CRenderTarget()
 		rt_half_depth.create(r2_RT_half_depth, s_dwWidth / 2, s_dwHeight / 2, DxgiFormat::DXGI_FORMAT_R16_FLOAT);
 	}
 
+	//Volumetrics
+	{
+		b_combine_volumetric = new CBlender_combine_volumetric();
+		s_combine_volumetric.create(b_combine_volumetric);
+
+		rt_volumetric_0.create("$user$volumetric_0", s_dwWidth / 2, s_dwHeight / 2, DxgiFormat::DXGI_FORMAT_R11G11B10_FLOAT);
+	}
+
 	// OCCLUSION
 	s_occq.create(b_occq, "r2\\occq");
 
@@ -668,7 +677,6 @@ CRenderTarget::CRenderTarget()
 			D3DDECL_END()
 		};
 		s_combine.create					(b_combine,					"r2\\combine");
-		s_combine_volumetric.create			("combine_volumetric");
 		s_combine_dbg_0.create				("effects\\screen_set",		r2_RT_smap_surf		);	
 		s_combine_dbg_1.create				("effects\\screen_set",		r2_RT_luminance_t8	);
 		s_combine_dbg_Accumulator.create	("effects\\screen_set",		r2_RT_accum			);
@@ -971,6 +979,8 @@ CRenderTarget::~CRenderTarget	()
 	xr_delete					(b_hdao_cs				);
 	xr_delete					(b_cas					);
 	xr_delete					(b_gtao					);	
+	xr_delete					(b_depth_downsample		);	
+	xr_delete					(b_combine_volumetric	);	
 	g_Fsr2Wrapper.Destroy();
 	g_DLSSWrapper.Destroy();
 
