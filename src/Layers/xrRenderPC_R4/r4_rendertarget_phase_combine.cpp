@@ -54,8 +54,6 @@ void	CRenderTarget::phase_combine	()
 
 	if (ps_r_ssao > 0)
 	{
-		phase_depth_downsample();
-
 		if (RImplementation.SSAO.test(ESSAO_DATA::SSAO_GTAO))
 		{
 			phase_gtao();

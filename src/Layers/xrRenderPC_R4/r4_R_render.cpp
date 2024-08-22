@@ -599,6 +599,10 @@ void CRender::Render		()
 
 	RContext->CopyResource(Target->rt_Position->pSurface, res);
 
+	//Depth downsampling
+	if (ps_r_ssao > 0 || ps_r_sun_shafts > 0 || ps_r2_ls_flags.test(R2FLAG_VOLUMETRIC_LIGHTS))
+		Target->phase_depth_downsample();
+
 	// Wall marks
 	if(Wallmarks)	
 	{
