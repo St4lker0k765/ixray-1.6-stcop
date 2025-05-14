@@ -104,7 +104,10 @@ function actor_binder:net_destroy()
 				self.object:set_callback(callback.level_border_enter, nil)
 				self.object:set_callback(callback.level_border_exit, nil)
 				self.object:set_callback(callback.take_item_from_box, nil)
-
+				-- IX-Ray 
+				self.object:set_callback(callback.actor_before_death, nil)
+				-- END IX-Ray
+	
 				if sr_psy_antenna.psy_antenna then
 								sr_psy_antenna.psy_antenna:destroy()
 								sr_psy_antenna.psy_antenna = false
