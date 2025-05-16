@@ -941,7 +941,7 @@ void CUIActorMenu::ActivatePropertiesBox()
 		PropertiesBoxForRepair(item, b_show);
 	}
 	//Alundaio: Ability to donate item to npc during trade
-	else if (m_currMenuMode == mmTrade)
+	else if (m_isDonateCurrentItem && m_currMenuMode == mmTrade)
 	{
 		CUIDragDropListEx* invlist = GetListByType(iActorBag);
 		if (invlist->IsOwner(cell_item))
