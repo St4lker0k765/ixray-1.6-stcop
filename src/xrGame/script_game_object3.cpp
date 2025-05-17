@@ -936,7 +936,7 @@ void CScriptGameObject::set_sight		(SightManager::ESightType sight_type, Fvector
 		ai().script_engine().script_log					(ScriptStorage::eLuaMessageTypeError,"CSightManager : cannot access class member set_sight!");
 	else {
 		if ( (sight_type == SightManager::eSightTypeDirection) && vector3d && (_abs(vector3d->magnitude() - 1.f) > .01f) ) {
-#ifndef MASTER_GOLD
+#ifdef DEBUG
 			Msg("~ non-normalized direction passed [%f][%f][%f]", VPUSH(*vector3d));
 #endif
 			if (EngineExternal().CallOfPripyatMode())
@@ -963,7 +963,7 @@ void CScriptGameObject::set_sight		(SightManager::ESightType sight_type, Fvector
 		ai().script_engine().script_log					(ScriptStorage::eLuaMessageTypeError,"CSightManager : cannot access class member set_sight!");
 	else {
 		if ( (sight_type == SightManager::eSightTypeDirection) && (_abs(vector3d.magnitude() - 1.f) > .01f) ) {
-#ifndef MASTER_GOLD
+#ifdef DEBUG
 			Msg("~ non-normalized direction passed [%f][%f][%f]", VPUSH(vector3d));
 #endif
 			if (EngineExternal().CallOfPripyatMode())
@@ -981,7 +981,7 @@ void CScriptGameObject::set_sight		(SightManager::ESightType sight_type, Fvector
 		ai().script_engine().script_log					(ScriptStorage::eLuaMessageTypeError,"CSightManager : cannot access class member set_sight!");
 	else {
 		if ( (sight_type == SightManager::eSightTypeDirection) && vector3d && (_abs(vector3d->magnitude() - 1.f) > .01f) ) {
-#ifndef MASTER_GOLD
+#ifdef DEBUG
 			Msg("~ non-normalized direction passed [%f][%f][%f]", VPUSH(*vector3d));
 #endif
 			if (EngineExternal().CallOfPripyatMode())
