@@ -1366,7 +1366,7 @@ void  CInventory::AddAvailableItems(TIItemContainer& items_container, bool for_t
 					}
 					else 
 					{
-						if (m_pOwner->is_alive())
+						if (m_isItemAvailableToTrade && m_pOwner->is_alive())
 						{
 							luabind::functor<bool> funct;
 							R_ASSERT2(ai().script_engine().functor(m_onItemAvailableToTrade, funct), "failed to get OnItemAvailableToTrade functor");
