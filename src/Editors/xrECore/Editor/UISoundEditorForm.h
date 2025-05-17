@@ -1,12 +1,11 @@
 //---------------------------------------------------------------------------
 #pragma once
-#include "../xrEUI/XrUI.h"
 #include "../xrEProps/stdafx.h"
 #include "../xrEProps/Tree/Properties/UIPropertiesForm.h"
 #include "../xrEProps/Tree/Properties/UIPropertiesItem.h"
 #include "Editor/EThumbnail.h"
 
-class UISoundEditorForm :public XrUI
+class UISoundEditorForm :public IEditorWnd
 {
 public:
 	UISoundEditorForm();
@@ -14,7 +13,7 @@ public:
 	virtual void Draw();
 public:
 	static void Update();
-	static void Show();
+	static void Show(const xr_string);
 private:
 
 	void HideLib();

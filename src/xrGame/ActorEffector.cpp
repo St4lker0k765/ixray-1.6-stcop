@@ -1,8 +1,8 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 
 #include "ActorEffector.h"
 #include "PostprocessAnimator.h"
-#include "../xrEngine/effectorPP.h"
+#include "../xrEngine/EffectorPP.h"
 #include "../xrEngine/ObjectAnimator.h"
 #include "object_broker.h"
 #include "Actor.h"
@@ -411,7 +411,7 @@ BOOL CControllerPsyHitCamEffector::ProcessCam(SCamEffectorInfo& info)
 	
 	//////////////////////////////////////////////////////////////////////////
 
-	// Óñòàíîâèòü óãëû ñìåùåíèÿ
+	// Ð£ÑÑ‚Ð°Ð½Ð¾Ð²Ð¸Ñ‚ÑŒ ÑƒÐ³Ð»Ñ‹ ÑÐ¼ÐµÑ‰ÐµÐ½Ð¸Ñ
 	Fmatrix		R;
 	if (m_time_current > m_time_total) 
 		R.identity	();

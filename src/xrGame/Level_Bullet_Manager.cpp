@@ -2,12 +2,12 @@
 //								все пули и осколки передаются сюда
 //////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "Level.h"
 #include "Level_Bullet_Manager.h"
 #include "game_cl_base.h"
 #include "Actor.h"
-#include "gamepersistent.h"
+#include "GamePersistent.h"
 #include "mt_config.h"
 #include "game_cl_base_weapon_usage_statistic.h"
 #include "game_cl_mp.h"
@@ -172,7 +172,7 @@ void CBulletManager::PlayExplodePS( const Fmatrix& xf )
 		return;
 
 	shared_str const& ps_name	= m_ExplodeParticles[Random.randI(0, (u32)m_ExplodeParticles.size())];
-	CParticlesObject* const	ps	= CParticlesObject::Create(*ps_name,TRUE);
+	xr_shared_ptr<CParticlesObject> const	ps	= Particles::Details::Create(*ps_name,TRUE);
 	ps->UpdateParent			(xf,zero_vel);
 	GamePersistent().ps_needtoplay.push_back(ps);
 }
@@ -1026,7 +1026,7 @@ void CBulletManager::CommitRenderSet		()	// @ the end of frame
 {
 	m_BulletsRendered	= m_Bullets			;
 	if (g_mt_config.test(mtBullets))		{
-		Device.seqParallel.push_back		(fastdelegate::FastDelegate0<>(this,&CBulletManager::UpdateWorkload));
+		Device.seqParallel.push_back		(xr_make_delegate(this,&CBulletManager::UpdateWorkload));
 	} else {
 		UpdateWorkload						();
 	}

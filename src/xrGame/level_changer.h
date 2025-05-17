@@ -9,7 +9,7 @@
 #pragma once
 
 #include "GameObject.h"
-#include "../xrEngine/feel_touch.h"
+#include "../xrEngine/Feel_Touch.h"
 #include "game_graph_space.h"
 
 class CLevelChanger : public CGameObject, public Feel::Touch {
@@ -48,4 +48,7 @@ public:
 	virtual void	save					(NET_Packet &output_packet);
 	virtual void	load					(IReader &input_packet);
 
+#ifdef DEBUG_DRAW
+	virtual void		OnRender();
+#endif
 };

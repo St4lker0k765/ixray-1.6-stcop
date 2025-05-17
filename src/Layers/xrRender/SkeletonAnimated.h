@@ -2,8 +2,8 @@
 #ifndef SkeletonAnimatedH
 #define SkeletonAnimatedH
 
-#include		"skeletoncustom.h"
-#include		"animation.h"
+#include "SkeletonCustom.h"
+#include "Animation.h"
 #include		"../../xrEngine/SkeletonMotions.h"
 
 #include		"../../Include/xrRender/KinematicsAnimated.h"
@@ -16,6 +16,7 @@ public:
 	typedef svector<CBlend*,MAX_BLENDED>	BlendSVec;
 	typedef BlendSVec::iterator				BlendSVecIt;
 	typedef BlendSVec::const_iterator		BlendSVecCIt;
+	xrSRWLock								blend_lock;
 private:
 	BlendSVec			Blend;
 public:
@@ -28,9 +29,10 @@ IC	BlendSVec			&blend_vector	()	{ return Blend;}
 
 	u32					mem_usage		()
 	{
+		xrSRWLockGuard guard(&blend_lock, true);
 		u32 sz			= sizeof(*this);
-		for (BlendSVecIt it=Blend.begin(); it!=Blend.end(); it++)
-			sz			+= (*it)->mem_usage();
+		for (CBlend* B : Blend)
+			sz			+= B->mem_usage();
 		return			sz;
 	}
 };
@@ -65,12 +67,7 @@ virtual	void					BuildBoneMatrix				( const CBoneData* bd, CBoneInstance &bi, co
 public:
 
 	virtual void				OnCalculateBones		();
-public: 
-#ifdef _EDITOR
 public:
-#else
-private:
-#endif
 	u32											Update_LastTime;
 
 	CBlendInstance*								blend_instances;
@@ -105,6 +102,8 @@ protected:
 private:
 	void						IBlendSetup				(CBlend& B,u16 part,u8 channel, MotionID motion_ID, BOOL  bMixing, float blendAccrue, float blendFalloff, float Speed, BOOL noloop, PlayCallback Callback, LPVOID CallbackParam);
 	void						IFXBlendSetup			(CBlend &B, MotionID motion_ID, float blendAccrue, float blendFalloff,float Power ,float Speed,u16 bone);
+	virtual void				LoadOmf(const char* path, const char* name);
+	virtual	void				ProcessOmfFiles(const char* omfPath, const char* nameOgf);
 //.	bool						LoadMotions				(LPCSTR N, IReader *data);
 public:
 #if (defined DEBUG || defined _EDITOR)
@@ -171,7 +170,7 @@ public:
 	// General "Visual" stuff
 	virtual void				Copy			(dxRender_Visual *pFrom);
 	virtual void				Load			(const char* N, IReader *data, u32 dwFlags);
-	virtual void				append_motion_from_path (const char* N);
+	virtual void				append_motion_from_path(const char* nameOgf, const char* pathOmf);
 	virtual void				Release			();
 	virtual void				Spawn			();
 	virtual	IKinematicsAnimated*dcast_PKinematicsAnimated() { return this;	}

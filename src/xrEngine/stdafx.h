@@ -9,26 +9,17 @@
 #	define D3D_DEBUG_INFO
 #endif
 
-#pragma warning(disable:4995)
-#include <d3d9.h>
-//#include <dplay8.h>
-#pragma warning(default:4995)
 
 // you must define ENGINE_BUILD then building the engine itself
 // and not define it if you are about to build DLL
-#ifndef NO_ENGINE_API
-	#ifdef	ENGINE_BUILD
-		#define DLL_API			__declspec(dllimport)
-		#define ENGINE_API		__declspec(dllexport)
-	#else
-		#undef	DLL_API
-		#define DLL_API			__declspec(dllexport)
-		#define ENGINE_API		__declspec(dllimport)
-	#endif
+#ifdef ENGINE_BUILD
+	#define DLL_API			__declspec(dllimport)
+	#define ENGINE_API		__declspec(dllexport)
 #else
-	#define ENGINE_API
-	#define DLL_API
-#endif // NO_ENGINE_API
+	#undef	DLL_API
+	#define DLL_API			__declspec(dllexport)
+	#define ENGINE_API		__declspec(dllimport)
+#endif
 
 #include "../xrCore/API/xrAPI.h"
 
@@ -38,27 +29,23 @@
 
 // Our headers
 #include "EngineExternal.h"
-#include "engine.h"
+#include "Engine.h"
 #include "defines.h"
 #ifndef NO_XRLOG
-#include "../xrcore/log.h"
+#include "../xrCore/log.h"
 #endif
 #include "device.h"
-#include "../xrcore/fs.h"
+#include "../xrCore/FS.h"
 
-#include "../xrcdb/xrXRC.h"
+#include "../xrCDB/xrXRC.h"
 
-#include "../xrSound/sound.h"
+#include "../xrSound/Sound.h"
 #include "bone.h"
 
 extern ENGINE_API CInifile *pGameIni;
 
-#pragma comment( lib, "winmm.lib"		)
 
-#pragma comment( lib, "d3d9.lib"		)
-#pragma comment( lib, "dxguid.lib"		)
-
-#ifndef DEBUG
+#if !defined(DEBUG) && !defined(LUA_DEBUG)
 #	define LUABIND_NO_ERROR_CHECKING
 #endif
 

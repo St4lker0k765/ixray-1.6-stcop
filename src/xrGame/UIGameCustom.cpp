@@ -1,9 +1,9 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 #include "UIGameCustom.h"
 #include "Level.h"
-#include "ui/UIXmlInit.h"
-#include "ui/UIStatic.h"
+#include "UIHelperGame.h"
+#include "../xrUI/Widgets/UIStatic.h"
 #include "object_broker.h"
 #include "../xrEngine/string_table.h"
 
@@ -45,8 +45,10 @@ CUIGameCustom::CUIGameCustom()
 	ShowGameIndicators		(true);
 	ShowCrosshair			(true);
 
+	g_pGameCustom = this;
 	TalkMenu = new CUITalkWnd();
 }
+
 bool g_b_ClearGameCaptions = false;
 
 CUIGameCustom::~CUIGameCustom()
@@ -54,6 +56,7 @@ CUIGameCustom::~CUIGameCustom()
 	delete_data(m_custom_statics);
 	g_b_ClearGameCaptions	= false;
 	delete_data(TalkMenu);
+	g_pGameCustom = nullptr;
 }
 
 bool CUIGameCustom::HasShownDialogs() const
@@ -63,6 +66,7 @@ bool CUIGameCustom::HasShownDialogs() const
 
 void CUIGameCustom::OnFrame() 
 {
+	PROF_EVENT("CUIGameCustom::OnFrame");
 	CDialogHolder::OnFrame();
 	st_vec_it it = m_custom_statics.begin();
 	st_vec_it it_e = m_custom_statics.end();
@@ -94,6 +98,7 @@ void CUIGameCustom::OnFrame()
 
 void CUIGameCustom::Render()
 {
+	PROF_EVENT("CUIGameCustom::Render");
 	st_vec_it it = m_custom_statics.begin();
 	st_vec_it it_e = m_custom_statics.end();
 	for(;it!=it_e;++it)

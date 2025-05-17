@@ -1,8 +1,8 @@
-#include "stdafx.h"
-#include "uizonemap.h"
+#include "StdAfx.h"
+#include "UIZoneMap.h"
 
 #include "InfoPortion.h"
-#include "Pda.h"
+#include "PDA.h"
 
 #include "Grenade.h"
 #include "Level.h"
@@ -13,8 +13,8 @@
 #include "game_graph.h"
 
 #include "ui/UIMap.h"
-#include "ui/UIXmlInit.h"
-#include "ui/UIHelper.h"
+#include "../../xrUI/UIXmlInit.h"
+#include "../../xrUI/UIHelper.h"
 #include "ui/UIInventoryUtilities.h"
 //////////////////////////////////////////////////////////////////////////
 

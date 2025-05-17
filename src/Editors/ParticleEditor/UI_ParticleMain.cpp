@@ -12,7 +12,7 @@ CParticleMain*	PUI=(CParticleMain*)UI;
 
 CParticleMain::CParticleMain()  
 {
-    EPrefs			= xr_new<CCustomPreferences>();
+    EPrefs			= new CCustomPreferences();
 }
 //---------------------------------------------------------------------------
 
@@ -39,34 +39,29 @@ CCommandVar CParticleTool::CommandSaveXR(CCommandVar p1, CCommandVar p2)
     return TRUE;
 }
 
-#include "../xrEProps/UIFileLoad.h"
-extern CUFileOpen* FileOpen;
-
 CCommandVar CParticleTool::CommandLoadXR(CCommandVar p1, CCommandVar p2)
 {
-    FileOpen->AfterLoadCallback = [](xr_string filePathName)
+    xr_string temp_fn;
+    if (EFS.GetOpenName("$game_data$", temp_fn, false, NULL, 0))
     {
-        if (!filePathName.empty())
+        string_path gamedata = {};
+        FS.update_path(gamedata, "$game_data$", "");
+        xr_path temp = gamedata;
+        size_t Pos = temp_fn.find(temp.xfilename(), 0);
+
+        if (Pos == xr_string::npos)
         {
-            size_t Pos = filePathName.find("gamedata", 0);
-
-            if (Pos == xr_string::npos)
-            {
-                Msg("Incorrect Path!!! [%s]", filePathName.c_str());
-                return;
-            }
-
-            xr_string NormalPath = filePathName.substr(Pos);
-            RImplementation.PSLibrary.OnDestroy();
-            RImplementation.PSLibrary.Load(NormalPath.c_str());
-            PTools->ResetCurrent();
-            ExecCommand(COMMAND_UPDATE_PROPERTIES);
-            ExecCommand(COMMAND_UPDATE_CAPTION);
+            Msg("Incorrect Path!!! [%s]", temp_fn.c_str());
+            return false;
         }
-    };
 
-    FileOpen->ShowDialog("$game_data$", ".xr");
-
+        xr_string NormalPath = temp_fn.substr(Pos);
+        RImplementation.PSLibrary.OnDestroy();
+        RImplementation.PSLibrary.Load(NormalPath.c_str());
+        PTools->ResetCurrent();
+        ExecCommand(COMMAND_UPDATE_PROPERTIES);
+        ExecCommand(COMMAND_UPDATE_CAPTION);
+    }
     return TRUE;
 }
 
@@ -95,7 +90,7 @@ CCommandVar CParticleTool::CommandValidate(CCommandVar p1, CCommandVar p2)
 }
 CCommandVar CParticleTool::CommandClear(CCommandVar p1, CCommandVar p2)
 {
-    EDevice->m_Camera.Reset();
+    UI->CurrentView().m_Camera.Reset();
     ResetPreviewObject();
     ExecCommand(COMMAND_UPDATE_CAPTION);
     return TRUE;
@@ -230,39 +225,7 @@ void CParticleMain::ProgressDraw()
     inherited::ProgressDraw();
 /*	fraBottomBar->RedrawBar();*/
 }
-//---------------------------------------------------------------------------
-void CParticleMain::OutCameraPos()
-{
-	VERIFY(m_bReady);
-   /* xr_string s;
-	const Fvector& c 	= EDevice->m_Camera.GetPosition();
-	s.sprintf("C: %3.1f, %3.1f, %3.1f",c.x,c.y,c.z);
-//	const Fvector& hpb 	= EDevice->m_Camera.GetHPB();
-//	s.sprintf(" Cam: %3.1f�, %3.1f�, %3.1f�",rad2deg(hpb.y),rad2deg(hpb.x),rad2deg(hpb.z));
-    fraBottomBar->paCamera->Caption=s; fraBottomBar->paCamera->Repaint();*/
-}
-//---------------------------------------------------------------------------
-void CParticleMain::OutUICursorPos()
-{
-	VERIFY(m_bReady);
-    /*xr_string s; POINT pt;
-    GetCursorPos(&pt);
-    s.sprintf("Cur: %d, %d",pt.x,pt.y);
-    fraBottomBar->paUICursor->Caption=s; fraBottomBar->paUICursor->Repaint();*/
-}
-//---------------------------------------------------------------------------
-void CParticleMain::OutGridSize()
-{
-	/*VERIFY(fraBottomBar);
-    xr_string s;
-    s.sprintf("Grid: %1.1f",EPrefs->grid_cell_size);
-    fraBottomBar->paGridSquareSize->Caption=s; fraBottomBar->paGridSquareSize->Repaint();*/
-}
-//---------------------------------------------------------------------------
-void CParticleMain::OutInfo()
-{
-	/*fraBottomBar->paSel->Caption = Tools->GetInfo();*/
-}
+
 //---------------------------------------------------------------------------
 void CParticleMain::RealQuit()
 {

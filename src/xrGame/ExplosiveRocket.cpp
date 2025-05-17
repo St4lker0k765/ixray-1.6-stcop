@@ -1,13 +1,13 @@
 //////////////////////////////////////////////////////////////////////
-// ExplosiveRocket.cpp:	ракета, которой стреляет RocketLauncher 
-//						взрывается при столкновении
+// ExplosiveRocket.cpp:	СЂР°РєРµС‚Р°, РєРѕС‚РѕСЂРѕР№ СЃС‚СЂРµР»СЏРµС‚ RocketLauncher 
+//						РІР·СЂС‹РІР°РµС‚СЃСЏ РїСЂРё СЃС‚РѕР»РєРЅРѕРІРµРЅРёРё
 //////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "../Include/xrRender/Kinematics.h"
 #include "ExplosiveRocket.h"
-#include "physicsshellholder.h"
-#include "../xrPhysics/physicsshell.h"
+#include "PhysicsShellHolder.h"
+#include "../xrPhysics/PhysicsShell.h"
 
 
 CExplosiveRocket::CExplosiveRocket() 

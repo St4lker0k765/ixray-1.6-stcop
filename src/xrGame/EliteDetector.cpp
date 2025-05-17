@@ -1,13 +1,11 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "EliteDetector.h"
 #include "player_hud.h"
 #include "../Include/xrRender/UIRender.h"
-#include "ui/UIXmlInit.h"
-#include "ui/xrUIXmlParser.h"
-#include "ui/UIStatic.h"
+#include "../../xrUI/UIXmlInit.h"
+#include "../../xrUI/xrUIXmlParser.h"
+#include "../../xrUI/Widgets/UIStatic.h"
 #include "ui/ArtefactDetectorUI.h"
-
-
 
 CEliteDetector::CEliteDetector()
 {

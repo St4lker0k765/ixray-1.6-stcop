@@ -1,5 +1,5 @@
-#include "stdafx.h"
-#include "../xrEngine/xr_ioconsole.h"
+#include "StdAfx.h"
+#include "../xrEngine/XR_IOConsole.h"
 #include "CustomZone.h"
 #include "Hit.h"
 #include "PHDestroyable.h"
@@ -8,16 +8,16 @@
 #include "../xrEngine/LightAnimLibrary.h"
 #include "Level.h"
 #include "game_cl_base.h"
-#include "../xrEngine/igame_persistent.h"
-#include "../xrengine/xr_collide_form.h"
+#include "../xrEngine/IGame_Persistent.h"
+#include "../xrEngine/xr_collide_form.h"
 #include "Artefact.h"
 #include "ai_object_location.h"
 #include "../Include/xrRender/Kinematics.h"
 #include "zone_effector.h"
-#include "breakableobject.h"
+#include "BreakableObject.h"
 #include "GamePersistent.h"
 
-#define WIND_RADIUS (4*Radius())	//расстояние до актера, когда появляется ветер 
+#define WIND_RADIUS (4*Radius())	//СЂР°СЃСЃС‚РѕСЏРЅРёРµ РґРѕ Р°РєС‚РµСЂР°, РєРѕРіРґР° РїРѕСЏРІР»СЏРµС‚СЃСЏ РІРµС‚РµСЂ 
 #define FASTMODE_DISTANCE (50.f)	//distance to camera from sphere, when zone switches to fast update sequence
 
 CCustomZone::CCustomZone(void) 
@@ -80,15 +80,14 @@ void CCustomZone::Load(LPCSTR section)
 	m_zone_flags.set(eIgnoreSmall,		pSettings->r_bool(section,	"ignore_small"));
 	m_zone_flags.set(eIgnoreArtefact,	pSettings->r_bool(section,	"ignore_artefacts"));
 
-	//загрузить времена для зоны
+	//Р·Р°РіСЂСѓР·РёС‚СЊ РІСЂРµРјРµРЅР° РґР»СЏ Р·РѕРЅС‹
 	m_StateTime[eZoneStateIdle]			= -1;
 	m_StateTime[eZoneStateAwaking]		= pSettings->r_s32(section, "awaking_time");
 	m_StateTime[eZoneStateBlowout]		= pSettings->r_s32(section, "blowout_time");
 	m_StateTime[eZoneStateAccumulate]	= pSettings->r_s32(section, "accamulate_time");
 	
 //////////////////////////////////////////////////////////////////////////
-	ISpatial*		self				=	smart_cast<ISpatial*> (this);
-	if (self)		self->spatial.type	|=	(STYPE_COLLIDEABLE|STYPE_SHAPE);
+	SpatialComponent->spatial.type	|=	(STYPE_COLLIDEABLE|STYPE_SHAPE);
 //////////////////////////////////////////////////////////////////////////
 
 	LPCSTR sound_str = nullptr;
@@ -248,7 +247,7 @@ void CCustomZone::Load(LPCSTR section)
 		m_fBlowoutWindPowerMax = pSettings->r_float(section,"blowout_wind_power");
 	}
 
-	//загрузить параметры световой вспышки от взрыва
+	//Р·Р°РіСЂСѓР·РёС‚СЊ РїР°СЂР°РјРµС‚СЂС‹ СЃРІРµС‚РѕРІРѕР№ РІСЃРїС‹С€РєРё РѕС‚ РІР·СЂС‹РІР°
 	m_zone_flags.set(eBlowoutLight, pSettings->r_bool (section, "blowout_light"));
 	if(m_zone_flags.test(eBlowoutLight) ){
 		sscanf(pSettings->r_string(section,"light_color"), "%f,%f,%f", &m_LightColor.r, &m_LightColor.g, &m_LightColor.b);
@@ -265,7 +264,7 @@ void CCustomZone::Load(LPCSTR section)
 	m_fVolumetricDistance  = READ_IF_EXISTS(pSettings, r_float, section, "volumetric_distance",  1.f);
 	m_fVolumetricIntensity = READ_IF_EXISTS(pSettings, r_float, section, "volumetric_intensity", 1.f);
 
-	//загрузить параметры idle подсветки
+	//Р·Р°РіСЂСѓР·РёС‚СЊ РїР°СЂР°РјРµС‚СЂС‹ idle РїРѕРґСЃРІРµС‚РєРё
 	m_zone_flags.set(eIdleLight,	pSettings->r_bool (section, "idle_light"));
 	if( m_zone_flags.test(eIdleLight) )
 	{
@@ -312,7 +311,7 @@ BOOL CCustomZone::net_Spawn(CSE_Abstract* DC)
 	m_StartTime					= Device.dwTimeGlobal;
 	m_zone_flags.set			(eUseOnOffTime,	(m_TimeToDisable!=0)&&(m_TimeToEnable!=0) );
 
-	//добавить источники света
+	//РґРѕР±Р°РІРёС‚СЊ РёСЃС‚РѕС‡РЅРёРєРё СЃРІРµС‚Р°
 	bool br1 = (0==psDeviceFlags.test(rsR2|rsR4));
 	
 	
@@ -349,8 +348,11 @@ BOOL CCustomZone::net_Spawn(CSE_Abstract* DC)
 	else m_pLight = nullptr;
 
 	setEnabled					(TRUE);
-
-	PlayIdleParticles			();
+	
+	if (IsEnabled())
+	{
+		PlayIdleParticles();
+	}
 
 	m_iPreviousStateTime		= m_iStateTime = 0;
 
@@ -376,7 +378,7 @@ void CCustomZone::net_Destroy()
 	m_pLight.destroy		();
 	m_pIdleLight.destroy	();
 
-	CParticlesObject::Destroy(m_pIdleParticles);
+	Particles::Details::Destroy(m_pIdleParticles);
 
 	if(m_actor_effector)			
 		m_actor_effector->Stop		(); 
@@ -506,6 +508,7 @@ void CCustomZone::UpdateCL		()
 // called as usual
 void CCustomZone::shedule_Update(u32 dt)
 {
+	PROF_EVENT("CCustomZone::shedule_Update");
 	m_zone_flags.set(eZoneIsActive, FALSE);
 
 	if (IsEnabled())
@@ -517,8 +520,8 @@ void CCustomZone::shedule_Update(u32 dt)
 		// update
 		feel_touch_update		(P,s.R);
 
-		//пройтись по всем объектам в зоне
-		//и проверить их состояние
+		//РїСЂРѕР№С‚РёСЃСЊ РїРѕ РІСЃРµРј РѕР±СЉРµРєС‚Р°Рј РІ Р·РѕРЅРµ
+		//Рё РїСЂРѕРІРµСЂРёС‚СЊ РёС… СЃРѕСЃС‚РѕСЏРЅРёРµ
 		for(OBJECT_INFO_VEC_IT it = m_ObjectInfoMap.begin(); 
 			m_ObjectInfoMap.end() != it; ++it) 
 		{
@@ -541,8 +544,8 @@ void CCustomZone::shedule_Update(u32 dt)
 					StopObjectIdleParticles( pObject );
 			}
 
-			//если есть хотя бы один не дисабленый объект, то
-			//зона считается активной
+			//РµСЃР»Рё РµСЃС‚СЊ С…РѕС‚СЏ Р±С‹ РѕРґРёРЅ РЅРµ РґРёСЃР°Р±Р»РµРЅС‹Р№ РѕР±СЉРµРєС‚, С‚Рѕ
+			//Р·РѕРЅР° СЃС‡РёС‚Р°РµС‚СЃСЏ Р°РєС‚РёРІРЅРѕР№
 			if(info.zone_ignore == false) 
 				m_zone_flags.set(eZoneIsActive,TRUE);
 		}
@@ -679,7 +682,7 @@ void CCustomZone::PlayIdleParticles(bool bIdleLight)
 	{
 		if (!m_pIdleParticles)
 		{
-			m_pIdleParticles = CParticlesObject::Create(m_sIdleParticles.c_str(),FALSE);
+			m_pIdleParticles = Particles::Details::Create(m_sIdleParticles.c_str(),FALSE);
 			m_pIdleParticles->UpdateParent(XFORM(),zero_vel);
 		
 			m_pIdleParticles->UpdateParent(XFORM(),zero_vel);
@@ -697,7 +700,7 @@ void CCustomZone::StopIdleParticles(bool bIdleLight)
 	if(m_pIdleParticles)
 	{
 		m_pIdleParticles->Stop(FALSE);
-		CParticlesObject::Destroy(m_pIdleParticles);
+		Particles::Details::Destroy(m_pIdleParticles);
 	}
 
 	if(bIdleLight)
@@ -731,7 +734,7 @@ void CCustomZone::UpdateIdleLight	()
 	VERIFY(m_pIdleLAnim);
 
 	int frame = 0;
-	u32 clr					= m_pIdleLAnim->CalculateBGR(Device.fTimeGlobal,frame); // возвращает в формате BGR
+	u32 clr					= m_pIdleLAnim->CalculateBGR(Device.fTimeGlobal,frame); // РІРѕР·РІСЂР°С‰Р°РµС‚ РІ С„РѕСЂРјР°С‚Рµ BGR
 	Fcolor					fclr;
 	fclr.set				((float)color_get_B(clr)/255.f,(float)color_get_G(clr)/255.f,(float)color_get_R(clr)/255.f,1.f);
 	
@@ -750,7 +753,7 @@ void CCustomZone::PlayBlowoutParticles()
 	if(!m_sBlowoutParticles) return;
 
 	CParticlesObject* pParticles;
-	pParticles	= CParticlesObject::Create(*m_sBlowoutParticles,TRUE);
+	pParticles	= Particles::Details::Create(*m_sBlowoutParticles,TRUE).get();
 	pParticles->UpdateParent(XFORM(),zero_vel);
 	pParticles->Play(false);
 }
@@ -782,7 +785,7 @@ void CCustomZone::PlayHitParticles(CGameObject* pObject)
 		}
 	}
 }
-#include "bolt.h"
+#include "Bolt.h"
 void CCustomZone::PlayEntranceParticles(CGameObject* pObject)
 {
 	m_entrance_sound.play_at_pos		(0, pObject->Position());
@@ -811,7 +814,7 @@ void CCustomZone::PlayEntranceParticles(CGameObject* pObject)
 	else 
 		vel.set						(0,0,0);
 	
-	//выбрать случайную косточку на объекте
+	//РІС‹Р±СЂР°С‚СЊ СЃР»СѓС‡Р°Р№РЅСѓСЋ РєРѕСЃС‚РѕС‡РєСѓ РЅР° РѕР±СЉРµРєС‚Рµ
 	CParticlesPlayer* PP			= smart_cast<CParticlesPlayer*>(pObject);
 	if (PP)
 	{
@@ -819,7 +822,7 @@ void CCustomZone::PlayEntranceParticles(CGameObject* pObject)
 		
 		if (play_bone!=BI_NONE)
 		{
-			CParticlesObject* pParticles = CParticlesObject::Create(particle_str, TRUE);
+			CParticlesObject* pParticles = Particles::Details::Create(particle_str, TRUE).get();
 			Fmatrix					xform;
 			Fvector					dir;
 			if(fis_zero				(vel.magnitude()))
@@ -887,7 +890,7 @@ void CCustomZone::PlayBoltEntranceParticles()
 
 				PXF.c					= sP1;
 
-				pParticles				= CParticlesObject::Create(m_sBoltEntranceParticles.c_str(), TRUE);
+				pParticles				= Particles::Details::Create(m_sBoltEntranceParticles.c_str(), TRUE).get();
 				pParticles->UpdateParent(PXF,vel);
 				pParticles->Play		(false);
 			}
@@ -906,7 +909,7 @@ void CCustomZone::PlayBulletParticles(Fvector& pos)
 	if(!m_sEntranceParticlesSmall) return;
 	
 	CParticlesObject* pParticles;
-	pParticles = CParticlesObject::Create(*m_sEntranceParticlesSmall,TRUE);
+	pParticles = Particles::Details::Create(*m_sEntranceParticlesSmall,TRUE).get();
 	
 	Fmatrix M;
 	M = XFORM();
@@ -923,7 +926,7 @@ void CCustomZone::PlayObjectIdleParticles(CGameObject* pObject)
 
 	shared_str particle_str = nullptr;
 
-	//разные партиклы для объектов разного размера
+	//СЂР°Р·РЅС‹Рµ РїР°СЂС‚РёРєР»С‹ РґР»СЏ РѕР±СЉРµРєС‚РѕРІ СЂР°Р·РЅРѕРіРѕ СЂР°Р·РјРµСЂР°
 	if(pObject->Radius()<SMALL_OBJECT_RADIUS)
 	{
 		if(!m_sIdleObjectParticlesSmall) return;
@@ -936,7 +939,7 @@ void CCustomZone::PlayObjectIdleParticles(CGameObject* pObject)
 	}
 
 	
-	//запустить партиклы на объекте
+	//Р·Р°РїСѓСЃС‚РёС‚СЊ РїР°СЂС‚РёРєР»С‹ РЅР° РѕР±СЉРµРєС‚Рµ
 	//. new
 	PP->StopParticles (particle_str, BI_NONE, true);
 
@@ -959,7 +962,7 @@ void CCustomZone::StopObjectIdleParticles(CGameObject* pObject)
 	
 	
 	shared_str particle_str = nullptr;
-	//разные партиклы для объектов разного размера
+	//СЂР°Р·РЅС‹Рµ РїР°СЂС‚РёРєР»С‹ РґР»СЏ РѕР±СЉРµРєС‚РѕРІ СЂР°Р·РЅРѕРіРѕ СЂР°Р·РјРµСЂР°
 	if(pObject->Radius()<SMALL_OBJECT_RADIUS)
 	{
 		if(!m_sIdleObjectParticlesSmall) return;
@@ -1326,7 +1329,7 @@ void CCustomZone::PlayAccumParticles()
 	if(m_sAccumParticles.size())
 	{
 		CParticlesObject* pParticles;
-		pParticles	= CParticlesObject::Create(*m_sAccumParticles,TRUE);
+		pParticles	= Particles::Details::Create(*m_sAccumParticles,TRUE).get();
 		pParticles->UpdateParent(XFORM(),zero_vel);
 		pParticles->Play(false);
 	}
@@ -1340,7 +1343,7 @@ void CCustomZone::PlayAwakingParticles()
 	if(m_sAwakingParticles.size())
 	{
 		CParticlesObject* pParticles;
-		pParticles	= CParticlesObject::Create(*m_sAwakingParticles,TRUE);
+		pParticles	= Particles::Details::Create(*m_sAwakingParticles,TRUE).get();
 		pParticles->UpdateParent(XFORM(),zero_vel);
 		pParticles->Play(false);
 	}
@@ -1407,7 +1410,7 @@ void CCustomZone::GoEnabledState()
 
 BOOL CCustomZone::feel_touch_on_contact	(CObject *O)
 {
-	if ((spatial.type | STYPE_VISIBLEFORAI) != spatial.type)
+	if ((SpatialComponent->spatial.type | STYPE_VISIBLEFORAI) != SpatialComponent->spatial.type)
 		return			(FALSE);
 
 	return				(inherited::feel_touch_on_contact(O));

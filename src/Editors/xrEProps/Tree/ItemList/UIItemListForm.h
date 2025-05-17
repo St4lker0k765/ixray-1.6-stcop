@@ -1,11 +1,12 @@
-﻿#pragma once
+#pragma once
 
 class XREPROPS_API UIItemListForm : 
-	public XrUI, 
+	public IEditorWnd, 
 	private FolderHelper<ListItem, true>
 {
 	TOnILItemsFocused OnItemsFocusedEvent;
 	TOnILItemFocused  OnItemFocusedEvent;
+	TOnILItemFocused  OnItemUnfocusedEvent;
 	TOnItemRemove     OnItemRemoveEvent;
 	TOnItemRename     OnItemRenameEvent;
 	TOnItemCreate     OnItemCreateEvent;
@@ -51,6 +52,10 @@ public:
 	IC void SetOnItemFocusedEvent(TOnILItemFocused e)
 	{
 		OnItemFocusedEvent = e;
+	}
+	IC void SetOnItemUnfocusedEvent(TOnILItemFocused e)
+	{
+		OnItemUnfocusedEvent = e;
 	}
 	IC void SetOnItemRemoveEvent(TOnItemRemove e)
 	{

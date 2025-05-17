@@ -14,7 +14,7 @@
 
 // server entities includes
 #include "xrServer_Objects_ALife_All.h"
-#include "xrServer_Objects_ALife_Smartcovers.h"
+#include "xrServer_Objects_Alife_Smartcovers.h"
 #include "clsid_game.h"
 
 // client entities includes
@@ -136,7 +136,7 @@
 #	include "torridZone.h"
 #	include "ZoneVisual.h"
 #	include "hairszone.h"
-//. #	include "amebazone.h"
+#	include "amebazone.h"
 #	include "nogravityzone.h"
 #	include "simpledetector.h"
 #	include "elitedetector.h"
@@ -189,7 +189,7 @@
 #ifndef NO_XR_GAME
 	ENGINE_API					bool g_dedicated_server;
 #	define ADD(a,b,c,d)			add<a,b>(c,d)
-#	define ADD_MP(a,b,c,d,e,f)	add(xr_new<CObjectItemClientServerSingleMp<a,b,c,d> >(e,f))
+#	define ADD_MP(a,b,c,d,e,f)	add(new CObjectItemClientServerSingleMp<a,b,c,d>(e,f))
 #else
 #	define ADD(a,b,c,d)			add<b>(c,d)
 #endif
@@ -392,7 +392,7 @@ void CObjectFactory::register_classes	()
 	ADD(CTeamBaseZone			,CSE_ALifeTeamBaseZone			,CLSID_Z_TEAM_BASE				,"team_base_zone");
 	ADD(CTorridZone				,CSE_ALifeTorridZone			,CLSID_Z_TORRID					,"torrid_zone");
 	ADD(CSpaceRestrictor		,CSE_ALifeSpaceRestrictor		,CLSID_SPACE_RESTRICTOR			,"space_restrictor");
-//.	ADD(CAmebaZone				,CSE_ALifeZoneVisual			,CLSID_Z_AMEBA					,"ameba_zone");
+	ADD(CAmebaZone				,CSE_ALifeZoneVisual			,CLSID_Z_AMEBA					,"ameba_zone");
 	ADD(CNoGravityZone			,CSE_ALifeAnomalousZone			,CLSID_Z_NOGRAVITY				,"nogravity_zone");
 	ADD(CZoneCampfire			,CSE_ALifeAnomalousZone			,CLSID_Z_CAMPFIRE				,"zone_campfire");
 	// Detectors

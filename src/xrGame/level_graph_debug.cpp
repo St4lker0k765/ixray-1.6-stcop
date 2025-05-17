@@ -6,7 +6,7 @@
 //	Description : Level graph debug functions
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 
 #ifdef DEBUG
 #ifndef AI_COMPILER
@@ -21,7 +21,7 @@
 #include "alife_human_brain.h"
 #include "alife_monster_movement_manager.h"
 #include "alife_monster_detail_path_manager.h"
-#include "ui_base.h"
+#include "../../xrUI/ui_base.h"
 
 #include "debug_renderer.h"
 

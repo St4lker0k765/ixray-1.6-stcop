@@ -1,12 +1,12 @@
 ///////////////////////////////////////////////////////////////
 // MilitaryOutfit.h
-// MilitaryOutfit - защитный костюм военного
+// MilitaryOutfit - Р·Р°С‰РёС‚РЅС‹Р№ РєРѕСЃС‚СЋРј РІРѕРµРЅРЅРѕРіРѕ
 ///////////////////////////////////////////////////////////////
 
 
 #pragma once
 
-#include "customoutfit.h"
+#include "CustomOutfit.h"
 
 class CMilitaryOutfit: public CCustomOutfit
 {

@@ -5,7 +5,7 @@
 #define MIN_LEGS_COUNT	1
 #define MAX_LEGS_COUNT	4 
 
-#include "../include/xrRender/animation_motion.h"
+#include "../Include/xrRender/animation_motion.h"
 
 struct SStepParam {
 	struct{
@@ -24,8 +24,8 @@ using STEPS_MAP_IT = STEPS_MAP::iterator;
 
 struct SStepInfo {
 	struct {
-		bool			handled;		// обработан
-		u8				cycle;			// цикл в котором отработан
+		bool			handled;		// РѕР±СЂР°Р±РѕС‚Р°РЅ
+		u8				cycle;			// С†РёРєР» РІ РєРѕС‚РѕСЂРѕРј РѕС‚СЂР°Р±РѕС‚Р°РЅ
 	} activity[MAX_LEGS_COUNT];
 
 	SStepParam		params;

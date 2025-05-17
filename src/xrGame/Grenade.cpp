@@ -1,8 +1,8 @@
-#include "stdafx.h"
-#include "grenade.h"
+#include "StdAfx.h"
+#include "Grenade.h"
 #include "../xrPhysics/PhysicsShell.h"
 //.#include "WeaponHUD.h"
-#include "entity.h"
+#include "Entity.h"
 #include "Actor.h"
 #include "Inventory.h"
 #include "Level.h"
@@ -311,6 +311,7 @@ void CGrenade::OnAnimationEnd(u32 state)
 
 void CGrenade::UpdateCL() 
 {
+	PROF_EVENT("CGrenade::UpdateCL")
 	inherited::UpdateCL			();
 	CExplosive::UpdateCL		();
 

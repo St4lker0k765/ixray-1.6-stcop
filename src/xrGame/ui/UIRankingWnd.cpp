@@ -9,15 +9,15 @@
 #include "pch_script.h"
 #include "UIRankingWnd.h"
 
-#include "UIFixedScrollBar.h"
-#include "UIXmlInit.h"
-#include "UIProgressBar.h"
-#include "UIFrameLineWnd.h"
-#include "UIScrollView.h"
-#include "UIHelper.h"
+#include "../../xrUI/Widgets/UIFixedScrollBar.h"
+#include "../../xrUI/UIXmlInit.h"
+#include "../../xrUI/Widgets/UIProgressBar.h"
+#include "../../xrUI/Widgets/UIFrameLineWnd.h"
+#include "../../xrUI/Widgets/UIScrollView.h"
+#include "../../xrUI/UIHelper.h"
 #include "UIInventoryUtilities.h"
 
-#include "../actor.h"
+#include "../Actor.h"
 #include "../ai_space.h"
 #include "../alife_simulator.h"
 
@@ -27,7 +27,7 @@
 #include "../relation_registry.h"
 #include "../../xrEngine/string_table.h"
 #include "UICharacterInfo.h"
-#include "ui_base.h"
+#include "../../xrUI/ui_base.h"
 
 #define  PDA_RANKING_XML		"pda_ranking.xml"
 
@@ -51,9 +51,16 @@ CUIRankingWnd::~CUIRankingWnd()
 
 void CUIRankingWnd::Show( bool status )
 {
-	if ( status )
+	if (status && Actor())
 	{
-		m_actor_ch_info->InitCharacter( Actor()->object_id() );
+		if (IsGameTypeSingle())
+		{
+			m_actor_ch_info->InitCharacter(Actor()->object_id());
+		}
+		else
+		{
+			m_actor_ch_info->InitCharacterMP(Actor());
+		}
 		
 		string64 buf;
 		xr_sprintf( buf, sizeof(buf), "%d %s", Actor()->get_money(), "RU" );
@@ -85,7 +92,8 @@ void CUIRankingWnd::Init()
 	m_background				= UIHelper::CreateFrameWindow(xml, "background", this);
 	m_down_background			= UIHelper::CreateFrameWindow(xml, "down_background", this);
 
-	if (!EngineExternal()[EEngineExternalUI::DiasbleCharacterInfo])
+	const static bool isCharacterInfo = EngineExternal()[EEngineExternalUI::DisableCharacterInfo];
+	if (!isCharacterInfo)
 	{
 		m_actor_ch_info = new CUICharacterInfo();
 		m_actor_ch_info->SetAutoDelete(true);

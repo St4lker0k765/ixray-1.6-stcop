@@ -1,18 +1,18 @@
 #include "stdafx.h"
 #include "controller_psy_hit.h"
-#include "../BaseMonster/base_monster.h"
+#include "../basemonster/base_monster.h"
 #include "controller.h"
 #include "../control_animation_base.h"
 #include "../control_direction_base.h"
 #include "../control_movement_base.h"
-#include "../../../level.h"
-#include "../../../actor.h"
+#include "../../../Level.h"
+#include "../../../Actor.h"
 #include "../../../ActorEffector.h"
 #include "../../../../xrEngine/CameraBase.h"
 #include "../../../CharacterPhysicsSupport.h"
 #include "../../../level_debug.h"
 #include "../../../ActorCondition.h"
-#include "../../../HudManager.h"
+#include "../../../HUDManager.h"
 
 
 
@@ -49,17 +49,21 @@ bool CControllerPsyHit::tube_ready () const
 bool CControllerPsyHit::check_start_conditions()
 {
 	CActor* pActor = Actor();
-	if (is_active())				
-		return false;	
+	if (is_active())
+		return false;
 
-	if (IsGameTypeSingle()) {
+	if (m_man->is_captured_pure())
+		return false;
+
+	if (IsGameTypeSingle())
+	{
 		if (pActor->Cameras().GetCamEffector(eCEControllerPsyHit))
 			return						false;
 
-	if ( !see_enemy(pActor) )
+		if (!see_enemy(pActor))
 			return						false;
 
-	if ( !tube_ready() )
+		if (!tube_ready())
 			return						false;
 
 		if (m_object->Position().distance_to(pActor->Position()) < m_min_tube_dist)
@@ -68,7 +72,8 @@ bool CControllerPsyHit::check_start_conditions()
 	else
 	{
 		CActor* pA = const_cast<CActor*>(smart_cast<const CActor*>(m_object->EnemyMan.get_enemy()));
-		if (pA) {
+		if (pA) 
+		{
 			m_curent_actor_id = u16(-1);
 
 			if (pA->Cameras().GetCamEffector(eCEControllerPsyHit))
@@ -88,7 +93,8 @@ bool CControllerPsyHit::check_start_conditions()
 		else
 			return false;
 	}
-	return							true;
+
+	return true;
 }
 
 void CControllerPsyHit::activate()
@@ -113,6 +119,11 @@ void CControllerPsyHit::activate()
 	// set direction
 	SControlDirectionData			*ctrl_dir = (SControlDirectionData*)m_man->data(this, ControlCom::eControlDir); 
 	VERIFY							(ctrl_dir);
+	if (ctrl_dir == nullptr)
+	{
+		return;
+	}
+
 	ctrl_dir->heading.target_speed	= 3.f;
 	ctrl_dir->heading.target_angle	= m_man->direction().angle_to_target(pActor->Position());
 
@@ -188,7 +199,10 @@ void CControllerPsyHit::play_anim()
 {
 	SControlAnimationData		*ctrl_anim = (SControlAnimationData*)m_man->data(this, ControlCom::eControlAnimation); 
 	VERIFY						(ctrl_anim);
-
+	if (ctrl_anim == nullptr)
+	{
+		return;
+	}
 	ctrl_anim->global.set_motion ( m_stage[m_current_index] );
 	ctrl_anim->global.actual	= false;
 }
@@ -376,6 +390,10 @@ void CControllerPsyHit::death_glide_start()
 	// set direction
 	SControlDirectionData			*ctrl_dir = (SControlDirectionData*)m_man->data(this, ControlCom::eControlDir); 
 	VERIFY							(ctrl_dir);
+	if (ctrl_dir == nullptr)
+	{
+		return;
+	}
 	ctrl_dir->heading.target_speed	= 3.f;
 	ctrl_dir->heading.target_angle	= m_man->direction().angle_to_target(pActor->Position());
 

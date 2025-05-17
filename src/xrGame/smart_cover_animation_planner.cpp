@@ -5,14 +5,13 @@
 //	Description : Smart cover planner class
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 #include "smart_cover_animation_planner.h"
 #include "script_game_object.h"
 #include "ai/stalker/ai_stalker.h"
 #include "ai/stalker/ai_stalker_impl.h"
 #include "ai/stalker/ai_stalker_space.h"
-#include "stalker_property_evaluators.h"
 #include "smart_cover_planner_actions.h"
 #include "smart_cover_loophole_planner_actions.h"
 #include "Hit.h"
@@ -26,6 +25,8 @@
 #include "smart_cover_animation_selector.h"
 #include "clsid_game.h"
 #include "game_object_space.h"
+#include "Legacy/StalkerPlanner/stalker_danger_property_evaluators.h"
+#include "Legacy/StalkerPlanner/stalker_property_evaluators.h"
 
 using smart_cover::animation_planner;
 using namespace StalkerDecisionSpace;
@@ -117,16 +118,10 @@ void animation_planner::finalize		()
 
 void animation_planner::add_evaluators	()
 {
-	add_evaluator			(
-		eWorldPropertySmartCoverEntered,
-		xr_new<evaluators::cover_entered_evaluator>(
-			m_object,
-			"smart cover entered"
-		)
-	);
+	add_evaluator(eWorldPropertySmartCoverEntered, new evaluators::cover_entered_evaluator(m_object, "smart cover entered"));
 	add_evaluator			(
 		eWorldPropertySmartCoverActual,
-		xr_new<evaluators::cover_actual_evaluator>(
+		new evaluators::cover_actual_evaluator(
 			m_object,
 			"smart cover actual"
 		)
@@ -148,7 +143,7 @@ void animation_planner::add_evaluators	()
 	);
 	add_evaluator			(
 		eWorldPropertyLoopholeActual,
-		xr_new<evaluators::loophole_actual_evaluator>(
+		new evaluators::loophole_actual_evaluator(
 			m_object,
 			"loophole actual",
 			this,
@@ -225,14 +220,14 @@ void animation_planner::add_evaluators	()
 	);
 	add_evaluator			(
 		eWorldPropertyLoopholeExitable,
-		xr_new<evaluators::loophole_exitable_evaluator>(
+		new evaluators::loophole_exitable_evaluator(
 			m_object,
 			"loophole exitable"
 		)
 	);
 	add_evaluator			(
 		eWorldPropertyLoopholeCanExitWithAnimation,
-		xr_new<evaluators::can_exit_loophole_with_animation>(
+		new evaluators::can_exit_loophole_with_animation(
 			m_object,
 			"can exit loophole with animation"
 		)

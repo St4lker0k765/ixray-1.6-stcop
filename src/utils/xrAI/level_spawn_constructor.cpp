@@ -6,7 +6,7 @@
 //	Description : Level spawn constructor
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "level_spawn_constructor.h"
 #include "level_graph.h"
 #include "graph_engine.h"
@@ -37,7 +37,6 @@ CLevelSpawnConstructor::~CLevelSpawnConstructor					()
 
 	VERIFY					(!m_level_graph);
 	VERIFY					(!m_cross_table);
-	VERIFY					(!m_graph_engine);
 }
 
 IC	const CGameGraph &CLevelSpawnConstructor::game_graph		() const
@@ -60,14 +59,9 @@ IC	const CLevelGraph &CLevelSpawnConstructor::level_graph			() const
 	return					(*m_level_graph);
 }
 
-IC	const CGameLevelCrossTable &CLevelSpawnConstructor::cross_table	() const
+IC	const IGameLevelCrossTable &CLevelSpawnConstructor::cross_table	() const
 {
 	return					(*m_cross_table);
-}
-
-IC	CGraphEngine &CLevelSpawnConstructor::graph_engine			() const
-{
-	return					(*m_graph_engine);
 }
 
 void CLevelSpawnConstructor::init								()
@@ -76,7 +70,7 @@ void CLevelSpawnConstructor::init								()
 	string_path				file_name;
 	FS.update_path			(file_name,"$game_levels$",*m_level.name());
 	xr_strcat				(file_name,"\\");
-	m_level_graph			= xr_new<CLevelGraph>(file_name);
+	m_level_graph			= new CLevelGraph(file_name);
 	
 	// loading cross table
 	m_game_spawn_constructor->game_graph().set_current_level	(game_graph().header().level(*m_level.name()).id());
@@ -149,7 +143,7 @@ void CLevelSpawnConstructor::add_space_restrictor				(CSE_ALifeDynamicObject *dy
 	if (!space_restrictor->m_flags.test(CSE_ALifeObject::flCheckForSeparator))
 		return;
 
-	m_space_restrictors.push_back	(xr_new<CSpaceRestrictorWrapper>(space_restrictor));
+	m_space_restrictors.push_back	(new CSpaceRestrictorWrapper(space_restrictor));
 }
 
 void CLevelSpawnConstructor::add_level_changer					(CSE_Abstract			*abstract)
@@ -169,7 +163,7 @@ void CLevelSpawnConstructor::add_free_object					(CSE_Abstract			*abstract)
 //{
 //	SPAWN_GRPOUP_OBJECTS::iterator	I = m_spawn_objects.find(group_section);
 //	if (I == m_spawn_objects.end()) {
-//		xr_vector<CSE_Abstract*>	*temp = xr_new<GROUP_OBJECTS>();
+//		xr_vector<CSE_Abstract*>	*temp = new GROUP_OBJECTS();
 //		temp->clear					();
 //		temp->push_back				(abstract);
 //		m_spawn_objects.insert		(std::make_pair(group_section,temp));
@@ -438,8 +432,6 @@ public:
 void CLevelSpawnConstructor::generate_artefact_spawn_positions	()
 {
 	// create graph engine
-	VERIFY								(!m_graph_engine);
-	m_graph_engine						= xr_new<CGraphEngine>(m_level_graph->header().vertex_count());
 
 	xr_vector<u32>						l_tpaStack;
 	SPAWN_STORAGE						zones;
@@ -464,23 +456,44 @@ void CLevelSpawnConstructor::generate_artefact_spawn_positions	()
 		zone->m_tGraphID					= cell.game_vertex_id();
 		zone->m_fDistance					= cell.distance();
 
-		graph_engine().search			(
-			level_graph(),
-			zone->m_tNodeID,
-			zone->m_tNodeID,
-			&l_tpaStack,
-			SFlooder<
-				float,
-				u32,
-				u32
-			>(
-				zone->m_offline_interactive_radius,
-				u32(-1),
-				u32(-1)
-			)
-		);
-		
-		l_tpaStack.erase				(
+
+		xr_vector<u32> CheckNodes;
+		l_tpaStack.push_back(zone->m_tNodeID);
+		CheckNodes.push_back(zone->m_tNodeID);
+
+		xr_set<u32> NodeVisited;
+
+		float m_distance_xz = level_graph().header().cell_size();
+		ILevelGraph::CVertex* MainNode = level_graph().vertex(zone->m_tNodeID);
+		while(CheckNodes.size() > 0)
+		{
+			u32 CurrentNodeID = CheckNodes.back();
+			CheckNodes.pop_back();
+			ILevelGraph::CVertex* Node = level_graph().vertex(CurrentNodeID);
+			NodeVisited.emplace(CurrentNodeID);
+
+			auto DistanceNode = [this,m_distance_xz](ILevelGraph::CVertex* Node1,ILevelGraph::CVertex* Node2)
+			{
+				return level_graph().distance(Node1,Node2);
+			};
+
+			for (s32 NeighborIndex = 0; NeighborIndex < 4; NeighborIndex++)
+			{
+				const u32 NeighborID = Node->link(NeighborIndex);
+				if (!level_graph().valid_vertex_id(NeighborID)) continue;
+				ILevelGraph::CVertex* NeighborNode = level_graph().vertex(zone->m_tNodeID);
+				if(DistanceNode(MainNode,NeighborNode) < zone->m_offline_interactive_radius)
+				{
+					if (!NodeVisited.contains(NeighborID))
+					{
+						l_tpaStack.push_back(NeighborID);
+						CheckNodes.push_back(NeighborID);
+					}
+				}
+			}
+		}
+
+		l_tpaStack.erase(
 			std::remove_if(
 				l_tpaStack.begin(),
 				l_tpaStack.end(),
@@ -613,7 +626,6 @@ void CLevelSpawnConstructor::Execute							()
 	
 	xr_delete							(m_level_graph);
 	m_cross_table						= 0;
-	xr_delete							(m_graph_engine);
 }
 
 void CLevelSpawnConstructor::update								()
@@ -633,7 +645,7 @@ void CLevelSpawnConstructor::verify_space_restrictors			()
 		if ((*I)->object().m_space_restrictor_type == RestrictionSpace::eRestrictorTypeNone)
 			continue;
 
-		(*I)->verify					(*m_level_graph,*m_graph_engine,m_no_separator_check);
+		(*I)->verify					(*m_level_graph,m_no_separator_check);
 	}
 
 	delete_data							(m_space_restrictors);

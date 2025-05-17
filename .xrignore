@@ -9,3 +9,9 @@ Thumbs.db
 /.git/
 /.vs/
 /temp/
+
+.md
+
+.7z
+.rar
+.zip

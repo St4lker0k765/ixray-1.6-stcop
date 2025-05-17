@@ -1,5 +1,5 @@
-#include "stdafx.h"
-#include "simpledetector.h"
+#include "StdAfx.h"
+#include "SimpleDetector.h"
 #include "ui/ArtefactDetectorUI.h"
 #include "../Include/xrRender/Kinematics.h"
 #include "../xrEngine/LightAnimLibrary.h"
@@ -64,7 +64,7 @@ void CSimpleDetector::UpdateAf()
 	float fRelPow			= (dist/m_fAfDetectRadius);
 	clamp					(fRelPow, 0.f, 1.f);
 
-	//îïðåäåëèòü òåêóùóþ ÷àñòîòó ñðàáàòûâàíèÿ ñèãíàëà
+	//Ð¾Ð¿Ñ€ÐµÐ´ÐµÐ»Ð¸Ñ‚ÑŒ Ñ‚ÐµÐºÑƒÑ‰ÑƒÑŽ Ñ‡Ð°ÑÑ‚Ð¾Ñ‚Ñƒ ÑÑ€Ð°Ð±Ð°Ñ‚Ñ‹Ð²Ð°Ð½Ð¸Ñ ÑÐ¸Ð³Ð½Ð°Ð»Ð°
 	af_info.cur_period = item_type->freq.x + 
 		(item_type->freq.y - item_type->freq.x) * (fRelPow*fRelPow);
 
@@ -115,25 +115,29 @@ void CUIArtefactDetectorSimple::Flash(bool bOn, float fRelPower)
 		K->LL_SetBoneVisible(m_flash_bone, FALSE, TRUE);
 		m_turn_off_flash_time	= 0;
 	}
+	K->CalculateBones(TRUE);
 	if(bOn!=m_flash_light->get_active())
 		m_flash_light->set_active(bOn);
 }
-
+#include "Level.h"
+#include "player_hud.h"
 void CUIArtefactDetectorSimple::setup_internals()
 {
 	R_ASSERT						(!m_flash_light);
 	m_flash_light					= ::Render->light_create();
-	m_flash_light->set_shadow		(false);
+	m_flash_light->set_shadow		(!!psDeviceFlags.test(rsR4));
 	m_flash_light->set_type			(IRender_Light::POINT);
 	m_flash_light->set_range		(pSettings->r_float(m_parent->HudItemData()->m_sect_name,"flash_light_range"));
 	m_flash_light->set_hud_mode		(true);
+	m_flash_light->set_occq_mode	(false);
 	
 	R_ASSERT						(!m_on_off_light);
 	m_on_off_light					= ::Render->light_create();
-	m_on_off_light->set_shadow		(false);
+	m_on_off_light->set_shadow		(!!psDeviceFlags.test(rsR4));
 	m_on_off_light->set_type		(IRender_Light::POINT);
 	m_on_off_light->set_range		(pSettings->r_float(m_parent->HudItemData()->m_sect_name,"onoff_light_range"));
 	m_on_off_light->set_hud_mode	(true);
+	m_on_off_light->set_occq_mode	(false);
 
 	IKinematics* K					= m_parent->HudItemData()->m_model;
 	R_ASSERT						(K);

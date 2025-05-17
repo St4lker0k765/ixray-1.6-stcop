@@ -9,7 +9,7 @@
 #include "../monster_cover_manager.h"
 #include "../monster_home.h"
 
-#include "../../../actor.h"
+#include "../../../Actor.h"
 #include "../../../actor_memory.h"
 #include "../../../visual_memory_manager.h"
 
@@ -23,8 +23,8 @@
 TEMPLATE_SPECIALIZATION
 CBloodsuckerStateAttackHideAbstract::CBloodsuckerStateAttackHide(_Object *obj) : inherited(obj)
 {
-	add_state	(eStateAttack_HideInCover,	xr_new<CStateMonsterMoveToPointEx<_Object> >(obj));
-	add_state	(eStateAttack_CampInCover,	xr_new<CStateBloodsuckerPredatorLite<_Object> >	(obj));
+	add_state	(eStateAttack_HideInCover,	new CStateMonsterMoveToPointEx<_Object> (obj));
+	add_state	(eStateAttack_CampInCover,	new CStateBloodsuckerPredatorLite<_Object> 	(obj));
 }
 
 TEMPLATE_SPECIALIZATION

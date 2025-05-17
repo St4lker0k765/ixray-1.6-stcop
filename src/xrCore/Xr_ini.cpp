@@ -478,7 +478,7 @@ void CInifile::save_as	(IWriter& writer, bool bcheck) const
 		if(bcheck)
 		{
 			xr_sprintf		(temp, sizeof(temp), "; %d %d %d", (*r_it)->Name._get()->dwCRC, 
-																(*r_it)->Name._get()->dwReference, 
+																(*r_it)->Name._get()->dwReference.load(),
 																(*r_it)->Name._get()->dwLength);
 			writer.w_string	(temp);
 		}
@@ -525,21 +525,27 @@ bool CInifile::save_as	(LPCSTR new_fname)
 	return				(true);
 }
 
-BOOL	CInifile::section_exist( LPCSTR S )const
+BOOL CInifile::section_exist(LPCSTR S) const
 {
+	if (S == nullptr)
+		return false;
+
 	RootCIt I = std::lower_bound(DATA.begin(), DATA.end(), S, sect_pred);
-	return (I!=DATA.end() && xr_strcmp(*(*I)->Name,S)==0);
+	return (I != DATA.end() && xr_strcmp(*(*I)->Name, S) == 0);
 }
 
-BOOL	CInifile::line_exist( LPCSTR S, LPCSTR L )const
+BOOL CInifile::line_exist( LPCSTR S, LPCSTR L )const
 {
+	if (S == nullptr || L == nullptr)
+		return false;
+
 	if (!section_exist(S)) return FALSE;
 	Sect&	I = r_section(S);
 	SectCIt A = std::lower_bound(I.Data.begin(),I.Data.end(),L,item_pred);
 	return (A!=I.Data.end() && xr_strcmp(*A->first,L)==0);
 }
 
-u32		CInifile::line_count(LPCSTR Sname)const
+u32	CInifile::line_count(LPCSTR Sname)const
 {
 	Sect&	S = r_section(Sname);
 	SectCIt	I = S.Data.begin();
@@ -628,11 +634,7 @@ u32 CInifile::r_u32(LPCSTR S, LPCSTR L)const
 u64 CInifile::r_u64(LPCSTR S, LPCSTR L)const
 {
 	LPCSTR		C = r_string(S,L);
-#ifndef _EDITOR
 	return		_strtoui64(C,nullptr,10);
-#else
-	return		(u64)_atoi64(C);
-#endif
 }
 
 s64 CInifile::r_s64(LPCSTR S, LPCSTR L)const
@@ -853,26 +855,18 @@ void	CInifile::w_u32			( LPCSTR S, LPCSTR L, u32				V, LPCSTR comment )
 	w_string	(S,L,temp,comment);
 }
 
-void	CInifile::w_u64			( LPCSTR S, LPCSTR L, u64				V, LPCSTR comment )
+void CInifile::w_u64(LPCSTR S, LPCSTR L, u64 V, LPCSTR comment)
 {
-	string128 temp; 
-#ifndef _EDITOR
-	_ui64toa_s			(V, temp, sizeof(temp), 10);
-#else
-	_ui64toa			(V, temp, 10);
-#endif
-	w_string			(S,L,temp,comment);
+	string128 temp;
+	_ui64toa_s(V, temp, sizeof(temp), 10);
+	w_string(S, L, temp, comment);
 }
 
-void	CInifile::w_s64			( LPCSTR S, LPCSTR L, s64				V, LPCSTR comment )
+void CInifile::w_s64(LPCSTR S, LPCSTR L, s64 V, LPCSTR comment)
 {
 	string128			temp;
-#ifndef _EDITOR
-	_i64toa_s			(V, temp, sizeof(temp), 10);
-#else
-	_i64toa				(V, temp, 10);
-#endif
-	w_string			(S,L,temp,comment);
+	_i64toa_s(V, temp, sizeof(temp), 10);
+	w_string(S, L, temp, comment);
 }
 
 void	CInifile::w_s8			( LPCSTR S, LPCSTR L, s8				V, LPCSTR comment )
@@ -1217,11 +1211,16 @@ void CInifile::LTXLoad(IReader* F, LPCSTR path, xr_string_map<xr_string, Sect>& 
 				_splitpath(fn, inc_path, folder, 0, 0);
 				xr_strcat(inc_path, sizeof(inc_path), folder);
 
-				if (strstr(inc_name, "*.ltx"))
+				if (strstr(inc_name, "*"))
 				{
-					FS_FileSet fset;
-					FS.file_list(fset, inc_path, FS_ListFiles, inc_name);
-
+					FS_FileSet fset = {};
+					string_path inc_mask = {};
+					char inc_ext[8] = {};
+					
+					_splitpath(inc_name, nullptr, nullptr, inc_mask, inc_ext);
+					xr_string mask = xr_string(inc_mask) + inc_ext;
+					FS.file_list(fset, inc_path, FS_ListFiles, mask.c_str());
+					
 					for (FS_FileSet::iterator it = fset.begin(); it != fset.end(); it++)
 					{
 						LPCSTR _name = it->name.c_str();

@@ -4,6 +4,8 @@ project(ActorEditor)
 file(GLOB EAE_SOURCE_ALL_FILES CONFIGURE_DEPENDS
     "*.cpp"
     "*.h"
+    "*.ico"
+    "*.rc"
 )
 
 file(GLOB EAE_SOURCE_UI_FILES CONFIGURE_DEPENDS "UI*.*")
@@ -51,5 +53,3 @@ set_target_properties(ActorEditor PROPERTIES DISABLE_PRECOMPILE_HEADERS ON)
 file(GLOB_RECURSE EAE_SOURCE_PCH_FILES "stdafx.*")
 source_group("pch" FILES ${EAE_SOURCE_PCH_FILES})
 
-target_include_directories(ActorEditor PUBLIC "${CMAKE_BINARY_DIR}/packages/Microsoft.DXSDK.D3DX.9.29.952.8/build/native/include/")
-target_include_directories(ActorEditor PUBLIC "${CMAKE_BINARY_DIR}/packages/directxmesh_desktop_2019.2024.6.5.1/include/")

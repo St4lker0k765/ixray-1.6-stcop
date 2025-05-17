@@ -3,7 +3,10 @@
 
 #include "UI_Camera.h"
 #include "ui_main.h"
-#include "ui_toolscustom.h"
+#include "UI_ToolsCustom.h"
+
+#include "../xrEngine/IGame_Level.h"
+#include "../xrEngine/CameraManager.h"
 
 CUI_Camera::CUI_Camera()
 {
@@ -57,7 +60,7 @@ const Fvector& CUI_Camera::GetPosition() const
 {
     if (UI->IsPlayInEditor())
     {
-        return Device.vCameraPosition;
+        return g_pGameLevel->Cameras().Position();
     }
     return m_Position;
 }
@@ -66,7 +69,7 @@ const Fvector& CUI_Camera::GetRight() const
 {
 	if (UI->IsPlayInEditor())
 	{
-		return Device.vCameraRight;
+        return g_pGameLevel->Cameras().Right();
 	}
    return m_CamMat.i;
 }
@@ -75,7 +78,7 @@ const Fvector& CUI_Camera::GetNormal() const
 {
 	if (UI->IsPlayInEditor())
 	{
-		return Device.vCameraTop;
+        return g_pGameLevel->Cameras().Up();
 	}
     return m_CamMat.j;
 }
@@ -84,7 +87,7 @@ const Fvector& CUI_Camera::GetDirection() const
 {
 	if (UI->IsPlayInEditor())
 	{
-		return Device.vCameraDirection;
+        return g_pGameLevel->Cameras().Direction();
 	}
     return m_CamMat.k;
 }
@@ -131,11 +134,31 @@ void CUI_Camera::SetDepth(float _far, bool bForcedUpdate)
     if (m_Zfar!=_far)	{m_Zfar=_far; UI->Resize(bForcedUpdate);}
 }
 
-void CUI_Camera::SetViewport(float _near, float _far, float _fov)
+void CUI_Camera::SetViewport(float _near, float _far, float _fov, bool Silent)
 {
-    if (m_Znear!=_near)		{m_Znear=_near; UI->Resize();}
-    if (m_Zfar!=_far)		{m_Zfar=_far; UI->Resize();}
-    if (EDevice->fFOV!=_fov)	{EDevice->fFOV=_fov; UI->Resize();}
+    if (m_Znear != _near)
+    {
+        m_Znear = _near;
+
+        if (!Silent)
+            UI->Resize();
+    }
+
+    if (m_Zfar != _far)
+    {
+        m_Zfar = _far;
+
+        if (!Silent)
+            UI->Resize();
+    }
+
+    if (EDevice->fFOV != _fov)
+    {
+        EDevice->fFOV = _fov;
+
+        if (!Silent)
+            UI->Resize();
+    }
 }
 
 void CUI_Camera::SetSensitivity(float sm, float sr)
@@ -299,8 +322,8 @@ bool CUI_Camera::KeyUp(WORD Key, TShiftState Shift)
 
 void CUI_Camera::MouseRayFromPoint( Fvector& start, Fvector& direction, const Ivector2& point )
 {
-	int halfwidth  = UI->GetRenderWidth()*0.5f;
-	int halfheight = UI->GetRenderHeight()*0.5f;
+	int halfwidth  = UI->CurrentView().RTSize.x * 0.5f;
+	int halfheight = UI->CurrentView().RTSize.y * 0.5f;
 
     if (!halfwidth||!halfheight) return;
 
@@ -334,7 +357,7 @@ void CUI_Camera::ZoomExtents(const Fbox& bb)
 
 	BuildCamera();
 /*
-	eye_k - фокусное расстояние, eye_k=eye_width/2
+	eye_k - С„РѕРєСѓСЃРЅРѕРµ СЂР°СЃСЃС‚РѕСЏРЅРёРµ, eye_k=eye_width/2
 	camera.alfa:=0;
      camera.beta:=-30*pi/180;
      camera.gama:=0;

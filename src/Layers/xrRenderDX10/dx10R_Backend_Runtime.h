@@ -268,6 +268,7 @@ IC void CBackend::Compute(UINT ThreadGroupCountX, UINT ThreadGroupCountY, UINT T
 
 IC void CBackend::Render(D3DPRIMITIVETYPE T_, u32 baseV, u32 startV, u32 countV, u32 startI, u32 PC)
 {
+	//PROF_EVENT("RCache.Render_ibvb")
 	//VERIFY(vs);
 	//RDevice->VSSetShader(vs);
 	//RDevice->GSSetShader(0);
@@ -315,6 +316,7 @@ IC void CBackend::Render(D3DPRIMITIVETYPE T_, u32 baseV, u32 startV, u32 countV,
 
 IC void CBackend::Render(D3DPRIMITIVETYPE T_, u32 startV, u32 PC)
 {
+	//PROF_EVENT("RCache.Render_vb")
 	//	TODO: DX10: Remove triangle fan usage from the engine
 	if (T_ == D3DPT_TRIANGLEFAN)
 		return;
@@ -342,6 +344,26 @@ IC void CBackend::Render(D3DPRIMITIVETYPE T_, u32 startV, u32 PC)
 	RContext->Draw(iVertexCount, startV);
 //	Msg("Draw: End\n");
 	PGO					(Msg("PGO:DIP:%dv/%df",3*PC,PC));
+}
+
+IC void CBackend::Render_noIA(u32 iVertexCount)
+{
+	stat.calls++;
+	stat.verts += iVertexCount;
+
+	SRVSManager.Apply();
+	ApplyRTandZB();
+
+	//Unbind IA (VB, IB)
+	RContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	RContext->IASetInputLayout(nullptr);
+
+	StateManager.Apply();
+
+	//State manager may alter constants
+	constants.flush();
+
+	RContext->Draw(iVertexCount, 0);
 }
 
 IC void CBackend::set_Geometry(SGeometry* _geom)
@@ -434,6 +456,7 @@ ICF void CBackend::set_CullMode(u32 _mode)
 
 IC void CBackend::ApplyVertexLayout()
 {
+	//PROF_EVENT("CBackend::ApplyVertexLayout")
 	VERIFY(vs);
 	VERIFY(decl);
 	VERIFY(m_pInputSignature);
@@ -500,6 +523,7 @@ IC bool CBackend::CBuffersNeedUpdate( ref_cbuffer buf1[MaxCBuffers], ref_cbuffer
 
 IC void CBackend::set_Constants			(R_constant_table* C_)
 {
+	//PROF_EVENT("CBackend::set_Constants")
 	// caching
 	if (ctable==C_)	return;
 	ctable			= C_;
@@ -726,6 +750,7 @@ ICF void CBackend::ApplyRTandZB()
 
 IC	void CBackend::get_ConstantDirect(shared_str& n, u32 DataSize, void** pVData, void** pGData, void** pPData)
 {
+	//PROF_EVENT("CBackend::get_ConstantDirect")
 	ref_constant C_ = get_c(n);
 
 	if (C_)

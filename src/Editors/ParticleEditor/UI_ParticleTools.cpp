@@ -53,11 +53,11 @@ bool CParticleTool::OnCreate()
 
     m_EditPE 		= (PS::CParticleEffect*)((CRender*)::Render)->Models->CreatePE(0);
     m_EditPG		= (PS::CParticleGroup*)((CRender*)::Render)->Models->CreatePG(0);
-    m_ItemProps = xr_new<UIPropertiesForm>();
+    m_ItemProps = new UIPropertiesForm();
     m_ItemProps->SetModifiedEvent(TOnModifiedEvent(this, &CParticleTool::OnItemModified));
 
     // item list
-    m_PList = xr_new<UIItemListForm>();
+    m_PList = new UIItemListForm();
     m_PList->m_Flags.set(UIItemListForm::fMenuEdit, true);
     m_PList->SetOnItemFocusedEvent	(TOnILItemFocused(this,&CParticleTool::OnParticleItemFocused));
     m_PList->SetOnItemCloneEvent(TOnItemClone(this, &CParticleTool::OnParticleCloneItem));
@@ -65,9 +65,9 @@ bool CParticleTool::OnCreate()
 	m_PList->SetOnItemRenameEvent	(TOnItemRename(this,&CParticleTool::OnParticleItemRename));
     m_PList->SetOnItemRemoveEvent	(TOnItemRemove(this,&CParticleTool::OnParticleItemRemove));
     //
-    m_ParentAnimator= xr_new<CObjectAnimator>();
+    m_ParentAnimator= new CObjectAnimator();
 
-    m_ObjectProps = xr_new<UIPropertiesForm>();
+    m_ObjectProps = new UIPropertiesForm();
     FillObjectPrefs();
     return true;
 }
@@ -92,7 +92,7 @@ void CParticleTool::OnDestroy()
 bool CParticleTool::IfModified()
 {
     if (m_bModified){
-        int mr = ELog.DlgMsg(mtConfirmation, "The particles has been modified.\nDo you want to save your changes?");
+        int mr = ELog.DlgMsg(mtConfirmation, mbYes|mbNo|mbCancel, "The particles has been modified.\nDo you want to save your changes?");
         switch(mr){
         case mrYes: if (!ExecCommand(COMMAND_SAVE)) return false; else m_bModified = FALSE; break;
         case mrNo: m_bModified = FALSE; break;
@@ -149,6 +149,10 @@ void CParticleTool::Render()
          	int cnt 		= m_EditPG->items.size();
             for (int k=0; k<cnt; k++){
                 PS::CParticleEffect* E		= (PS::CParticleEffect*)m_EditPG->items[k]._effect;
+
+                if (m_LibPGD == nullptr || m_LibPGD->m_Effects[k] == nullptr)
+                    continue;
+
 				if (E&&E->GetDefinition()&&m_LibPGD->m_Effects[k]->m_Flags.is(PS::CPGDef::SEffect::flEnabled))
                 	E->GetDefinition()->Render(m_Transform);
             }
@@ -240,7 +244,7 @@ void CParticleTool::ZoomObject(BOOL bSelOnly)
 {
 	VERIFY(m_bReady);
     if (!bSelOnly&&m_EditObject){
-        EDevice->m_Camera.ZoomExtents(m_EditObject->GetBox());
+        UI->CurrentView().m_Camera.ZoomExtents(m_EditObject->GetBox());
 	}else{
     	Fbox box; box.invalidate();
         switch(m_EditMode){
@@ -249,7 +253,7 @@ void CParticleTool::ZoomObject(BOOL bSelOnly)
         case emGroup:	box.set(m_EditPG->vis.box);	break;
 	    default: THROW;
         }
-        if (box.is_valid()){ box.grow(1.f); EDevice->m_Camera.ZoomExtents(box); }
+        if (box.is_valid()){ box.grow(1.f); UI->CurrentView().m_Camera.ZoomExtents(box); }
     }
 }
 
@@ -319,8 +323,20 @@ bool CParticleTool::Save(bool bAsXR)
     // validate
     if (!Validate(true))
     {
-    	ELog.DlgMsg	(mtError,"Invalid particle's found. Validate library and try again.");
-        return false;
+        if (!bAsXR)
+        {
+            int RetVal = ELog.DlgMsg(mtError, mbYes | mbNo, "Should I save only valid parts or cancel saving?");
+            if (RetVal == mrNo)
+            {
+                ELog.Msg(mtConfirmation, ">>> Cancel");
+                return false;
+            }
+        }
+        else
+        {
+            ELog.DlgMsg(mtError, "Invalid particle's found. Validate library and try again.");
+            return false;
+        }
     }
 	bool bRes			= false;
 	if(bAsXR)
@@ -342,6 +358,9 @@ void CParticleTool::Reload()
     ResetCurrent	();
 	RImplementation.PSLibrary.Reload();
     // visual part
+    m_EditPE->Compile(nullptr);
+    m_EditPG->Compile(nullptr);
+
     m_ItemProps->ClearProperties();
     UpdateProperties(true);
 }
@@ -713,38 +732,50 @@ float m_MoveSnap = 1;
 bool CParticleTool::MouseStart(TShiftState Shift)
 {
 	inherited::MouseStart(Shift);
-	switch(m_Action){
-    case etaSelect: break;
-    case etaAdd:	break;
-    case etaMove:{
-        if (Shift|ssCtrl){
-        	if (m_EditObject){
-                float dist = UI->ZFar();
-                SRayPickInfo pinf;
-                if (m_EditObject->RayPick(dist,UI->m_CurrentRStart,UI->m_CurrentRDir,Fidentity,&pinf))
-                    m_Transform.c.set(pinf.pt);
-            }else{
-                // pick grid
-                Fvector normal={0.f, 1.f, 0.f};
-                float clcheck = UI->m_CurrentRDir.dotproduct( normal );
-                if( fis_zero( clcheck ) ) return false;
-                float alpha = - UI->m_CurrentRStart.dotproduct(normal) / clcheck;
-                if( alpha <= 0 ) return false;
+	switch(m_Action)
+    {
+        case etaSelect:
+        break;
+        case etaAdd:
+        break;
+        case etaMove:
+        {
+            if (Shift | ssCtrl)
+            {
+                if (m_EditObject)
+                {
+                    float dist = UI->ZFar();
+                    SRayPickInfo pinf;
+                    if (m_EditObject->RayPick(dist, UI->m_CurrentRStart, UI->m_CurrentRDir, Fidentity, &pinf))
+                        m_Transform.c.set(pinf.pt);
+                }
+                else
+                {
+                    // pick grid
+                    Fvector normal = { 0.f, 1.f, 0.f };
+                    float clcheck = UI->m_CurrentRDir.dotproduct(normal);
+                    if (fis_zero(clcheck)) return false;
+                    float alpha = -UI->m_CurrentRStart.dotproduct(normal) / clcheck;
+                    if (alpha <= 0) return false;
 
-                m_Transform.c.mad(UI->m_CurrentRStart,UI->m_CurrentRDir,alpha);
+                    m_Transform.c.mad(UI->m_CurrentRStart, UI->m_CurrentRDir, alpha);
 
-                if (m_Settings.is(etfGSnap)){
-                    m_Transform.c.x = snapto( m_Transform.c.x, m_MoveSnap );
-                    m_Transform.c.z = snapto( m_Transform.c.z, m_MoveSnap );
-                    m_Transform.c.y = 0.f;
+                    if (m_Settings.is(etfGSnap))
+                    {
+                        m_Transform.c.x = snapto(m_Transform.c.x, m_MoveSnap);
+                        m_Transform.c.z = snapto(m_Transform.c.z, m_MoveSnap);
+                        m_Transform.c.y = 0.f;
+                    }
                 }
             }
         }
-    }break;
-    case etaRotate:	break;
-    case etaScale:  break;
+        break;
+        case etaRotate:
+        break;
+        case etaScale:
+        break;
     }
-    ApplyParent		();
+    ApplyParent();
 	return m_bHiddenMode;
 }
 
@@ -756,23 +787,32 @@ bool CParticleTool::MouseEnd(TShiftState Shift)
 
 void CParticleTool::MouseMove(TShiftState Shift)
 {
-	inherited::MouseMove(Shift);
-	switch(m_Action){
-    case etaSelect: break;
-    case etaAdd: 	break;
-    case etaMove:	
-    	m_Transform.c.add(m_MovedAmount); 
-    break;
-    case etaRotate:{
-    	Fmatrix mR; mR.identity();
-    	if (!fis_zero(m_RotateVector.x)) 		mR.rotateX(m_RotateAmount);
-        else if (!fis_zero(m_RotateVector.y)) 	mR.rotateY(m_RotateAmount);
-        else if (!fis_zero(m_RotateVector.z)) 	mR.rotateZ(m_RotateAmount);
-        m_Transform.mulB_43	(mR);
-    }break;
-    case etaScale:	break;
+    inherited::MouseMove(Shift);
+    switch (m_Action)
+    {
+        case etaSelect:
+        break;
+        case etaAdd:
+        break;
+        case etaMove:
+        m_Transform.c.add(m_MovedAmount);
+        break;
+        case etaRotate:
+        {
+            Fmatrix mR; mR.identity();
+            if (!fis_zero(m_RotateVector.x))
+                mR.rotateX(m_RotateAmount);
+            else if (!fis_zero(m_RotateVector.y))
+                mR.rotateY(m_RotateAmount);
+            else if (!fis_zero(m_RotateVector.z))
+                mR.rotateZ(m_RotateAmount);
+            m_Transform.mulB_43(mR);
+        }
+        break;
+        case etaScale:
+        break;
     }
-    ApplyParent		();
+    ApplyParent();
 }
 //------------------------------------------------------------------------------
 
@@ -839,7 +879,7 @@ PS::CPGDef*	CParticleTool::AppendPG(PS::CPGDef* src, const char* path)
     return S;
 }
 
-#include "../XrECore/Editor/EditMesh.h"
+#include "../xrECore/Editor/EditMesh.h"
 
 bool CParticleTool::RayPick(const Fvector& start, const Fvector& dir, float& dist, Fvector* pt, Fvector* n)
 {

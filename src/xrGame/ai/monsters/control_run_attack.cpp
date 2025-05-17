@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "control_run_attack.h"
-#include "BaseMonster/base_monster.h"
+#include "basemonster/base_monster.h"
 #include "monster_velocity_space.h"
 #include "control_animation_base.h"
 #include "control_direction_base.h"
@@ -32,6 +32,10 @@ void CControlRunAttack::activate()
 	
 	SControlDirectionData		*ctrl_dir = (SControlDirectionData*)m_man->data(this, ControlCom::eControlDir); 
 	VERIFY						(ctrl_dir);
+	if (ctrl_dir == nullptr)
+	{
+		return;
+	}
 	ctrl_dir->heading.target_speed	= 3.f;
 	ctrl_dir->heading.target_angle	= m_man->direction().angle_to_target(m_object->EnemyMan.get_enemy()->Position());
 
@@ -39,7 +43,10 @@ void CControlRunAttack::activate()
 	
 	SControlAnimationData		*ctrl_anim = (SControlAnimationData*)m_man->data(this, ControlCom::eControlAnimation); 
 	VERIFY						(ctrl_anim);
-
+	if (ctrl_anim == nullptr)
+	{
+		return;
+	}
 	ctrl_anim->global.set_motion ( smart_cast<IKinematicsAnimated*>(m_object->Visual())->ID_Cycle_Safe("stand_attack_run_0") );
 	ctrl_anim->global.actual	= false;
 }
@@ -79,9 +86,12 @@ void CControlRunAttack::on_event(ControlCom::EEventType type, ControlCom::IEvent
 {
 	switch (type) {
 	case ControlCom::eventAnimationEnd:
-			m_time_next_attack					= time() + Random.randI(m_min_delay,m_max_delay);
-			m_man->notify						(ControlCom::eventRunAttackEnd, 0);
-			break;
+		if (m_min_delay > 0 && m_max_delay > 0)
+		{
+			m_time_next_attack = time() + Random.randI(m_min_delay, m_max_delay);
+			m_man->notify(ControlCom::eventRunAttackEnd, 0);
+		}
+		break;
 	case ControlCom::eventAnimationStart: // handle blend params
 		{
 			// set animation speed

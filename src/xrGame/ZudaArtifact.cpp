@@ -1,9 +1,9 @@
 ///////////////////////////////////////////////////////////////
 // ZudaArtifact.cpp
-// ZudaArtefact - артефакт "зуда"
+// ZudaArtefact - Р°СЂС‚РµС„Р°РєС‚ "Р·СѓРґР°"
 ///////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "ZudaArtifact.h"
 #include "../xrPhysics/PhysicsShell.h"
 

@@ -6,7 +6,7 @@
 //	Description : Movement manager
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 #include "movement_manager.h"
 #include "movement_manager_space.h"
@@ -18,13 +18,11 @@
 #include "patrol_path_manager.h"
 #include "xrMessages.h"
 #include "ai_object_location.h"
-#include "custommonster.h"
+#include "CustomMonster.h"
 #include "location_manager.h"
 #include "level_path_builder.h"
 #include "detail_path_builder.h"
-#include "profiler.h"
 #include "mt_config.h"
-//#include "custommonster.h"
 
 // Lain: added 
 #include "steering_behaviour.h"
@@ -57,28 +55,28 @@ CMovementManager::~CMovementManager	()
 	xr_delete					(m_detail_path_builder		);
 }
 
-void CMovementManager::Load			(LPCSTR section)
+void CMovementManager::Load(LPCSTR section)
 {
-	m_restricted_object				= create_restricted_object();
-	m_location_manager				= new CLocationManager		 (m_object);
+	m_restricted_object = create_restricted_object();
+	m_location_manager = new CLocationManager(m_object);
 
-	m_base_game_selector			= new CGameVertexParams		 (locations().vertex_types());
-	m_base_level_selector			= new CBaseParameters		 ();
-	
-	m_game_location_selector		= xr_new<CGameLocationSelector	>(m_restricted_object,m_location_manager);
-	m_game_path_manager				= xr_new<CGamePathManager		>(m_restricted_object);
-	m_level_path_manager			= xr_new<CLevelPathManager		>(m_restricted_object);
-	m_detail_path_manager			= xr_new<CDetailPathManager		>(m_restricted_object);
-	m_patrol_path_manager			= xr_new<CPatrolPathManager		>(m_restricted_object,m_object);
+	m_base_game_selector = new CGameVertexParams(locations().vertex_types());
+	m_base_level_selector = new CBaseParameters();
 
-	m_level_path_builder			= new CLevelPathBuilder(this);
-	m_detail_path_builder			= new CDetailPathBuilder(this);
+	m_game_location_selector = new CGameLocationSelector(m_restricted_object, m_location_manager);
+	m_game_path_manager = new CGamePathManager(m_restricted_object);
+	m_level_path_manager = new CLevelPathManager(m_restricted_object);
+	m_detail_path_manager = new CDetailPathManager(m_restricted_object);
+	m_patrol_path_manager = new CPatrolPathManager(m_restricted_object, m_object);
 
-	extrapolate_path				(false);
+	m_level_path_builder = new CLevelPathBuilder(this);
+	m_detail_path_builder = new CDetailPathBuilder(this);
+
+	extrapolate_path(false);
 
 	m_wait_for_distributed_computation = false;
 
-	locations().Load		  	(section);
+	locations().Load(section);
 }
 
 void CMovementManager::reinit		()

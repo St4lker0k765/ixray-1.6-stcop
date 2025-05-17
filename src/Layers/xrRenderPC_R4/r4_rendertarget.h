@@ -45,9 +45,6 @@ public:
 	IBlender*					b_cas;
 	IBlender*					b_gtao;
 
-    // compute shader for hdao
-    IBlender*                   b_hdao_cs;
-
 #ifdef DEBUG
 	struct		dbg_line_t		{
 		Fvector	P0,P1;
@@ -79,7 +76,7 @@ public:
 	ref_rt						rt_LUM_64;			// 64bit, 64x64,	log-average in all components
 	ref_rt						rt_LUM_8;			// 64bit, 8x8,		log-average in all components
 
-	ref_rt						rt_LUM_pool[CHWCaps::MAX_GPUS*2]	;	// 1xfp32,1x1,		exp-result -> scaler
+	ref_rt						rt_LUM_pool[2]	;	// 1xfp32,1x1,		exp-result -> scaler
 	ref_texture				t_LUM_src		;	// source
 	ref_texture				t_LUM_dest		;	// destination & usage for current frame
 
@@ -112,6 +109,7 @@ private:
 	ref_shader					s_scale;
 	ref_shader					s_cas;
 	ref_shader					s_gtao;
+	ref_shader					s_puddles;
 
 	// OCCq
 	ref_shader					s_occq;
@@ -247,6 +245,8 @@ public:
 	void						phase_cas				();
 	void						phase_gtao				();
 
+	void						phase_puddles			();
+
 	void						RenderEffect			(ScreenPostProcessType postProcessType);
 	void						PhaseAberration			();
 	void						PhaseVignette			();
@@ -259,7 +259,6 @@ public:
 	void						phase_scene_end			();
 	void						phase_occq				();
 	void						phase_ssao				();
-	void						phase_hdao				();
 	void						phase_downsamp			();
 	void						phase_wallmarks			();
 	void						phase_smap_direct		(light* L,	u32 sub_phase);

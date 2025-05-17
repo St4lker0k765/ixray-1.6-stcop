@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "level_debug.h"
 #include "../xrEngine/xr_object.h"
 #include "Level.h"
@@ -8,13 +8,15 @@
 // Lain: added
 #	include "debug_text_tree.h"
 #	include "ai/monsters/basemonster/base_monster.h"
-#	include "ui_base.h"
+#	include "../../xrUI/ui_base.h"
 #endif
 
 #ifdef DEBUG
 
 // Lain: added text_tree
-CLevelDebug::CLevelDebug() : m_p_texttree( xr_new<debug::text_tree>() ), m_texttree_offs(0)
+CLevelDebug::CLevelDebug() :
+	m_p_texttree(new debug::text_tree()),
+	m_texttree_offs(0)
 {
 	
 }

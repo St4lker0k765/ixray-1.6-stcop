@@ -21,7 +21,7 @@ file(GLOB_RECURSE XRR4_SOURCE_BLEND_FILES
     "Blender_*.cpp"
     "Blender_*.h"
 )
-file(GLOB_RECURSE XRR4_SOURCE_DX9_FILES
+file(GLOB_RECURSE XRR4_SOURCE_DX9_FILES CONFIGURE_DEPENDS
     "../xrRenderDX10/*.cpp"
     "../xrRenderDX10/*.h"
 )
@@ -71,6 +71,7 @@ target_link_libraries(xrRender_R4 PUBLIC xrParticles)
 target_link_libraries(xrRender_R4 PUBLIC "dxgi.lib")
 target_link_libraries(xrRender_R4 PUBLIC "d3d11.lib")
 target_link_libraries(xrRender_R4 PUBLIC "d3dcompiler.lib")
+target_link_libraries(xrRender_R4 PUBLIC "dxguid.lib")
 target_link_libraries(xrRender_R4 PUBLIC "ffx_fsr2_api_${NUGET_PACKAGE_PLATFORM}.lib")
 target_link_libraries(xrRender_R4 PUBLIC "ffx_fsr2_api_dx11_${NUGET_PACKAGE_PLATFORM}.lib")
 

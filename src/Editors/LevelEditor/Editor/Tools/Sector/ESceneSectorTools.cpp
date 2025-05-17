@@ -5,11 +5,11 @@
 void ESceneSectorTool::CreateControls()
 {
 //	inherited::CreateControls();
-    AddControl		(xr_new<TUI_ControlSectorSelect>(estDefault,etaSelect,	this));
-    AddControl		(xr_new<TUI_ControlSectorAdd>	(estDefault,etaAdd,		this));
+    AddControl		(new TUI_ControlSectorSelect(estDefault,etaSelect,	this));
+    AddControl		(new TUI_ControlSectorAdd	(estDefault,etaAdd,		this));
 	// frame
-    pForm = xr_new<UISectorTool>();
-  //  pFrame 			= xr_new<TfraSector>((TComponent*)0);
+    pForm = new UISectorTool();
+  //  pFrame 			= new TfraSector((TComponent*)0);
 }
 
 
@@ -27,7 +27,7 @@ void ESceneSectorTool::_OnObjectRemove(CSceneObject* obj)
         {
             for(ObjectIt _F=m_Objects.begin();_F!=m_Objects.end();++_F)
             {
-                CSector* sector 	= dynamic_cast<CSector*>(*_F);
+                CSector* sector 	= smart_cast<CSector*>(*_F);
                 VERIFY				(sector);
                 if (sector->DelMesh(obj, *m_it))
                     break;
@@ -42,10 +42,10 @@ void ESceneSectorTool::OnObjectRemove(CCustomObject* O, bool bDeleting)
 
     if(bDeleting)
     {
-        CSceneObject* obj = dynamic_cast<CSceneObject*>(O);
+        CSceneObject* obj = smart_cast<CSceneObject*>(O);
         if(!obj)
         {   /*
-			CGroupObject* go = dynamic_cast<CGroupObject*>(O);
+			CGroupObject* go = smart_cast<CGroupObject*>(O);
             if(go && !go->IsOpened())
             {
             	ObjectList 					lst;
@@ -55,7 +55,7 @@ void ESceneSectorTool::OnObjectRemove(CCustomObject* O, bool bDeleting)
                 ObjectList::iterator it_e 	= lst.end();
                 for(; it!=it_e; ++it)
                 {
-        			CSceneObject* obj2 	= dynamic_cast<CSceneObject*>(*it);
+        			CSceneObject* obj2 	= smart_cast<CSceneObject*>(*it);
 					_OnObjectRemove(obj2);
                 }
             } */
@@ -69,12 +69,12 @@ void ESceneSectorTool::OnBeforeObjectChange(CCustomObject* O)
 {
 	inherited::OnBeforeObjectChange(O);
 
-    CSceneObject* obj = dynamic_cast<CSceneObject*>(O);
+    CSceneObject* obj = smart_cast<CSceneObject*>(O);
     if (obj&&!m_Objects.empty()){
 	    EditMeshVec* meshes = obj->Meshes();
         for (EditMeshIt m_it= meshes->begin(); m_it!=meshes->end(); m_it++){
 	        for(ObjectIt _F=m_Objects.begin();_F!=m_Objects.end();_F++){
-    	        CSector* sector = dynamic_cast<CSector*>(*_F); VERIFY(sector);
+    	        CSector* sector = smart_cast<CSector*>(*_F); VERIFY(sector);
                 if (sector->DelMesh(obj, *m_it)) break;
             }
         }
@@ -92,7 +92,7 @@ void ESceneSectorTool::FillProp(LPCSTR pref, PropItemVec& items)
 
 CCustomObject* ESceneSectorTool::CreateObject(LPVOID data, LPCSTR name)
 {
-	CCustomObject* O	= xr_new<CSector>(data,name);
+	CCustomObject* O	= new CSector(data,name);
     O->FParentTools		= this;
     return O;
 }

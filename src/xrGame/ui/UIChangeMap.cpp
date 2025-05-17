@@ -1,18 +1,18 @@
 #include "StdAfx.h"
 #include "UIChangeMap.h"
 #include "UIVotingCategory.h"
-#include "UIXmlInit.h"
-#include "UI3tButton.h"
-#include "UIListBox.h"
-#include "UIListBoxItem.h"
-#include "../level.h"
+#include "../../xrUI/UIXmlInit.h"
+#include "../../xrUI/Widgets/UI3tButton.h"
+#include "../../xrUI/Widgets/UIListBox.h"
+#include "../../xrUI/Widgets/UIListBoxItem.h"
+#include "../Level.h"
 #include "../game_cl_teamdeathmatch.h"
-#include "../../xrEngine/xr_ioconsole.h"
+#include "../../xrEngine/XR_IOConsole.h"
 #include "UIMapList.h"
 
 #include "object_broker.h"
 #include "../UIGameCustom.h"
-#include "../UIDialogHolder.h"
+#include "../../xrUI/Widgets/UIDialogHolder.h"
 
 xr_token	game_types		[];
 

@@ -2,19 +2,12 @@
 #define SSAO_1231242112
 #include "common.hlsli"
 
-#ifndef SSAO_QUALITY
-
-float calc_ssao(float3 P, float3 N, float2 tc, float2 tcJ, float4 pos2d)
-{
-    return 1.0;
-}
-
-#else // SSAO_QUALITY
+#define SSAO_RADIUS 0.8
 
 Texture2D jitter0;
 sampler smp_jitter;
+
 float4 scaled_screen_res;
-#define SSAO_RADIUS 0.8
 
 float3 uv_to_eye(float2 uv, float eye_z)
 {
@@ -28,13 +21,13 @@ float3 uv_to_eye(float2 uv, float eye_z)
 
 float3 GetViewPos(float2 uv)
 {
-	float depth = s_position.SampleLevel(smp_nofilter, uv, 0);
+	float depth = s_position.SampleLevel(smp_nofilter, uv, 0).x;
     return uv_to_eye(uv, depth_unpack.x * rcp(depth - depth_unpack.y));
 }
 
 float doPBAO(float2 uv, float3 pos, float3 n, float invRad, float bias, float selfOcc)
 {
-	float3 p = GetViewPos(uv);
+	float3 p = GbufferGetPointRealUnjitter(uv);
 	float3 dist	= p - pos;
 	
 	float len = length(dist);
@@ -44,7 +37,7 @@ float doPBAO(float2 uv, float3 pos, float3 n, float invRad, float bias, float se
 	return max(-selfOcc, dot(n, v) - bias) * rcp(atten * atten + 1.0f);
 }
 
-float calc_ssao(float3 pos, float3 normal, float2 tc0, float2 tcJ, float2 pos2d)
+float calc_ssao(float depth, float3 normal, float2 tc0)
 {
 	// define kernel
 	float n = 0.0f;
@@ -73,11 +66,11 @@ float calc_ssao(float3 pos, float3 normal, float2 tc0, float2 tcJ, float2 pos2d)
 	float2 jit_offset = 0.0f;
 	sincos(m_taa_jitter.z * 6.283, jit_offset.x, jit_offset.y);
 	
-	float2 tc1 = (tc0 * scaled_screen_res.xy + jit_offset * 4.0f) * 0.015625f;
+	float2 tc1 = (tc0 * scaled_screen_res.xy) * 0.015625f + jit_offset;
 	float3 rotSample = jitter0.Sample(smp_jitter, tc1).xyz;
 	rotSample = normalize(rotSample - 0.5f);
 
-	pos = uv_to_eye(tc0, pos.z * 0.99f);
+	float3 pos = GbufferGetPointRealUnjitter(tc0, depth) * 0.99f;
 	
 	// calculate angle bias
 	float bias = 0.0;
@@ -95,7 +88,7 @@ float calc_ssao(float3 pos, float3 normal, float2 tc0, float2 tcJ, float2 pos2d)
 	// calculate ao
  	[unroll]
 	for (int i = 0; i < 8; ++i) {
-		float2 deltaUV = reflect(arrKernel[i], rotSample) * radius2D;		
+		float2 deltaUV = reflect(arrKernel[i], rotSample).xy * radius2D;		
 		ao += doPBAO(tc0 + deltaUV, pos, normal, invRad, bias, selfOcc);
 		ao += doPBAO(tc0 + deltaUV * inv2, pos, normal, invRad, bias, selfOcc);
 	}
@@ -103,6 +96,5 @@ float calc_ssao(float3 pos, float3 normal, float2 tc0, float2 tcJ, float2 pos2d)
 	ao = 1.0f - (ao * contrast + selfOcc);
 	return ao * ao * ao;
 }
-#endif
 #endif
 

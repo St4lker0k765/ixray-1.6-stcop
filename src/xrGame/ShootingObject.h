@@ -7,7 +7,7 @@
 #pragma once
 
 #include "alife_space.h"
-#include "../xrEngine/render.h"
+#include "../xrEngine/Render.h"
 #include "anticheat_dumpable_object.h"
 #include "../xrParticles/psystem.h"
 #include "../xrParticles/ParticlesObject.h"
@@ -61,6 +61,21 @@ public:
 	IC BOOL					IsWorking			()	const	{return bWorking;}
 	virtual BOOL			ParentMayHaveAimBullet()		{return FALSE;}
 	virtual BOOL			ParentIsActor()					{return FALSE;}
+
+	float getFireDistance(void) const { return fireDistance; }
+	void setFireDistance(float value);
+	float getFireDispersionBase(void) const { return fireDispersionBase; }
+	void setFireDispersionBase(float value);
+	float getStartBulletSpeed(void) const { return m_fStartBulletSpeed; }
+	void setStartBulletSpeed(float value);
+	float getHitImpulse(void) const { return fHitImpulse; }
+	void setHitImpulse(float value);
+	float getRPM(void) const { return fOneShotTime; }
+	void setRPM(float value);
+	const Fvector4& getHitPower(void) const { return fvHitPower; }
+	void setHitPower(const Fvector4& vec);
+	const Fvector4& getHitPowerCritical(void) const { return fvHitPowerCritical; }
+	void setHitPowerCritical(const Fvector4& vec);
 
 protected:
 	// Weapon fires now
@@ -185,7 +200,7 @@ protected:
 	//для выстрела 1м и 2м видом стрельбы
 	shared_str				m_sFlameParticles;
 	//объект партиклов огня
-	CParticlesObject*		m_pFlameParticles;
+	xr_shared_ptr<CParticlesObject>		m_pFlameParticles;
 
 	//имя пратиклов для дыма
 	shared_str				m_sSmokeParticlesCurrent;

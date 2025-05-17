@@ -1,7 +1,9 @@
 #include "stdafx.h"
-#include <d3d11.h>
+#include <d3d11_1.h>
 #include "ICore_GPU.h"
 #include <renderdoc/api/app/renderdoc_app.h>
+
+ENGINE_API void* g_pAnnotation = nullptr;
 
 extern D3D_FEATURE_LEVEL FeatureLevel;
 extern void* HWSwapchain;
@@ -160,8 +162,7 @@ bool CreateD3D11()
 		const D3D_FEATURE_LEVEL pFeatureLevels[] = {
 			D3D_FEATURE_LEVEL_11_1,
 			D3D_FEATURE_LEVEL_11_0,
-			D3D_FEATURE_LEVEL_10_1,
-			D3D_FEATURE_LEVEL_10_0,
+			D3D_FEATURE_LEVEL_10_1
 		};
 
 		HRESULT R = D3D11CreateDeviceAndSwapChain(
@@ -169,6 +170,13 @@ bool CreateD3D11()
 			std::size(pFeatureLevels), D3D11_SDK_VERSION, &sd, (IDXGISwapChain**)&HWSwapchain,
 			(ID3D11Device**)&HWRenderDevice, &FeatureLevel, (ID3D11DeviceContext**)&HWRenderContext
 		);
+
+		// main anotation
+		
+		if (FeatureLevel == D3D_FEATURE_LEVEL_11_1)
+		{
+			R_CHK(((ID3D11DeviceContext*)HWRenderContext)->QueryInterface(__uuidof(ID3DUserDefinedAnnotation), (void**)&g_pAnnotation));
+		}
 
 		if (FAILED(R))
 		{
@@ -180,6 +188,36 @@ bool CreateD3D11()
 			xrLogger::FlushLog();
 			return false;
 		};
+
+		if (bHasDebugRender)
+		{
+			ID3D11InfoQueue* infoQueue = nullptr;
+			if (SUCCEEDED(((ID3D11Device*)HWRenderDevice)->QueryInterface(__uuidof(ID3D11InfoQueue), (void**)&infoQueue)))
+			{
+				infoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_ERROR, true);
+
+				D3D11_MESSAGE_SEVERITY Severities[] =
+				{
+					D3D11_MESSAGE_SEVERITY_INFO
+				};
+
+				// Suppress individual messages by their ID
+				D3D11_MESSAGE_ID DenyIds[] = {
+					D3D11_MESSAGE_ID_DEVICE_DRAW_RENDERTARGETVIEW_NOT_SET,
+				};
+
+				D3D11_INFO_QUEUE_FILTER NewFilter = {};
+				NewFilter.DenyList.NumSeverities = _countof(Severities);
+				NewFilter.DenyList.pSeverityList = Severities;
+				NewFilter.DenyList.NumIDs = _countof(DenyIds);
+				NewFilter.DenyList.pIDList = DenyIds;
+
+
+				infoQueue->PushStorageFilter(&NewFilter);
+				infoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_WARNING, true);
+				infoQueue->SetBreakOnID(D3D11_MESSAGE_ID_DEVICE_DRAW_RENDERTARGETVIEW_NOT_SET, false);
+			}
+		}
 	}
 	//else
 	//{
@@ -271,6 +309,12 @@ void DestroyD3D11()
 	}
 	else
 	{
+		if (g_pAnnotation != nullptr)
+		{
+			((ID3DUserDefinedAnnotation*)g_pAnnotation)->Release();
+			g_pAnnotation = nullptr;
+		}
+
 		if (HWRenderContext != nullptr) {
 			((ID3D11DeviceContext*)HWRenderContext)->Release();
 			HWRenderContext = nullptr;

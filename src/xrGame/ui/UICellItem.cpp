@@ -1,13 +1,13 @@
 #include "stdafx.h"
 #include "UICellItem.h"
-#include "uicursor.h"
+#include "../../xrUI/UICursor.h"
 #include "../inventory_item.h"
 #include "UIDragDropListEx.h"
 #include "../../xrEngine/xr_input.h"
-#include "../level.h"
+#include "../Level.h"
 #include "object_broker.h"
-#include "UIXmlInit.h"
-#include "UIProgressBar.h"
+#include "../../xrUI/UIXmlInit.h"
+#include "../../xrUI/Widgets/UIProgressBar.h"
 
 #include "CustomOutfit.h"
 
@@ -47,8 +47,14 @@ CUICellItem::~CUICellItem()
 
 void CUICellItem::init()
 {
-	CUIXml	uiXml;
-	uiXml.Load( CONFIG_PATH, UI_PATH, "actor_menu_item.xml" );
+	static CUIXml uiXml;
+	static bool is_xml_ready = false;
+
+	if (!is_xml_ready)
+	{
+		uiXml.Load(CONFIG_PATH, UI_PATH, "actor_menu_item.xml");
+		is_xml_ready = true;
+	}
 	
 	m_text					= new CUIStatic();
 	m_text->SetAutoDelete	( true );

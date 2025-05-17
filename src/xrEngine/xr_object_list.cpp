@@ -1,6 +1,6 @@
 #include "stdafx.h"
-#include "igame_level.h"
-#include "igame_persistent.h"
+#include "IGame_Level.h"
+#include "IGame_Persistent.h"
 
 #include "xrSheduler.h"
 #include "xr_object_list.h"
@@ -187,6 +187,7 @@ void CObjectList::clear_crow_vec(Objects& o)
 
 void CObjectList::Update		(bool bForce)
 {
+	PROF_EVENT("CObjectList::Update");
 	if ( !Device.Paused() || bForce )
 	{
 		// Clients

@@ -3,7 +3,7 @@
 
 #include "xrLC_GlobalData.h"
 
-#include "xrface.h"
+#include "xrFace.h"
 #include "vector_clear.h"
 
 typedef poolSS<Vertex,8*1024>	poolVertices;
@@ -78,7 +78,7 @@ void xrLC_GlobalData::vertices_isolate_and_pool_reload()
 				continue;
 			}
 			
-			// Se7kills Проверить для чего нужно было 
+			// Se7kills РџСЂРѕРІРµСЂРёС‚СЊ РґР»СЏ С‡РµРіРѕ РЅСѓР¶РЅРѕ Р±С‹Р»Рѕ 
 			// v.isolate_pool_clear_write(*file);
 			::destroy_vertex(_g_vertices[i], false);
 			++not_empty_verts;
@@ -104,7 +104,7 @@ void xrLC_GlobalData::vertices_isolate_and_pool_reload()
 			Vertex*& v = _g_vertices[i];
 			v = _VertexPool.create();
 
-			// Se7kills Проверить для чего нужно было 
+			// Se7kills РџСЂРѕРІРµСЂРёС‚СЊ РґР»СЏ С‡РµРіРѕ РЅСѓР¶РЅРѕ Р±С‹Р»Рѕ 
 			// v->isolate_pool_clear_read(r_verts);
 		}
 		b_vert_not_register = false;

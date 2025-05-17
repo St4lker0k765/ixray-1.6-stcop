@@ -4,7 +4,7 @@ UILeftBarForm::UILeftBarForm()
 {
 	bUseSnapList = true;
 	bUseObjectsTool = true;
-	bDrawSnapListObjects = true;
+	bDrawSnapListObjects = static_cast<CLevelPreferences*>(EPrefs)->OpenSnapList;
 	m_SnapListMode = false;
 	m_SnapItem_Current = 0;
 }
@@ -33,13 +33,13 @@ void UILeftBarForm::Draw()
 													OBJCLASS_AIMAP,
 													OBJCLASS_WM,
 													OBJCLASS_FOG_VOL,
+													OBJCLASS_PUDDLES,
 													OBJCLASS_force_dword
 		};
 
 		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 1));
 		ImGui::Columns(2);
-		ImGui::Separator();
 		for (u32 i = 0; Tools[i] != OBJCLASS_force_dword; i++)
 		{
 			u32 id = 0;
@@ -50,17 +50,25 @@ void UILeftBarForm::Draw()
 			ESceneToolBase* tool = Scene->GetTool(Tools[id]);
 			bool visble = tool->IsVisible();
 			ImGui::PushID(tool->ClassName());
-			if (ImGui::Checkbox("##value", &visble)) { tool->m_EditFlags.set(ESceneToolBase::flVisible, visble); UI->RedrawScene(); }; ImGui::SameLine();
+
+			ImGui::BeginDisabled(!tool->IsEnabled());
+
+			if (ImGui::Checkbox("##value", &visble)) 
+			{ 
+				tool->m_EditFlags.set(ESceneToolBase::flVisible, visble); 
+				UI->RedrawScene(); 
+			}; 
+			ImGui::SameLine();
 
 			if (ImGui::RadioButton(tool->ClassDesc(), LTools->GetTarget() == Tools[id]))
 			{
 				ExecCommand(COMMAND_CHANGE_TARGET, Tools[id]);
 			}
+			ImGui::EndDisabled();
 			ImGui::PopID();
 			ImGui::NextColumn();
 		}
 		ImGui::Columns(1);
-		ImGui::Separator();
 		ImGui::PopStyleVar(2);
 	}
 	ImGui::End();
@@ -76,8 +84,15 @@ void UILeftBarForm::Draw()
 			}
 			ImGui::End();
 
-			UIObjectTool* pTool = smart_cast<UIObjectTool*>(LTools->GetToolForm());
-			if (pTool)
+			if (UIObjectTool* pTool = smart_cast<UIObjectTool*>(LTools->GetToolForm()))
+			{
+				pTool->DrawObjectsList();
+			}
+			else if (UISpawnTool* pTool = smart_cast<UISpawnTool*>(LTools->GetToolForm()))
+			{
+				pTool->DrawObjectsList();
+			}
+			else if (UIParticlesTool* pTool = smart_cast<UIParticlesTool*>(LTools->GetToolForm()))
 			{
 				pTool->DrawObjectsList();
 			}
@@ -93,7 +108,10 @@ void UILeftBarForm::Draw()
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 1));
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 4));
 		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4, 0));
-		ImGui::Checkbox("Enable/Show Snap List", &bDrawSnapListObjects);
+		
+		if (ImGui::Checkbox("Enable/Show Snap List", &bDrawSnapListObjects))
+			static_cast<CLevelPreferences*>(EPrefs)->OpenSnapList = bDrawSnapListObjects;
+		
 		ImGui::Separator();
 		{
 			ImGui::BulletText("Commands", ImGuiDir_Left);

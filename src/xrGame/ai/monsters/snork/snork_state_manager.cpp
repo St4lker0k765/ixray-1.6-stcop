@@ -7,7 +7,7 @@
 #include "../control_movement_base.h"
 #include "../control_path_builder_base.h"
 
-#include "../../../level.h"
+#include "../../../Level.h"
 #include "../../../level_debug.h"
 #include "../states/monster_state_rest.h"
 #include "../states/monster_state_attack.h"
@@ -21,20 +21,20 @@
 #include "../states/state_test_state.h"
 #include "../states/monster_state_help_sound.h"
 
-#include "../../../entitycondition.h"
+#include "../../../EntityCondition.h"
 
 CStateManagerSnork::CStateManagerSnork(CSnork *obj) : inherited(obj)
 {
-	add_state(eStateRest,				xr_new<CStateMonsterRest<CSnork> >					(obj));
-	add_state(eStatePanic,				xr_new<CStateMonsterPanic<CSnork> >					(obj));
-	add_state(eStateAttack,				xr_new<CStateMonsterAttack<CSnork> >				(obj));
-	add_state(eStateEat,				xr_new<CStateMonsterEat<CSnork> >					(obj));
-	add_state(eStateHearInterestingSound,	xr_new<CStateMonsterHearInterestingSound<CSnork> >	(obj));
-	add_state(eStateHearDangerousSound,		xr_new<CStateMonsterHearDangerousSound<CSnork> >	(obj));
-	add_state(eStateHitted,				xr_new<CStateMonsterHitted<CSnork> >				(obj));
+	add_state(eStateRest,				new CStateMonsterRest<CSnork>					(obj));
+	add_state(eStatePanic,				new CStateMonsterPanic<CSnork> 					(obj));
+	add_state(eStateAttack,				new CStateMonsterAttack<CSnork> 				(obj));
+	add_state(eStateEat,				new CStateMonsterEat<CSnork> 					(obj));
+	add_state(eStateHearInterestingSound,	new CStateMonsterHearInterestingSound<CSnork>(obj));
+	add_state(eStateHearDangerousSound,		new CStateMonsterHearDangerousSound<CSnork> (obj));
+	add_state(eStateHitted,				new CStateMonsterHitted<CSnork> 				(obj));
 
-	add_state(eStateFindEnemy,			xr_new<CStateMonsterTestCover<CSnork> >			(obj));
-	add_state(eStateHearHelpSound,		xr_new<CStateMonsterHearHelpSound<CSnork> >		(obj));	
+	add_state(eStateFindEnemy,			new CStateMonsterTestCover<CSnork> 				(obj));
+	add_state(eStateHearHelpSound,		new CStateMonsterHearHelpSound<CSnork> 			(obj));	
 }
 
 CStateManagerSnork::~CStateManagerSnork()
@@ -74,7 +74,7 @@ void CStateManagerSnork::execute()
 		object->start_threaten = true;
 	}
 
-	// выполнить текущее состояние
+	// РІС‹РїРѕР»РЅРёС‚СЊ С‚РµРєСѓС‰РµРµ СЃРѕСЃС‚РѕСЏРЅРёРµ
 	get_state_current()->execute();
 
 	prev_substate = current_substate;

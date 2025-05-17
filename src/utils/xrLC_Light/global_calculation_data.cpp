@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "global_calculation_data.h"
 
-#include "../shader_xrlc.h"
+#include "../Shader_xrLC.h"
 
 global_claculation_data	gl_data;
 
@@ -28,7 +28,7 @@ void global_claculation_data::xrLoad()
 {
 	string_path					N;
 	FS.update_path				( N, "$game_data$", "shaders_xrlc.xr" );
-	g_shaders_xrlc				= xr_new<Shader_xrLC_LIB> ();
+	g_shaders_xrlc				= new Shader_xrLC_LIB ();
 	g_shaders_xrlc->Load		( N );
 
 	// Load CFORM

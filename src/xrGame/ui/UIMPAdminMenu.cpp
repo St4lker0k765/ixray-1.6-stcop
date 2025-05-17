@@ -3,14 +3,14 @@
 #include "UIMPPlayersAdm.h"
 #include "UIMPServerAdm.h"
 #include "UIMPChangeMapAdm.h"
-#include "UIXmlInit.h"
+#include "../../xrUI/UIXmlInit.h"
 #include "object_broker.h"
-#include "UITabControl.h"
-#include "UIStatic.h"
-#include "UI3tButton.h"
+#include "../../xrUI/Widgets/UITabControl.h"
+#include "../../xrUI/Widgets/UIStatic.h"
+#include "../../xrUI/Widgets/UI3tButton.h"
 #include "UIMessageBox.h"
 #include "UIMessageBoxEx.h"
-#include "../../xrEngine/xr_ioconsole.h"
+#include "../../xrEngine/XR_IOConsole.h"
 
 CUIMpAdminMenu::CUIMpAdminMenu()
 {

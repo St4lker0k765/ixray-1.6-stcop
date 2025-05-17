@@ -1,4 +1,4 @@
-set(IXRAY_FOLDER_PLUGIN FOLDER "Plugin")
+set(IXRAY_FOLDER_PLUGIN FOLDER "Plugins")
 
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
     add_subdirectory("PCore")

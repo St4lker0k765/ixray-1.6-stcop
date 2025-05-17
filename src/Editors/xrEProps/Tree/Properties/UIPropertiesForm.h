@@ -1,5 +1,5 @@
 #pragma once
-class XREPROPS_API UIPropertiesForm :public XrUI
+class XREPROPS_API UIPropertiesForm :public IEditorWnd
 {
 	friend class UIPropertiesItem;
 	std::atomic_bool bAsyncUpdated = true;
@@ -10,10 +10,17 @@ public:
 	virtual void Draw();
 	void AssignItems(PropItemVec& items);
 	PropItem* FindItem(const char* path);
+	UIPropertiesItem* FindPropItem(const char* path);
 	PropItem* FindItemOfName(shared_str name);
 	void ClearProperties();
 	IC void SetReadOnly(bool enable) { m_Flags.set(plReadOnly, enable); }
 	IC bool IsModified() { return m_bModified;}
+
+	void setModified(bool val)
+	{
+		m_bModified = val;
+	}
+
 	IC bool Empty() { return m_Items.size() == 0; }
 	void SetModifiedEvent(TOnModifiedEvent modif = 0) { OnModifiedEvent = modif; }
 
@@ -44,7 +51,7 @@ private:
 	PropItem* m_EditGameTypeValue;
 	void DrawEditGameType();
 	bool m_bModified;
-	void Modified() { m_bModified = true; if (!OnModifiedEvent.empty()) OnModifiedEvent(); }
+	void Modified() { m_bModified = true; if (!OnModifiedEvent.empty()) OnModifiedEvent(); /* m_bModified = false; */ }
 private:
 	UIPropertiesItem m_Root;
 

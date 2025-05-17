@@ -5,6 +5,7 @@
 #include "spectrum.h"
 #include <SDL3/SDL.h>
 #include "xrUITheme.h"
+#include "ImGuizmo.h"
 
 XrUIManager::XrUIManager()
 {
@@ -14,26 +15,33 @@ XrUIManager::~XrUIManager()
 {
 }
 
-static void LoadImGuiFont(ImFont*& FontHandle, const char* Font)
+xr_map<xr_string, ImFont*> FontsStorage;
+xr_string ImCurrentFont;
+xr_vector<xr_string> LazyFonts; 
+
+void LoadImGuiFont(const char* Font)
+{
+	LazyFonts.push_back(Font);
+}
+
+void LoadImGuiFontBase(const char* Font)
 {
 	string_path FullPath;
-	FS.update_path(FullPath, _game_fonts_, Font);
+	xr_string FixFontName = "editors\\" + xr_string(Font);
+	FS.update_path(FullPath, _game_fonts_, FixFontName.data());
 	ImFontConfig FontConfig = {};
 	FontConfig.OversampleH = 3;
 
-	if (FS.exist(FullPath))
+	if (FS.TryLoad(FullPath))
 	{
-		FontHandle = ImGui::GetIO().Fonts->AddFontFromFileTTF(Platform::ANSI_TO_UTF8(FullPath).c_str(), 14.0f, &FontConfig, ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
-		R_ASSERT(FontHandle);
-	}
-}
+		if (!FontsStorage.contains(Font))
+		{
+			FontsStorage[Font] = ImGui::GetIO().Fonts->AddFontFromFileTTF(Platform::ANSI_TO_UTF8(FullPath).c_str(), 14.0f, &FontConfig, ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
+		}
 
-namespace ImGui
-{
-	XREUI_API ImFont* LightFont = nullptr;
-	XREUI_API ImFont* RegularFont = nullptr;
-	XREUI_API ImFont* MediumFont = nullptr;
-	XREUI_API ImFont* BoldFont = nullptr;
+		ImCurrentFont = Font;
+		//ImGui::GetIO().Fonts->AddFontDefault(&FontsStorage[Font]);
+	}
 }
 
 void XrUIManager::Initialize(HWND hWnd, IDirect3DDevice9* device, const char* ini_path)
@@ -50,11 +58,23 @@ void XrUIManager::Initialize(HWND hWnd, IDirect3DDevice9* device, const char* in
 	CUIThemeManager::Get().InitDefault();
 	Push(&CUIThemeManager::Get(), false);
 
-	LoadImGuiFont(ImGui::RegularFont, "RobotoMono.ttf");
-	LoadImGuiFont(ImGui::LightFont, "RobotoMono-Light.ttf");
-	LoadImGuiFont(ImGui::MediumFont, "RobotoMono-Medium.ttf");
-	LoadImGuiFont(ImGui::BoldFont, "RobotoMono-Bold.ttf");
-	
+	FS_FileSet Files;
+	string_path Fonts = {};
+	FS.update_path(Fonts, _game_fonts_, "editors\\");
+	FS.file_list(Files, Fonts, 1, "*.ttf");
+
+	auto OldFont = ImCurrentFont;
+	for (auto& File : Files)
+	{
+		xr_string FileName = xr_path(File.name).xfilename();
+		LoadImGuiFontBase(FileName.c_str());
+	}
+
+	if (!OldFont.empty())
+	{
+		ImCurrentFont = OldFont;
+	}
+
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
 	io.Fonts->Build();
 	//ImGui_ImplWin32_Init(hWnd);
@@ -79,13 +99,19 @@ bool XrUIManager::ProcessEvent(void* Event)
 
 void XrUIManager::BeginFrame()
 {
+	for (auto str : LazyFonts)
+	{
+		LoadImGuiFontBase(str.c_str());
+	}
+
+	LazyFonts.clear();
+
 	ImGui_ImplSDL3_NewFrame();
 	ImGui_ImplDX9_NewFrame();
 }
 
 void XrUIManager::EndFrame()
 {
-	ImGui::GetForegroundDrawList()->AddCircle({ 66, 56 }, 55, 512351, 4);
 	ImGui::Render();
 	ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
 
@@ -93,7 +119,7 @@ void XrUIManager::EndFrame()
 	{
 		if (m_UIArray[i - 1]->IsClosed())
 		{
-			if (!m_UIArray[i - 1]->Flags.test(XrUI::F_NoDelete))
+			if (!m_UIArray[i - 1]->Flags.test(IEditorWnd::F_NoDelete))
 			{
 				xr_delete(m_UIArray[i - 1]);
 			}
@@ -106,14 +132,23 @@ void XrUIManager::EndFrame()
 
 void XrUIManager::ResetBegin()
 {
+	for (auto Ptr : m_UIArray)
+	{
+		Ptr->ResetBegin();
+	}
+
 	ImGui_ImplDX9_Shutdown();
 }
 
 void XrUIManager::ResetEnd(void* NewDevice)
 {
 	ImGui_ImplDX9_Init((IDirect3DDevice9*)NewDevice);
-}
 
+	for (auto Ptr : m_UIArray)
+	{
+		Ptr->ResetEnd();
+	}
+}
 
 void XrUIManager::OnDrawUI()
 {
@@ -127,7 +162,7 @@ void XrUIManager::ApplyShortCutInput(DWORD Key)
 	{
 		IsFail = false;
 	}
-	else if (Key >= SDL_SCANCODE_0 && Key <= SDL_SCANCODE_9)
+	else if (Key >= SDL_SCANCODE_1 && Key <= SDL_SCANCODE_0)
 	{
 		IsFail = false;
 	}
@@ -162,6 +197,12 @@ void XrUIManager::ApplyShortCutInput(DWORD Key)
 		case SDL_SCANCODE_F11:
 		case SDL_SCANCODE_F12:
 		case SDL_SCANCODE_DELETE:
+		case SDL_SCANCODE_RIGHTBRACKET:
+		case SDL_SCANCODE_LEFTBRACKET:
+		case SDL_SCANCODE_MENU:
+		case SDL_SCANCODE_MINUS:
+		case SDL_SCANCODE_EQUALS:
+		case SDL_SCANCODE_BACKSLASH:
 		//case SDL_SCANCODE_ADD:
 		//case SDL_SCANCODE_SUBTRACT:
 		//case SDL_SCANCODE_MULTIPLY:
@@ -199,16 +240,16 @@ void XrUIManager::ApplyShortCutInput(DWORD Key)
 	ApplyShortCut(Key, ShiftState);
 }
 
-void XrUIManager::Push(XrUI* ui, bool need_deleted)
+void XrUIManager::Push(IEditorWnd* ui, bool need_deleted)
 {
 	m_UIArray.push_back(ui);
-	ui->Flags.set(!need_deleted, XrUI::F_NoDelete);
+	ui->Flags.set(!need_deleted, IEditorWnd::F_NoDelete);
 }
 
-void XrUIManager::PushBegin(XrUI* ui, bool need_deleted)
+void XrUIManager::PushBegin(IEditorWnd* ui, bool need_deleted)
 {
 	m_UIArray.insert(m_UIArray.begin(), ui);
-	ui->Flags.set(!need_deleted, XrUI::F_NoDelete);
+	ui->Flags.set(!need_deleted, IEditorWnd::F_NoDelete);
 }
 
 void XrUIManager::Draw()
@@ -216,18 +257,23 @@ void XrUIManager::Draw()
 	//BeginFrame(); 
 
 	ImGui::NewFrame();
+    ImGuizmo::BeginFrame();
 
+	ImGui::PushFont(FontsStorage[ImCurrentFont]);
 	//ImGui::DockSpaceOverViewport();
 	{
+		m_MenuBarHeight = 32;
+		int headerSize = 10;
 		ImGuiViewport* viewport = ImGui::GetMainViewport();
-		ImGui::SetNextWindowPos(ImVec2(viewport->Pos.x, viewport->Pos.y + UIToolBarSize / 2));
-		ImGui::SetNextWindowSize(ImVec2(viewport->Size.x, viewport->Size.y - (UIToolBarSize / 2)));
+		ImGui::SetNextWindowPos(ImVec2(viewport->Pos.x, viewport->Pos.y + m_MenuBarHeight - headerSize));
+		ImGui::SetNextWindowSize(ImVec2(viewport->Size.x, viewport->Size.y - headerSize));
 		ImGui::SetNextWindowViewport(viewport->ID);
 		ImGuiWindowFlags window_flags = 0
 			| ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking
 			| ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse
 			| ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove
-			| ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+			| ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus
+			| ImGuiWindowFlags_NoBackground;
 
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, UIToolBarSize / 2));
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
@@ -236,24 +282,36 @@ void XrUIManager::Draw()
 		ImGui::Begin("MyDockspace", NULL, window_flags);
 		ImGuiID dockMain = ImGui::GetID("MyDockspace");
 
-		m_MenuBarHeight = ImGui::GetWindowBarHeight();
-		// Save off menu bar height for later.
+		////// Save off menu bar height for later.
 
 		ImGui::DockSpace(dockMain);
 		ImGui::End();
 		ImGui::PopStyleVar(4);
 
 	}
+
+	bool CopyBool = IsEnableInput;
+
+	if (!CopyBool)
+	{
+		ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+	}
 	
 	OnDrawUI();
-
-	for (XrUI* ui : m_UIArray)
+	
+	for (IEditorWnd* ui : m_UIArray)
 	{
 		ui->BeginDraw();
 		ui->Draw();
 		ui->EndDraw();
 	}
 
+	if (!CopyBool)
+	{
+		ImGui::PopItemFlag();
+	}
+
+	ImGui::PopFont();
 	//ImGui::EndFrame();
 
 	//EndFrame();
@@ -290,54 +348,4 @@ static bool ImGui_ImplWin32_UpdateMouseCursor()
 		::SetCursor(::LoadCursor(NULL, win32_cursor));
 	}
 	return true;
-}
-#ifndef WM_MOUSEHWHEEL
-#define WM_MOUSEHWHEEL 0x020E
-#endif
-#ifndef DBT_DEVNODES_CHANGED
-#define DBT_DEVNODES_CHANGED 0x0007
-#endif
-//IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
-LRESULT XrUIManager::WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-#if 0
-	SDL_Event event;
-	while (SDL_PollEvent(&event))
-	{
-		switch (event.type)
-		{
-			case SDL_EVENT_WINDOW_TAKE_FOCUS:
-				UI->OnAppActivate
-		}
-
-		if (!IsPlayInEditor())
-		{
-			if (!ImGui_ImplSDL3_ProcessEvent(&event))
-				return;
-		}
-	}
-
-	switch (msg)
-	{
-	case WM_DESTROY:
-		::PostQuitMessage(0);
-		return 0;
-	case WM_KEYDOWN:
-	case WM_SYSKEYDOWN:
-		switch (wParam)
-		{
-		case VK_MENU:
-		case VK_CONTROL:
-		case VK_SHIFT:
-			break;
-		default:
-			if(!IsPlayInEditor())   ApplyShortCut((DWORD)wParam);
-			break;
-		}
-	default:
-		break;
-	}
-	   // return  ImGui_ImplSDL3_ProcessEvent ImGui_ImplWin32_WndProcHandler(hwnd, msg, wParam, lParam);;
-#endif
-	return 0;
 }

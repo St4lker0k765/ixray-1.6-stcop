@@ -1,9 +1,9 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "xrMessages.h"
 #include "file_transfer.h"
 #include "Level.h"
 #include "xrServer.h"
-#include "ui_base.h"
+#include "../../xrUI/ui_base.h"
 
 
 #define MAX_FT_WAIT_TIME (2000 * 3)		/*3 max pings*/

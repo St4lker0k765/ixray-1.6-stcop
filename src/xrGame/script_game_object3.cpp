@@ -6,7 +6,7 @@
 //	Description : Script game object class script export
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 #include "script_game_object.h"
 #include "ai_space.h"
@@ -16,13 +16,10 @@
 #include "cover_manager.h"
 #include "ai/stalker/ai_stalker.h"
 #include "stalker_animation_manager.h"
-#include "stalker_planner.h"
 #include "Weapon.h"
 #include "Inventory.h"
 #include "CustomZone.h"
 #include "patrol_path_manager.h"
-#include "object_handler_planner.h"
-#include "object_handler_space.h"
 #include "memory_manager.h"
 #include "visual_memory_manager.h"
 #include "sound_memory_manager.h"
@@ -32,13 +29,13 @@
 #include "movement_manager_space.h"
 #include "detail_path_manager_space.h"
 #include "level_debug.h"
-#include "ai/monsters/BaseMonster/base_monster.h"
+#include "ai/monsters/basemonster/base_monster.h"
 #include "trade_parameters.h"
 #include "../xrScripts/exports/script_ini_file.h"
 #include "sound_player.h"
-#include "stalker_decision_space.h"
 #include "space_restriction_manager.h"
 #include "eatable_item.h"
+#include "Legacy/StalkerPlanner/stalker_planner.h"
 
 namespace MemorySpace {
 	struct CVisibleObject;
@@ -363,10 +360,18 @@ u32 CScriptGameObject::GetWeaponType()
 	return weapon->ef_weapon_type();
 }
 
+bool CScriptGameObject::ActorIsJump() const
+{
+	if (smart_cast<CActor*>(this) == nullptr)
+		return false;
+
+	return (Actor()->is_jump());
+}
+
 bool CScriptGameObject::RayPick(const Fvector3& Pos, const Fvector3& Dir, float Range)
 {
 	collide::rq_result R;
-	return Level().ObjectSpace.RayPick(Pos, Dir, Range, collide::rq_target::rqtNone, R, nullptr);
+	return Level().ObjectSpace.RayPick(Pos, Dir, Range, (collide::rq_target)(collide::rq_target::rqtBoth | collide::rq_target::rqtObstacle), R, nullptr);
 }
 
 const CCoverPoint *CScriptGameObject::best_cover	(const Fvector &position, const Fvector &enemy_position, float radius, float min_enemy_distance, float max_enemy_distance)

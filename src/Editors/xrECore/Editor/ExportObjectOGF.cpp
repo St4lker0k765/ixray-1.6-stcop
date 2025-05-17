@@ -27,12 +27,12 @@ CObjectOGFCollectorPacked::CObjectOGFCollectorPacked(const Fbox &bb, int apx_ver
     m_Verts.reserve	(apx_vertices);
     m_Faces.reserve	(apx_faces);
 
-   /*int		_size = (clpOGFMX + 1) * (clpOGFMY + 1) * (clpOGFMZ + 1);
+   int		_size = (clpOGFMX + 1) * (clpOGFMY + 1) * (clpOGFMZ + 1);
     int		_average= (apx_vertices/_size)/2;
     for (int ix=0; ix<clpOGFMX+1; ++ix)
         for (int iy=0; iy<clpOGFMY+1; ++iy)
             for (int iz=0; iz<clpOGFMZ+1; ++iz)
-                m_VM[ix][iy][iz].reserve	(_average);*/
+                m_VM[ix][iy][iz].reserve	(_average);
 }
 
 u16 CObjectOGFCollectorPacked::VPack(SOGFVert& V)
@@ -117,7 +117,7 @@ CExportObjectOGF::SSplit::~SSplit()
 
 void CExportObjectOGF::SSplit::AppendPart(int apx_vertices, int apx_faces)
 {
-	m_Parts.push_back	(xr_new<CObjectOGFCollectorPacked>(apx_box,apx_vertices, apx_faces));
+	m_Parts.push_back	(new CObjectOGFCollectorPacked(apx_box,apx_vertices, apx_faces));
     m_CurrentPart		= m_Parts.back();
 }
 
@@ -312,7 +312,7 @@ bool CExportObjectOGF::PrepareMESH(CEditableMesh* MESH)
                 break; 
             }
 #endif
-			m_Splits.push_back	(xr_new<SSplit>(surf,m_Source->GetBox()));
+			m_Splits.push_back	(new SSplit(surf,m_Source->GetBox()));
             split				= m_Splits.back();
         }
         int 	elapsed_faces 	= surf->m_Flags.is(CSurface::sf2Sided) ?face_lst.size()*2 : face_lst.size();
@@ -567,7 +567,7 @@ bool CExportObjectOGF::ExportAsWavefrontOBJ(IWriter& F, LPCSTR fn)
     for (auto split_it=m_Splits.begin(); split_it!=m_Splits.end(); ++split_it)
     {
 	    _splitpath			((*split_it)->m_Surf->_Texture(), 0, 0, tex_name, 0 );
-        sprintf				(tmp,"g %d",split_it-m_Splits.begin());
+        sprintf				(tmp,"g %d", int(split_it-m_Splits.begin()));
         F.w_string			(tmp);
         sprintf				(tmp,"usemtl %s",tex_name);
         F.w_string			(tmp);

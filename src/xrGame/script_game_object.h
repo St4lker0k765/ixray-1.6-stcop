@@ -646,15 +646,15 @@ public:
 			void				set_level_changer_invitation		(LPCSTR str);
 
 			//Boosters
-			bool				IsBoosterInfluence					(const EBoostParams& param);
+			bool				IsBoosterInfluence					(EBoostParams param);
 
-			float				GetBoosterInfluenceTime				(const EBoostParams& param);
+			float				GetBoosterInfluenceTime				(EBoostParams param);
 
 			void				ApplyBooster						(LPCSTR sect);
-			void				SetBoosterTime						(float time, const EBoostParams& param);
+			void				SetBoosterTime						(float time, EBoostParams param);
 
-			bool				GetActorMovementState				(const ACTOR_DEFS::EMovementStates& state, const ACTOR_DEFS::EMoveCommand& mask) const;
-			void				SetActorMovementState				(const ACTOR_DEFS::EMovementStates& state, const ACTOR_DEFS::EMoveCommand& mask, const bool status) const;
+			bool				GetActorMovementState				(ACTOR_DEFS::EMovementStates state, ACTOR_DEFS::EMoveCommand mask);
+			void				SetActorMovementState				(ACTOR_DEFS::EMovementStates state, ACTOR_DEFS::EMoveCommand mask, bool status);
 
 
 #ifdef DEBUG
@@ -786,30 +786,60 @@ public:
 			bool				is_door_blocked_by_npc					() const;
 			bool				is_weapon_going_to_be_strapped			( CScriptGameObject const* object ) const;
 
-			void IterateFeelTouch(const luabind::functor<bool>& functor);
-			int GetAmmoCount(u8 type);
-			u8 GetWeaponSubstate();
-			u32 GetMainWeaponType();
+			//Weapon
+			LPCSTR				Weapon_GetAmmoSection(u8 ammo_type);
+			void				Weapon_AddonAttach(CScriptGameObject* item);
+			void				Weapon_AddonDetach(LPCSTR item_section, bool b_spawn_item);
+			u32					GetMainWeaponType();
+			u32					GetWeaponType();
+			u8					GetWeaponSubstate();
+
+			//CWeaponAmmo
+			u16					AmmoGetCount();
+			int					GetAmmoCount(u8 type);
+
 			bool IsOnBelt(CScriptGameObject* obj) const;
 			void SetRemainingUses(u8 value);
 			u8 GetRemainingUses();
 			u8 GetMaxUses();
 			bool IsAmmo() const;
+			bool ActorIsJump() const;
 			u32 PlayHudMotion(LPCSTR M, bool bMixIn, u32 state);
 			void AmmoSetCount(u16 count);
 			u16 AmmoBoxSize();
+
+			//Weapon & Outfit
 			bool InstallUpgrade(LPCSTR upgrade);
 			bool HasUpgrade(LPCSTR upgrade);
 			void IterateInstalledUpgrades(const luabind::functor<bool>& functor);
-			void Weapon_AddonAttach(CScriptGameObject* item);
-			void Weapon_AddonDetach(LPCSTR item_section, bool b_spawn_item);
-			LPCSTR Weapon_GetAmmoSection(u8 ammo_type);
-			u16 AmmoGetCount();
 			void SwitchState(u32 state);
 			u32 GetState();
 			CScriptGameObject* ItemOnBelt(u32 item_id) const;
-			u32 GetWeaponType();
 
+			//Actor
+			float		GetActorMaxWeight() const;
+			void		SetActorMaxWeight(float max_weight);
+			float		GetActorMaxWalkWeight() const;
+			void		SetActorMaxWalkWeight(float max_walk_weight);
+			float		GetAdditionalMaxWeight() const;
+			void		SetAdditionalMaxWeight(float add_max_weight);
+			float		GetAdditionalMaxWalkWeight() const;
+			void		SetAdditionalMaxWalkWeight(float add_max_walk_weight);
+			float		GetTotalWeight() const;
+			float		Weight() const;
+
+			float       GetActorJumpSpeed() const;
+			void        SetActorJumpSpeed(float jump_speed);
+			float       GetActorSprintKoef() const;
+			void        SetActorSprintKoef(float sprint_koef);
+			float       GetActorRunCoef() const;
+			void        SetActorRunCoef(float run_coef);
+			float       GetActorRunBackCoef() const;
+			void        SetActorRunBackCoef(float run_back_coef);
+			void		SetCharacterIcon(LPCSTR iconName);
+
+			void IterateFeelTouch(const luabind::functor<bool>& functor);
+			bool IsActorLadder() const;
 	doors::door*				m_door;
 
 	DECLARE_SCRIPT_REGISTER_FUNCTION

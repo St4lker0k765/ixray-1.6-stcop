@@ -1,12 +1,13 @@
 #include "stdafx.h"
 #include "../xrRender/du_cone.h"
+#include "../xrRender/CHudInitializer.h"
 
 void CRenderTarget::accum_spot(light* L) {
 	if (L == nullptr)
 	{
 		return;
 	}
-
+	PROF_EVENT("CRenderTarget::accum_spot")
 	phase_accumulator();
 	RImplementation.stats.l_visible++;
 
@@ -26,10 +27,16 @@ void CRenderTarget::accum_spot(light* L) {
 		}
 	}
 
+	CHudInitializer initalizer(false);
+
+	if(L->flags.bHudMode) {
+		initalizer.SetHudMode();
+		RImplementation.rmNear();
+	}
+
 	BOOL	bIntersect = FALSE; //enable_scissor(L);
 	{
 		// setup xform
-		L->xform_calc();
 		RCache.set_xform_world(L->m_xform);
 		RCache.set_xform_view(Device.mView);
 		RCache.set_xform_project(Device.mProject);
@@ -154,6 +161,11 @@ void CRenderTarget::accum_spot(light* L) {
 	increment_light_marker();
 
 	u_DBT_disable();
+
+	if(L->flags.bHudMode) {
+		RImplementation.rmNormal();
+		initalizer.SetDefaultMode();
+	}
 }
 
 void CRenderTarget::accum_volumetric(light* L) {
@@ -161,9 +173,9 @@ void CRenderTarget::accum_volumetric(light* L) {
 	{
 		return;
 	}
-	//if (L->flags.type != IRender_Light::SPOT) return;
-	if(!L->flags.bVolumetric) return;
 
+	if(!L->flags.bVolumetric) return;
+	PROF_EVENT("CRenderTarget::accum_volumetric")
 	phase_vol_accumulator();
 
 	ref_shader			shader;
@@ -178,7 +190,6 @@ void CRenderTarget::accum_volumetric(light* L) {
 	BOOL	bIntersect = FALSE; //enable_scissor(L);
 	{
 		// setup xform
-		L->xform_calc();
 		RCache.set_xform_world(L->m_xform);
 		RCache.set_xform_view(Device.mView);
 		RCache.set_xform_project(Device.mProject);
@@ -251,9 +262,9 @@ void CRenderTarget::accum_volumetric(light* L) {
 	Fbox	aabb;
 
 	//float	scaledRadius = L->spatial.sphere.R * (1+L->m_volumetric_distance)*0.5f;
-	float	scaledRadius = L->spatial.sphere.R * L->m_volumetric_distance;
+	float	scaledRadius = L->SpatialComponent->spatial.sphere.R * L->m_volumetric_distance;
 	Fvector	rr = Fvector().set(scaledRadius, scaledRadius, scaledRadius);
-	Fvector pt = L->spatial.sphere.P;
+	Fvector pt = L->SpatialComponent->spatial.sphere.P;
 	pt.sub(L->position);
 	pt.mul(L->m_volumetric_distance);
 	pt.add(L->position);
@@ -283,34 +294,6 @@ void CRenderTarget::accum_volumetric(light* L) {
 
 	// Draw volume with projective texgen
 	{
-		//	Set correct depth surface
-		//	It's slow. Make this when shader is created
-		{
-			const char* pszSMapName;
-			BOOL		b_HW_smap = RImplementation.o.HW_smap;
-			BOOL		b_HW_PCF = RImplementation.o.HW_smap_PCF;
-			if(b_HW_smap) {
-				if(b_HW_PCF)	pszSMapName = r2_RT_smap_depth;
-				else			pszSMapName = r2_RT_smap_depth;
-			}
-			else				pszSMapName = r2_RT_smap_surf;
-			//s_smap
-			STextureList* _T = &*s_accum_volume->E[0]->passes[0]->T;
-
-			STextureList::iterator	_it = _T->begin();
-			STextureList::iterator	_end = _T->end();
-			for(; _it != _end; _it++) {
-				std::pair<u32, ref_texture>& loader = *_it;
-				u32			load_id = loader.first;
-				//	Shadowmap texture always uses 0 texture unit
-				if(load_id == 0) {
-					//	Assign correct texture
-					loader.second.create(pszSMapName);
-				}
-			}
-		}
-
-
 		RCache.set_Element(shader->E[0]);
 
 		// Constants

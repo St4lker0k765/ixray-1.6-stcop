@@ -6,7 +6,7 @@
 //	Description : Patrol path storage
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "patrol_path_storage.h"
 #include "patrol_path.h"
 #include "patrol_point.h"
@@ -17,7 +17,7 @@ CPatrolPathStorage::~CPatrolPathStorage		()
 	delete_data					(m_registry);
 }
 
-void CPatrolPathStorage::load_raw			(const CLevelGraph *level_graph, const CGameLevelCrossTable *cross, const CGameGraph *game_graph, IReader &stream)
+void CPatrolPathStorage::load_raw			(const CLevelGraph *level_graph, const IGameLevelCrossTable *cross, const CGameGraph *game_graph, IReader &stream)
 {
 	IReader						*chunk = stream.open_chunk(WAY_PATROLPATH_CHUNK);
 
@@ -37,9 +37,9 @@ void CPatrolPathStorage::load_raw			(const CLevelGraph *level_graph, const CGame
 		m_registry.insert		(
 			std::make_pair(
 				patrol_name,
-				&xr_new<CPatrolPath>(
+				&(new CPatrolPath(
 					patrol_name
-				)->load_raw(
+				))->load_raw(
 					level_graph,
 					cross,
 					game_graph,

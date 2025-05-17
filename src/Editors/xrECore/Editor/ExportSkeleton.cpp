@@ -19,8 +19,8 @@
 
 #if 1
 #include "ui_main.h"
-#include "ui_toolscustom.h"
-#include "..\Engine\XrGameMaterialLibraryEditors.h"
+#include "UI_ToolsCustom.h"
+#include "../Engine/XrGameMaterialLibraryEditors.h"
 #endif
 //#include "../../../Layers/xrRender/SkeletonAnimated.h"
 #include <d3dx9.h>
@@ -33,33 +33,89 @@ ECORE_API float g_EpsSkelPositionDelta = EPS_L;
 
 u16 CSkeletonCollectorPacked::VPack(SSkelVert& V)
 {
-	u32 P 	= 0xffffffff;
+	u32 P = 0xffffffff;
 
-  
-	if (0xffffffff==P)
+	u32 ix, iy, iz;
+	ix = iFloor(float(V.offs.x - m_VMmin.x) / m_VMscale.x * clpSMX);
+	iy = iFloor(float(V.offs.y - m_VMmin.y) / m_VMscale.y * clpSMY);
+	iz = iFloor(float(V.offs.z - m_VMmin.z) / m_VMscale.z * clpSMZ);
+	R_ASSERT(ix <= clpSMX && iy <= clpSMY && iz <= clpSMZ);
+
+	int similar_pos = -1;
 	{
+		U32Vec& vl = m_VM[ix][iy][iz];
+		for (U32It it = vl.begin(); it != vl.end(); it++) {
+			SSkelVert& src = m_Verts[*it];
+			if (src.similar_pos(V)) {
+				if (src.similar(V)) {
+					P = *it;
+					break;
+				}
+				similar_pos = *it;
+			}
+		}
+	}
+	if (0xffffffff == P)
+	{
+		if (similar_pos >= 0) V.offs.set(m_Verts[similar_pos].offs);
 		P = m_Verts.size();
 		m_Verts.push_back(V);
+
+		m_VM[ix][iy][iz].push_back(P);
+
+		u32 ixE, iyE, izE;
+		ixE = iFloor(float(V.offs.x + m_VMeps.x - m_VMmin.x) / m_VMscale.x * clpSMX);
+		iyE = iFloor(float(V.offs.y + m_VMeps.y - m_VMmin.y) / m_VMscale.y * clpSMY);
+		izE = iFloor(float(V.offs.z + m_VMeps.z - m_VMmin.z) / m_VMscale.z * clpSMZ);
+
+		R_ASSERT(ixE <= clpSMX && iyE <= clpSMY && izE <= clpSMZ);
+
+		if (ixE != ix)							m_VM[ixE][iy][iz].push_back(P);
+		if (iyE != iy)							m_VM[ix][iyE][iz].push_back(P);
+		if (izE != iz)							m_VM[ix][iy][izE].push_back(P);
+		if ((ixE != ix) && (iyE != iy))				m_VM[ixE][iyE][iz].push_back(P);
+		if ((ixE != ix) && (izE != iz))				m_VM[ixE][iy][izE].push_back(P);
+		if ((iyE != iy) && (izE != iz))				m_VM[ix][iyE][izE].push_back(P);
+		if ((ixE != ix) && (iyE != iy) && (izE != iz))	m_VM[ixE][iyE][izE].push_back(P);
 	}
-	VERIFY	(P<u16(-1));
+	VERIFY(P < u16(-1));
 	return 	(u16)P;
 }
 
-CSkeletonCollectorPacked::CSkeletonCollectorPacked(const Fbox &_bb, int apx_vertices, int apx_faces)
+CSkeletonCollectorPacked::CSkeletonCollectorPacked(const Fbox& _bb, int apx_vertices, int apx_faces)
 {
-	m_Verts.reserve	(apx_vertices);
-	m_Faces.reserve	(apx_faces);
-  
+	Fbox bb;		bb.set(_bb); bb.grow(EPS_L);
+	// Params
+	m_VMscale.set(bb.max.x - bb.min.x + EPS, bb.max.y - bb.min.y + EPS, bb.max.z - bb.min.z + EPS);
+	m_VMmin.set(bb.min).sub(EPS);
+	m_VMeps.set(m_VMscale.x / clpSMX / 2, m_VMscale.y / clpSMY / 2, m_VMscale.z / clpSMZ / 2);
+	m_VMeps.x = (m_VMeps.x < EPS_L) ? m_VMeps.x : EPS_L;
+	m_VMeps.y = (m_VMeps.y < EPS_L) ? m_VMeps.y : EPS_L;
+	m_VMeps.z = (m_VMeps.z < EPS_L) ? m_VMeps.z : EPS_L;
+
+	invalid_faces = 0;
+
+	// Preallocate memory
+	m_Verts.reserve(apx_vertices);
+	m_Faces.reserve(apx_faces);
+
+	int		_size = (clpSMX + 1) * (clpSMY + 1) * (clpSMZ + 1);
+	int		_average = (apx_vertices / _size) / 2;
+	for (int ix = 0; ix < clpSMX + 1; ix++)
+		for (int iy = 0; iy < clpSMY + 1; iy++)
+			for (int iz = 0; iz < clpSMZ + 1; iz++)
+				m_VM[ix][iy][iz].reserve(_average);
 }
 //----------------------------------------------------
 
 CExportSkeleton::SSplit::SSplit(CSurface* surf, const Fbox& bb, u16 part):CSkeletonCollectorPacked(bb)
 {
 //.	m_b2Link	= FALSE;
-	m_SkeletonLinkType		= 1;
-	m_Shader				= surf->m_ShaderName;
-	m_Texture				= surf->m_Texture;
-	m_PartID 				= part;
+	m_SkeletonLinkType = 1;
+	m_Shader = surf->m_ShaderName;
+	m_Texture = surf->m_Texture;
+	m_PartID = part;
+	m_id = surf->m_id;
 }
 //----------------------------------------------------
 
@@ -485,15 +541,13 @@ void ComputeOBB_WML		(Fobb &B, FvectorVec& V)
 	VERIFY (_valid(B.m_rotate)&&_valid(B.m_translate)&&_valid(B.m_halfsize));
 }
 //----------------------------------------------------
-
-int CExportSkeletonCustom::FindSplit(shared_str shader, shared_str texture, u16 part_id)
+int CExportSkeletonCustom::FindSplit(shared_str shader, shared_str texture, u16 part_id, u16 surf_id)
 {
-	for (SplitIt it=m_Splits.begin(); it!=m_Splits.end(); it++)
-		if (	it->m_Shader.equal(shader) 		&&
-				it->m_Texture.equal(texture) 	&&
-				(it->m_PartID==part_id)      	)
-
-		return it-m_Splits.begin();
+	for (SplitIt it = m_Splits.begin(); it != m_Splits.end(); it++)
+	{
+		if (it->m_Shader.equal(shader) && it->m_Texture.equal(texture) && (it->m_PartID == part_id) && (it->m_id == surf_id))
+			return it - m_Splits.begin();
+	}
 	return -1;
 }
 
@@ -567,6 +621,14 @@ bool CExportSkeleton::PrepareGeometry(u8 influence)
 #if 1
 		pb->Inc											();
 #endif
+		u16 surf_counter = 0;
+		for (SurfFacesPairIt sp_it = MESH->m_SurfFaces.begin(); sp_it != MESH->m_SurfFaces.end(); sp_it++)
+		{
+			CSurface* surf = sp_it->first;
+			surf->m_id = surf_counter;
+			surf_counter++;
+		}
+
 		// fill faces
 		for (SurfFacesPairIt sp_it=MESH->m_SurfFaces.begin(); sp_it!=MESH->m_SurfFaces.end(); sp_it++)
 		{
@@ -640,7 +702,7 @@ bool CExportSkeleton::PrepareGeometry(u8 influence)
 							}                    	
 					}
 					// find split
-					int mtl_idx 				= FindSplit(surf->m_ShaderName,surf->m_Texture,bone_brk_part);
+					int mtl_idx = FindSplit(surf->m_ShaderName, surf->m_Texture, bone_brk_part, surf->m_id);
 					if (mtl_idx<0)
 					{
 						m_Splits.push_back					(SSplit(surf,m_Source->GetBox(),bone_brk_part));
@@ -754,22 +816,25 @@ bool CExportSkeleton::ExportGeometry(IWriter& F, u8 infl)
 	xr_vector<FvectorVec>	bone_points;
 	bone_points.resize		(m_Source->BoneCount());
 
-	for (SplitIt split_it=m_Splits.begin(); split_it!=m_Splits.end(); ++split_it)
+	for (SSplit& SplitMeshData : m_Splits)
 	{
 		if (m_Source->m_objectFlags.is(CEditableObject::eoProgressive))
-			split_it->MakeProgressive();
-		else
-			split_it->MakeStripify();
-
-		SkelVertVec& lst = split_it->getV_Verts();
-		for (SkelVertIt sv_it=lst.begin(); sv_it!=lst.end(); sv_it++)
 		{
-			bone_points		[sv_it->bones[0].id].push_back						(sv_it->offs);
-			bones			[sv_it->bones[0].id]->_RITransform().transform_tiny(bone_points[sv_it->bones[0].id].back());
+			SplitMeshData.MakeProgressive();
 		}
-#if 1
-		pb->Inc		();
-#endif
+		else if (!m_Source->m_objectFlags.is(CEditableObject::eoSkipOpt))
+		{
+			SplitMeshData.MakeStripify();
+		}
+
+		SkelVertVec& lst = SplitMeshData.getV_Verts();
+		for (SkelVertIt sv_it = lst.begin(); sv_it != lst.end(); sv_it++)
+		{
+			bone_points[sv_it->bones[0].id].push_back(sv_it->offs);
+			bones[sv_it->bones[0].id]->_RITransform().transform_tiny(bone_points[sv_it->bones[0].id].back());
+		}
+
+		pb->Inc();
 	}
 
 	// create OGF

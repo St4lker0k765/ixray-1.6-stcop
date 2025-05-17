@@ -90,6 +90,9 @@ bool CSceneObject::IsRender()
 
 void CSceneObject::Render(int priority, bool strictB2F)
 {
+    if (!IsLoaded)
+        return;
+
 	inherited::Render(priority,strictB2F);
     if (!m_pReference) return;
 #ifdef _LEVEL_EDITOR    
@@ -101,7 +104,7 @@ void CSceneObject::Render(int priority, bool strictB2F)
             if (false==strictB2F){
                 EDevice->SetShader(EDevice->m_WireShader);
                 RCache.set_xform_world(_Transform());
-                u32 clr = 0xFFFFFFFF;
+                u32 clr = Locked()?0xFFFF0000:0xFFFFFFFF;
                 DU_impl.DrawSelectionBoxB(m_pReference->GetBox(),&clr);
             }else{
                 RenderBlink	();
@@ -171,6 +174,9 @@ bool CSceneObject::SpherePick(const Fvector& center, float radius)
 
 bool CSceneObject::RayPick(float& dist, const Fvector& S, const Fvector& D, SRayPickInfo* pinf)
 {
+    if (!IsLoaded && !pinf->IsForcePickup)
+        return false;
+
 	if (!m_pReference) return false;
     if (::Render->occ_visible(m_TBBox))
 		if (m_pReference->RayPick(dist, S, D, _ITransform(), pinf)){
@@ -219,13 +225,22 @@ CEditableObject* CSceneObject::UpdateReference()
     {
         for (size_t i = 0; i < m_pReference->SurfaceCount(); i++)
         {
-            CSurface* surf = xr_new< CSurface>();
+            CSurface* surf = new CSurface();
             surf->CopyFrom(m_pReference->Surfaces()[i]);
             m_Surfaces.push_back(surf);
-            if(surf->IsVoid())
+            if (surf->IsVoid())
+            {
+                if (m_pReference->IsSkeleton())
+                    Engine.External.SetSkinningMode(4);
+
                 surf->OnDeviceCreate();
+
+                if (m_pReference->IsSkeleton())
+                    Engine.External.SetSkinningMode();
+            }
         }
-    } 
+    }
+
     return m_pReference;
 }
 
@@ -253,8 +268,25 @@ void CSceneObject::OnFrame()
 
 void CSceneObject::ReferenceChange(PropValue* sender)
 {
+    CSector* OldSector = nullptr;
+    for (auto MeshObJ : m_pReference->Meshes())
+    {
+        OldSector = PortalUtils.FindSector(this, MeshObJ);
+
+        if (OldSector != nullptr)
+            break;
+    }
+
     Scene->BeforeObjectChange(this);
 	UpdateReference	();
+
+    if (OldSector)
+    {
+        for (auto MeshObJ : m_pReference->Meshes())
+        {
+            OldSector->AddMesh(this, MeshObJ);
+        }
+    }
 }
 void CSceneObject::OnChangeShader(PropValue* sender)
 {
@@ -405,7 +437,7 @@ void CSceneObject::ClearSurface()
     {
         for (size_t i = 0; i < m_pReference->SurfaceCount(); i++)
         {
-            CSurface* surf = xr_new< CSurface>();
+            CSurface* surf = new CSurface();
             surf->CopyFrom(m_pReference->Surfaces()[i]);
             m_Surfaces.push_back(surf);
             if (surf->IsVoid())

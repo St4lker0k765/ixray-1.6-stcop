@@ -11,7 +11,8 @@ SGameMtl* CGameMtlLibrary::GetMaterialByIdx(u16 idx)
 {
     if (idx >= materials.size())
     {
-        Msg("Material [%d] not found in library! ", (int)idx);
+        if (idx != 65535)
+            Msg("Material [%d] not found in library! ", (int)idx);
         return materials[0];
     }
 
@@ -121,7 +122,7 @@ void CGameMtlLibrary::Load()
     if (OBJ) {
         u32				count;
         for (IReader* O = OBJ->open_chunk_iterator(count); O; O = OBJ->open_chunk_iterator(count,O)) {
-        	SGameMtl*	M = xr_new<SGameMtl> ();
+        	SGameMtl*	M = new SGameMtl ();
 	        M->Load		(*O);
         	materials.push_back(M);
         }
@@ -132,7 +133,7 @@ void CGameMtlLibrary::Load()
     if (OBJ){
         u32				count;
         for (IReader* O = OBJ->open_chunk_iterator(count); O; O = OBJ->open_chunk_iterator(count,O)) {
-        	SGameMtlPair* M	= xr_new<SGameMtlPair> (this);
+        	SGameMtlPair* M	= new SGameMtlPair (this);
 	        M->Load		(*O);
         	material_pairs.push_back(M);
         }
@@ -151,14 +152,6 @@ void CGameMtlLibrary::Load()
     }
 #endif
 
-/*
-	for (GameMtlPairIt p_it=material_pairs.begin(); material_pairs.end() != p_it; ++p_it){
-		SGameMtlPair* S	= *p_it;
-		for (int k=0; k<S->StepSounds.size(); k++){
-			Msg("%40s - 0x%x", S->StepSounds[k].handle->file_name(), S->StepSounds[k].g_type);
-		}
-	}
-*/
 	FS.r_close		(F);
 }
 

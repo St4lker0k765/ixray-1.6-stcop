@@ -4,7 +4,7 @@
 
 #include "stdafx.h"
 #include "LightTrack.h"
-#include "../../include/xrRender/RenderVisual.h"
+#include "../../Include/xrRender/RenderVisual.h"
 #include "../../xrEngine/xr_object.h"
 
 #ifdef _EDITOR
@@ -438,20 +438,23 @@ void CROS_impl::prepare_lights(Fvector& position, IRenderable* O)
 		Fvector					bb_size	=	{radius,radius,radius};
 
 #if RENDER!=R_R1
-		g_SpatialSpace->q_box				(RImplementation.lstSpatial,0,STYPE_LIGHTSOURCEHEMI,position,bb_size);
+		g_SpatialSpace->q_box(RImplementation.lstSpatial,0,STYPE_LIGHTSOURCEHEMI,position,bb_size);
 #else
-		g_SpatialSpace->q_box				(RImplementation.lstSpatial,0,STYPE_LIGHTSOURCE,position,bb_size);
+		g_SpatialSpace->q_box(RImplementation.lstSpatial,0,STYPE_LIGHTSOURCE,position,bb_size);
 #endif
-		for (u32 o_it=0; o_it<RImplementation.lstSpatial.size(); o_it++)	{
-			ISpatial*	spatial		= RImplementation.lstSpatial[o_it];
-			light*		source		= (light*)	(spatial->dcast_Light());
-			VERIFY		(source);	// sanity check
-			float	R				= radius+source->range;
+
+		for (u32 o_it = 0; o_it < RImplementation.lstSpatial.size(); o_it++)
+		{
+			ISpatial* spatial = RImplementation.lstSpatial[o_it].get();
+			light* source = (light*)(spatial->dcast_Light());
+			VERIFY(source);	// sanity check
+			float	R = radius + source->range;
 			if (position.distance_to(source->position) < R
 #if RENDER!=R_R1
-				&&source->flags.bStatic
+				&& source->flags.bStatic
 #endif
-				)		add	(source);
+			)
+				add(source);
 		}
 
 		// Trace visibility

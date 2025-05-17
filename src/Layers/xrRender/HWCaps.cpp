@@ -1,8 +1,8 @@
 #include "stdafx.h"
 #pragma hdrstop
 
-#include "hwcaps.h"
-#include "hw.h"
+#include "HWCaps.h"
+#include "HW.h"
 
 #ifndef _EDITOR
 u32 GetGpuNum()
@@ -22,6 +22,6 @@ u32 GetGpuNum()
 #else
 u32 GetGpuNum()
 {
-	return 1;
+	return 2;
 }
 #endif

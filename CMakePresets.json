@@ -13,10 +13,10 @@
             "generator": "Visual Studio 17 2022",
             "cacheVariables": {
                 "IXRAY_UTILS": "OFF",
+                "IXRAY_EDITORS": "OFF",
                 "IXRAY_MP": "OFF",
                 "IXRAY_COMPRESSOR_ONLY": "OFF",
-                "IXRAY_PLUGIN_MAX": "OFF",
-                "IXRAY_PLUGIN_LW": "OFF",
+                "IXRAY_PLUGINS": "OFF",
                 "IXRAY_ASAN": "OFF",
                 "IXRAY_USE_R1": "ON",
                 "IXRAY_USE_R2": "ON",
@@ -59,10 +59,10 @@
             "generator": "Visual Studio 17 2022",
             "cacheVariables": {
                 "IXRAY_UTILS": "OFF",
+                "IXRAY_EDITORS": "OFF",
                 "IXRAY_MP": "OFF",
                 "IXRAY_COMPRESSOR_ONLY": "OFF",
-                "IXRAY_PLUGIN_MAX": "OFF",
-                "IXRAY_PLUGIN_LW": "OFF",
+                "IXRAY_PLUGINS": "OFF",
                 "IXRAY_ASAN": "OFF",
                 "IXRAY_USE_R1": "ON",
                 "IXRAY_USE_R2": "ON",
@@ -105,10 +105,10 @@
             "generator": "Visual Studio 17 2022",
             "cacheVariables": {
                 "IXRAY_UTILS": "OFF",
+                "IXRAY_EDITORS": "OFF",
                 "IXRAY_MP": "ON",
                 "IXRAY_COMPRESSOR_ONLY": "OFF",
-                "IXRAY_PLUGIN_MAX": "OFF",
-                "IXRAY_PLUGIN_LW": "OFF",
+                "IXRAY_PLUGINS": "OFF",
                 "IXRAY_ASAN": "OFF",
                 "IXRAY_USE_R1": "ON",
                 "IXRAY_USE_R2": "ON",
@@ -145,19 +145,52 @@
         },
 
         {
+            "name": "Editors-Base-Windows",
+            "displayName": "Editors-Base-Windows",
+            "hidden": true,
+            "generator": "Visual Studio 17 2022",
+            "cacheVariables": {
+                "IXRAY_UTILS": "OFF",
+                "IXRAY_EDITORS": "ON",
+                "IXRAY_MP": "OFF",
+                "IXRAY_COMPRESSOR_ONLY": "OFF",
+                "IXRAY_PLUGINS": "OFF",
+                "IXRAY_ASAN": "OFF",
+                "IXRAY_USE_R1": "OFF",
+                "IXRAY_USE_R2": "OFF",
+                "IXRAY_UNITYBUILD": "ON"
+            }
+        },
+        {
+            "name": "Editors-x64-Windows",
+            "displayName": "Editors-x64-Windows",
+            "inherits": "Editors-Base-Windows",
+            "binaryDir": "build/x64/Editors-Windows",
+            "cacheVariables": {
+                "CMAKE_GENERATOR_PLATFORM": "x64"
+            },
+            "vendor": {
+                "microsoft.com/VisualStudioSettings/CMake/1.0": {
+                    "intelliSenseMode": "windows-msvc-x64"
+                }
+            }
+        },
+
+        {
             "name": "Utilities-Base-Windows",
             "displayName": "Utilities-Base-Windows",
             "hidden": true,
             "generator": "Visual Studio 17 2022",
             "cacheVariables": {
                 "IXRAY_UTILS": "ON",
+                "IXRAY_EDITORS": "OFF",
                 "IXRAY_MP": "ON",
                 "IXRAY_COMPRESSOR_ONLY": "OFF",
-                "IXRAY_PLUGIN_MAX": "OFF",
-                "IXRAY_PLUGIN_LW": "OFF",
+                "IXRAY_PLUGINS": "OFF",
                 "IXRAY_ASAN": "OFF",
                 "IXRAY_USE_R1": "ON",
-                "IXRAY_USE_R2": "OFF"
+                "IXRAY_USE_R2": "OFF",
+                "IXRAY_UNITYBUILD": "ON"
             }
         },
         {
@@ -190,57 +223,27 @@
         },
 
         {
-            "name": "Plugins-3ds-Max-Base",
-            "displayName": "Plugins-3ds-Max-Base",
+            "name": "Plugins-Base-Windows",
+            "displayName": "Plugins-Base-Windows",
             "hidden": true,
             "generator": "Visual Studio 17 2022",
             "cacheVariables": {
                 "IXRAY_UTILS": "OFF",
+                "IXRAY_EDITORS": "OFF",
                 "IXRAY_MP": "OFF",
                 "IXRAY_COMPRESSOR_ONLY": "OFF",
-                "IXRAY_PLUGIN_MAX": "ON",
-                "IXRAY_PLUGIN_LW": "OFF",
+                "IXRAY_PLUGINS": "ON",
                 "IXRAY_ASAN": "OFF",
                 "IXRAY_USE_R1": "OFF",
-                "IXRAY_USE_R2": "OFF"
+                "IXRAY_USE_R2": "OFF",
+                "IXRAY_UNITYBUILD": "ON"
             }
         },
         {
-            "name": "Plugins-3ds-Max-x64",
-            "displayName": "Plugins-3ds-Max-x64",
-            "inherits": "Plugins-3ds-Max-Base",
-            "binaryDir": "build/x64/Plugins-3ds-Max",
-            "cacheVariables": {
-                "CMAKE_GENERATOR_PLATFORM": "x64"
-            },
-            "vendor": {
-                "microsoft.com/VisualStudioSettings/CMake/1.0": {
-                    "intelliSenseMode": "windows-msvc-x64"
-                }
-            }
-        },
-
-        {
-            "name": "Plugins-Lightwave-Base",
-            "displayName": "Plugins-Lightwave-Base",
-            "hidden": true,
-            "generator": "Visual Studio 17 2022",
-            "cacheVariables": {
-                "IXRAY_UTILS": "OFF",
-                "IXRAY_MP": "OFF",
-                "IXRAY_COMPRESSOR_ONLY": "OFF",
-                "IXRAY_PLUGIN_MAX": "OFF",
-                "IXRAY_PLUGIN_LW": "ON",
-                "IXRAY_ASAN": "OFF",
-                "IXRAY_USE_R1": "OFF",
-                "IXRAY_USE_R2": "OFF"
-            }
-        },
-        {
-            "name": "Plugins-Lightwave-x64",
-            "displayName": "Plugins-Lightwave-x64",
-            "inherits": "Plugins-Lightwave-Base",
-            "binaryDir": "build/x64/Plugins-Lightwave",
+            "name": "Plugins-x64-Windows",
+            "displayName": "Plugins-x64-Windows",
+            "inherits": "Plugins-Base-Windows",
+            "binaryDir": "build/x64/Plugins-Windows",
             "cacheVariables": {
                 "CMAKE_GENERATOR_PLATFORM": "x64"
             },
@@ -258,13 +261,14 @@
             "generator": "Visual Studio 17 2022",
             "cacheVariables": {
                 "IXRAY_UTILS": "OFF",
+                "IXRAY_EDITORS": "OFF",
                 "IXRAY_MP": "OFF",
                 "IXRAY_COMPRESSOR_ONLY": "ON",
-                "IXRAY_PLUGIN_MAX": "OFF",
-                "IXRAY_PLUGIN_LW": "OFF",
+                "IXRAY_PLUGINS": "OFF",
                 "IXRAY_ASAN": "OFF",
                 "IXRAY_USE_R1": "OFF",
-                "IXRAY_USE_R2": "OFF"
+                "IXRAY_USE_R2": "OFF",
+                "IXRAY_UNITYBUILD": "ON"
             }
         },
         {
@@ -303,13 +307,14 @@
             "generator": "Ninja Multi-Config",
             "cacheVariables": {
                 "IXRAY_UTILS": "OFF",
+                "IXRAY_EDITORS": "OFF",
                 "IXRAY_MP": "OFF",
                 "IXRAY_COMPRESSOR_ONLY": "ON",
-                "IXRAY_PLUGIN_MAX": "OFF",
-                "IXRAY_PLUGIN_LW": "OFF",
+                "IXRAY_PLUGINS": "OFF",
                 "IXRAY_ASAN": "OFF",
                 "IXRAY_USE_R1": "OFF",
                 "IXRAY_USE_R2": "OFF",
+                "IXRAY_UNITYBUILD": "ON",
                 "CMAKE_C_COMPILER": "clang-14",
                 "CMAKE_CXX_COMPILER": "clang++-14"
             }
@@ -434,6 +439,19 @@
         },
 
         {
+            "name": "Editors-x64-Windows-Debug",
+            "displayName": "Editors-x64-Windows-Debug",
+            "configurePreset": "Editors-x64-Windows",
+            "configuration": "Debug"
+        },
+        {
+            "name": "Editors-x64-Windows-RelWithDebInfo",
+            "displayName": "Editors-x64-Windows-RelWithDebInfo",
+            "configurePreset": "Editors-x64-Windows",
+            "configuration": "RelWithDebInfo"
+        },
+
+        {
             "name": "Utilities-x86-Windows-Debug",
             "displayName": "Utilities-x86-Windows-Debug",
             "configurePreset": "Utilities-x86-Windows",
@@ -471,40 +489,21 @@
         },
 
         {
-            "name": "Plugins-3ds-Max-x64-Debug",
-            "displayName": "Plugins-3ds-Max-x64-Debug",
-            "configurePreset": "Plugins-3ds-Max-x64",
+            "name": "Plugins-x64-Windows-Debug",
+            "displayName": "Plugins-x64-Windows-Debug",
+            "configurePreset": "Plugins-x64-Windows",
             "configuration": "Debug"
         },
         {
-            "name": "Plugins-3ds-Max-x64-RelWithDebInfo",
-            "displayName": "Plugins-3ds-Max-x64-RelWithDebInfo",
-            "configurePreset": "Plugins-3ds-Max-x64",
+            "name": "Plugins-x64-Windows-RelWithDebInfo",
+            "displayName": "Plugins-x64-Windows-RelWithDebInfo",
+            "configurePreset": "Plugins-x64-Windows",
             "configuration": "RelWithDebInfo"
         },
         {
-            "name": "Plugins-3ds-Max-x64-Release",
-            "displayName": "Plugins-3ds-Max-x64-Release",
-            "configurePreset": "Plugins-3ds-Max-x64",
-            "configuration": "Release"
-        },
-        
-        {
-            "name": "Plugins-Lightwave-x64-Debug",
-            "displayName": "Plugins-Lightwave-x64-Debug",
-            "configurePreset": "Plugins-Lightwave-x64",
-            "configuration": "Debug"
-        },
-        {
-            "name": "Plugins-Lightwave-x64-RelWithDebInfo",
-            "displayName": "Plugins-Lightwave-x64-RelWithDebInfo",
-            "configurePreset": "Plugins-Lightwave-x64",
-            "configuration": "RelWithDebInfo"
-        },
-        {
-            "name": "Plugins-Lightwave-x64-Release",
-            "displayName": "Plugins-Lightwave-x64-Release",
-            "configurePreset": "Plugins-Lightwave-x64",
+            "name": "Plugins-x64-Windows-Release",
+            "displayName": "Plugins-x64-Windows-Release",
+            "configurePreset": "Plugins-x64-Windows",
             "configuration": "Release"
         },
 

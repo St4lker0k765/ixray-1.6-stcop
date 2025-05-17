@@ -1,25 +1,28 @@
 #ifndef LAYERS_XRRENDER_LIGHT_H_INCLUDED
 #define LAYERS_XRRENDER_LIGHT_H_INCLUDED
 
-#include "../../xrcdb/ispatial.h"
-
+#include "../../xrCDB/ISpatial.h"
+//#include "../../xrEngine/xr_object.h"
 #if (RENDER==R_R2) || (RENDER==R_R4)
 #	include "light_package.h"
 #	include "light_smapvis.h"
 #endif //(RENDER==R_R2) || (RENDER==R_R4)
 
-class	light		:	public IRender_Light, public ISpatial
+class light :	
+	public IRender_Light
 {
 public:
-	struct {
-		u32			type	:	4;
-		u32			bStatic	:	1;
-		u32			bActive	:	1;
-		u32			bShadow	:	1;
-		u32			bVolumetric:1;
-		u32			bHudMode:	1;
+	struct
+	{
+		u32 type	:	4;
+		u32 bStatic	:	1;
+		u32 bActive	:	1;
+		u32 bShadow	:	1;
+		u32 bVolumetric:1;
+		u32 bHudMode:	1;
+		u32 bOccq:		1;
+	} flags;
 
-	}				flags;
 	Fvector			position	;
 	Fvector			direction	;
 	Fvector			right		;
@@ -27,26 +30,28 @@ public:
 	float			virtual_size;
 	float			cone		;
 	Fcolor			color		;
-
+	CObject			*ignore_object, *decor_object[6];
 	vis_data		hom			;
 	u32				frame_render;
-
+	
 #if RENDER!=R_R1
 	xr_vector<IRender_Sector*> m_sectors;
 #endif	//	RENDER!=R_R1
+
 	float			m_volumetric_quality;
 	float			m_volumetric_intensity;
 	float			m_volumetric_distance;
-
-#if (RENDER==R_R2) || (RENDER==R_R4)
+	bool			b_spatial_move;
+#if (RENDER==R_R2) || (RENDER==R_R4) || defined(_EDITOR)
 	float			falloff;			// precalc to make light equal to zero at light range
 	float	        attenuation0;		// Constant attenuation		
 	float	        attenuation1;		// Linear attenuation		
 	float	        attenuation2;		// Quadratic attenuation	
 
+#ifndef _EDITOR
 	light*						omnipart	[6]	;
-
 	smapvis			svis;		// used for 6-cubemap faces
+#endif
 
 	ref_shader		s_spot;
 	ref_shader		s_point;
@@ -55,7 +60,8 @@ public:
 	u32				m_xform_frame;
 	Fmatrix			m_xform;
 
-	struct _vis		{
+	struct _vis		
+	{
 		u32			frame2test;		// frame the test is sheduled to
 		u32			query_id;		// ID of occlusion query
 		u32			query_order;	// order of occlusion query
@@ -64,29 +70,38 @@ public:
 		u16			smap_ID;
 	}				vis;
 
-	union			_xform	{
-		struct		_D		{
-			Fmatrix						combine	;
-			s32							minX,maxX	;
-			s32							minY,maxY	;
-			BOOL						transluent	;
+	union _xform
+	{
+		struct _D
+		{
+			Fmatrix						combine = {};
+			s32							minX, maxX;
+			s32							minY, maxY;
+			BOOL						transluent;
 		}	D;
-		struct		_P		{
-			Fmatrix						world		;
-			Fmatrix						view		;
-			Fmatrix						project		;
-			Fmatrix						combine		;
+
+		struct _P
+		{
+			Fmatrix						world = {};
+			Fmatrix						view = {};
+			Fmatrix						project = {};
+			Fmatrix						combine = {};
 		}	P;
-		struct		_S		{
-			Fmatrix						view		;
-			Fmatrix						project		;
-			Fmatrix						combine		;
-			u32							size		;
-			u32							posX		;
-			u32							posY		;
-			BOOL						transluent	;
+
+		struct _S
+		{
+			Fmatrix						view = {};
+			Fmatrix						project = {};
+			Fmatrix						combine = {};
+			u32							size;
+			u32							posX;
+			u32							posY;
+			BOOL						transluent;
 		}	S;
-	}	X;
+
+	};
+
+	_xform X = {};
 #endif	//	(RENDER==R_R2) || (RENDER==R_R4)
 
 public:
@@ -117,24 +132,40 @@ public:
 	virtual void	set_hud_mode			(bool b)						{flags.bHudMode=b;}
 	virtual bool	get_hud_mode			()								{return flags.bHudMode;};
 
+	virtual void	set_occq_mode			(bool b)						{flags.bOccq=b;}
+	virtual bool	get_occq_mode			()								{return flags.bOccq;};
+
+	virtual void	set_ignore_object		(CObject* O)					{ignore_object=O;};
+	virtual CObject* get_ignore_object		()								{return ignore_object;};
+
+	virtual void	set_decor_object		(CObject* O, int index = 0)					{decor_object[index] = O; };
+	virtual CObject* get_decor_object		(int index = 0)								{return decor_object[index];};
+
 	virtual	void	spatial_move			();
 	virtual	Fvector	spatial_sector_point	();
+	virtual	void	spatial_updatesector_internal ();
 
 	virtual IRender_Light*	dcast_Light		()	{ return this; }
 
 	virtual vis_data&		get_homdata		();
-#if (RENDER==R_R2) || (RENDER==R_R4)
+#if (RENDER==R_R2) || (RENDER==R_R4) || defined(_EDITOR)
 	void			xform_calc				();
+#ifndef _EDITOR
+	void			optimize_smap_size		();
 	void			vis_prepare				();
 	void			vis_update				();
 	void			export_ 					(light_Package& dest);
 	void			set_attenuation_params	(float a0, float a1, float a2, float fo);
+#endif // _EDITOR
 #endif // (RENDER==R_R2) || (RENDER==R_R4)
 
 	float			get_LOD					();
 
 	light();
 	virtual ~light();
+
+	virtual void	destroy(bool deffered = true);
+
 };
 
 #endif // #define LAYERS_XRRENDER_LIGHT_H_INCLUDED

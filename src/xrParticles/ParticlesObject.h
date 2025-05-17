@@ -8,33 +8,30 @@ extern PARTICLES_API const Fvector zero_vel;
 class PARTICLES_API CParticlesObject :
 	public CPS_Instance
 {
-	typedef CPS_Instance	inherited;
+	friend class CParticlesAsync;
+	using inherited =  CPS_Instance;
 
-	u32					dwLastTime;
 	void				Init				(LPCSTR p_name, IRender_Sector* S, BOOL bAutoRemove);
 	void				UpdateSpatial		();
 
 protected:
-	bool				m_bLooped;			//флаг, что система зациклена
-	bool				m_bStopping;		//вызвана функция Stop()
-
-	static				xr_list<CParticlesObject*> AllParticleObjects;
-
-protected:
-	virtual				~CParticlesObject	();
+	bool				m_bLooped;			//С„Р»Р°Рі, С‡С‚Рѕ СЃРёСЃС‚РµРјР° Р·Р°С†РёРєР»РµРЅР°
+	bool				m_bStopping;		//РІС‹Р·РІР°РЅР° С„СѓРЅРєС†РёСЏ Stop()
+	bool				NeedUpdate = false;
 
 public:
+	virtual				~CParticlesObject	();
 						CParticlesObject	(LPCSTR p_name, BOOL bAutoRemove, bool destroy_on_game_load);
 
 	virtual bool		shedule_Needed		()	{return true;};
 	virtual float		shedule_Scale		()	;
-	virtual void		shedule_Update		(u32 dt);
 	virtual void		renderable_Render	();
 	void				PerformAllTheWork	();
 
 	Fvector&			Position			();
 	void				SetXFORM			(const Fmatrix& m);
 	IC	Fmatrix&		XFORM				()	{return renderable.xform;}
+	virtual void		Update				(u32 dt) override;
 	void				UpdateParent		(const Fmatrix& m, const Fvector& vel);
 	void				SetLiveUpdate		(BOOL b);
 	BOOL				GetLiveUpdate		();
@@ -49,22 +46,22 @@ public:
 	void				SetAutoRemove		(bool auto_remove);
 
 	const shared_str	Name				();
+};
 
-	static void			WaitForParticles	();
-	static void			UpdateAllAsync		();
 
-public:
-	static CParticlesObject*	Create		(LPCSTR p_name, BOOL bAutoRemove=TRUE, bool remove_on_game_load = true)
+namespace Particles::Details
+{
+	PARTICLES_API xr_shared_ptr<CParticlesObject> Create(LPCSTR p_name, BOOL bAutoRemove = TRUE, bool remove_on_game_load = true);
+
+	template <class T>
+	static void Destroy(T& p)
 	{
-		return new CParticlesObject(p_name, bAutoRemove, remove_on_game_load);
-	}
-	static void					Destroy		(CParticlesObject*& p)
-	{
-		if (p){ 
-			p->PSI_destroy		();
-			p					= 0;
+		if (p)
+		{
+			p->PSI_destroy();
+			p = 0;
 		}
 	}
-};
+}
 
 #endif /*ParticlesObjectH*/

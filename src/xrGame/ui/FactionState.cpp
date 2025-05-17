@@ -10,7 +10,7 @@
 /*
 #include "FactionState.h"
 
-#include "../actor.h"
+#include "../Actor.h"
 #include "../character_community.h"
 #include "../character_reputation.h"
 #include "../relation_registry.h"
@@ -104,9 +104,9 @@ void FactionState::update_info()
 	CActor* pActor = smart_cast<CActor*>( Level().CurrentEntity() );
 	if ( pActor )
 	{
-		CHARACTER_COMMUNITY		char_ñomm;
-		char_ñomm.set( m_id );
-		m_actor_goodwill = RELATION_REGISTRY().GetCommunityGoodwill( char_ñomm.index(), pActor->object_id() );
+		CHARACTER_COMMUNITY		char_Ã±omm;
+		char_Ã±omm.set( m_id );
+		m_actor_goodwill = RELATION_REGISTRY().GetCommunityGoodwill( char_Ã±omm.index(), pActor->object_id() );
 	}
 	ResetStates();
 

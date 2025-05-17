@@ -1,6 +1,6 @@
 #pragma once
 
-enum 
+enum ELECommand
 {
 	COMMAND_EXTFIRST_EXT = COMMAND_MAIN_LAST-1,
 
@@ -29,6 +29,7 @@ enum
 	COMMAND_CUT,
 	COMMAND_COPY,
 	COMMAND_PASTE,
+    COMMAND_DUPLICATE,
 	COMMAND_LOAD_SELECTION,
 	COMMAND_SAVE_SELECTION,
     COMMAND_LOAD_LEVEL_PART, 
@@ -44,6 +45,7 @@ enum
 	COMMAND_BUILD,
 
 	COMMAND_MAKE_GAME,
+	COMMAND_MAKE_PUDDLES,
     COMMAND_MAKE_DETAILS,
 	COMMAND_MAKE_HOM,
     COMMAND_MAKE_SOM,
@@ -59,6 +61,9 @@ enum
 	COMMAND_HIDE_UNSEL,
 	COMMAND_HIDE_SEL,
 	COMMAND_HIDE_ALL,
+    COMMAND_LOCK_ALL,
+    COMMAND_LOCK_SEL,
+    COMMAND_LOCK_UNSEL,
 
     COMMAND_SET_SNAP_OBJECTS,
     COMMAND_ADD_SEL_SNAP_OBJECTS,
@@ -71,6 +76,10 @@ enum
 
     COMMAND_SHOWCONTEXTMENU,
     COMMAND_SHOW_CLIP_EDITOR,
+
+    COMMAND_MULTI_REPLACE_OBJECTS,
+
+    COMMAND_LE_END
 };
 
 class CLevelMain: public TUI{
@@ -90,10 +99,6 @@ public:
     virtual void 	ResetStatus				();
     virtual void 	SetStatus				(LPCSTR s, bool bOutLog=true);
     virtual void	ProgressDraw			();
-    virtual void 	OutCameraPos			();
-    virtual void 	OutUICursorPos			();
-    virtual void 	OutGridSize				();
-    virtual void 	OutInfo					();
 
     virtual LPCSTR	EditorName				(){return "level";}
     virtual LPCSTR	EditorDesc				(){return "Level Editor";}

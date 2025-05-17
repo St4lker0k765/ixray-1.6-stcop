@@ -4,18 +4,18 @@
 
 #include "../xrRender/PSLibrary.h"
 
-#include "../xrRender/hom.h"
-#include "../xrRender/detailmanager.h"
-#include "glowmanager.h"
-#include "../xrRender/wallmarksengine.h"
-#include "fstaticrender_rendertarget.h"
-#include "../xrRender/modelpool.h"
+#include "../xrRender/HOM.h"
+#include "../xrRender/DetailManager.h"
+#include "GlowManager.h"
+#include "../xrRender/WallmarksEngine.h"
+#include "FStaticRender_RenderTarget.h"
+#include "../xrRender/ModelPool.h"
 
-#include "lightShadows.h"
-#include "lightProjector.h"
-#include "lightPPA.h"
-#include "../xrRender/light_DB.h"
-#include "../../xrEngine/fmesh.h"
+#include "LightShadows.h"
+#include "LightProjector.h"
+#include "LightPPA.h"
+#include "../xrRender/Light_DB.h"
+#include "../../xrEngine/Fmesh.h"
 #include <d3dcommon.h>
 
 class dxRender_Visual;
@@ -86,6 +86,8 @@ public:
 	bool														m_bMakeAsyncSS;
 	bool														m_bFirstFrameAfterReset;	// Determines weather the frame is the first after resetting device.
 
+	xr_list<light*>												v_all_lights_dque;
+	xr_list<light*>												v_all_lights;
 private:
 	// Loading / Unloading
 	void								LoadBuffers				(CStreamReader	*fs);
@@ -96,7 +98,7 @@ private:
 
 	BOOL								add_Dynamic				(dxRender_Visual	*pVisual, u32 planes);		// normal processing
 	void								add_Static				(dxRender_Visual	*pVisual, u32 planes);
-	void								add_leafs_Dynamic		(dxRender_Visual	*pVisual, bool ignore = false); // if detected node's full visibility
+	void								add_leafs_Dynamic		(dxRender_Visual	*pVisual); // if detected node's full visibility
 	void								add_leafs_Static		(dxRender_Visual	*pVisual);						// if detected node's full visibility
 
 public:
@@ -146,14 +148,19 @@ public:
 	virtual IRender_Sector*			getSector				(int id);
 	virtual IRenderVisual*			getVisual				(int id);
 	virtual IRender_Sector*			detectSector			(const Fvector& P);
+	IRender_Sector*					detectLastSector		(const Fvector& P);
+	IRender_Sector*					detectSector			(const Fvector& P, Fvector& D);
+	xr_vector<IRender_Sector*>		detectSectors_sphere	(CSector* sector, const Fvector& b_center, const Fvector& b_dim);
+	xr_vector<IRender_Sector*>		detectSectors_frustum	(CSector* sector, CFrustum* _frustum);
 	int								translateSector			(IRender_Sector* pSector);
 	virtual IRender_Target*			getTarget				();
-	
+	virtual SurfaceParams getSurface(const char* nameTexture) override;
+
 	// Main 
 	virtual void					flush					();
 	virtual void					set_Object				(IRenderable*		O	);
 	virtual	void					add_Occluder			(Fbox2&	bb_screenspace	);			// mask screen region as oclluded
-	virtual void					add_Visual				(IRenderVisual*	V, bool ignore_opt = false);			// add visual leaf (no culling performed at all)
+	virtual void					add_Visual				(IRenderVisual*	V);			// add visual leaf (no culling performed at all)
 	virtual void					add_Geometry			(IRenderVisual*	V	);			// add visual(s)	(all culling performed)
 
 	// wallmarks
@@ -187,6 +194,7 @@ public:
 	virtual IRenderVisual*			model_CreateChild		(LPCSTR name, IReader*data);
 	virtual IRenderVisual*			model_Duplicate			(IRenderVisual*	V);
 	virtual void					model_Delete			(IRenderVisual* &	V, BOOL bDiscard);
+	virtual void					model_Delete_Deffered	(IRenderVisual* &	V);
 	virtual void 					model_Delete			(IRender_DetailModel* & F);
 	virtual void					model_Logging			(BOOL bEnable)				{ Models->Logging(bEnable);	}
 	virtual void					models_Prefetch			();

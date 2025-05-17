@@ -3,7 +3,7 @@
 #include "mu_model_face.h"
   
 
-#include "../../xrcore/xrPool.h"
+#include "../../xrCore/xrPool.h"
 
 
 poolSS<_vertex,8*1024>	&mu_vertices_pool();
@@ -38,7 +38,7 @@ void _face::Failure		()
 
 }
  
-// POOLS  Δλÿ χεγξ ?  
+// POOLS  Π”Π»Ρ Ρ‡ΠµΠ³ΠΎ ?  
 
 poolSS<_vertex,8*1024>	mu_vertices;
 poolSS<_face,8*1024>	mu_faces;

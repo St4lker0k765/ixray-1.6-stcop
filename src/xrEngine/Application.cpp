@@ -3,9 +3,9 @@
 #include "Application.h"
 #include "IGame_Level.h"
 #include "IGame_Persistent.h"
-#include "xr_ioconsole.h"
+#include "XR_IOConsole.h"
 #include "std_classes.h"
-#include "../xrCDB/ispatial.h"
+#include "../xrCDB/ISpatial.h"
 #include "ILoadingScreen.h"
 
 //---------------------------------------------------------------------
@@ -234,8 +234,11 @@ void CApplication::LoadForceFinish() {
 
 void CApplication::LoadTitleInt(LPCSTR str1, LPCSTR str2, LPCSTR str3)
 {
-	if (loadingScreen && EngineExternal()[EEngineExternalRender::LoadScreenTips])
+	const static bool disableLoadScreenTips = EngineExternal()[EEngineExternalRender::DisableLoadScreenTips];
+	if (loadingScreen && !disableLoadScreenTips)
+	{
 		loadingScreen->SetStageTip(str1, str2, str3);
+	}
 }
 
 void CApplication::LoadStage()
@@ -262,9 +265,6 @@ void CApplication::OnFrame()
 	g_pEventManager->Event.OnFrame();
 	g_SpatialSpace->update();
 	g_SpatialSpacePhysic->update();
-	if (g_pGameLevel) {
-		g_pGameLevel->SoundEvent_Dispatch();
-	}
 }
 
 void CApplication::Level_Append(LPCSTR folder)

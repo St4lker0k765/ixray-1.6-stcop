@@ -1,12 +1,11 @@
-﻿// ActorEditor.cpp : Определяет точку входа для приложения.
+// ActorEditor.cpp : Определяет точку входа для приложения.
 //
 #include "stdafx.h"
 #include "../../xrEngine/xr_input.h"
 
-#include "../xrEProps/UIFileLoad.h"
 #include "../xrEProps/UIBoneView.h"
 
-CUFileOpen* FileOpen = nullptr;
+#include "xrECore/Splash.h"
 
 void DragFile(xr_string File)
 {
@@ -63,8 +62,8 @@ void DragFile(xr_string File)
 			}
 			else
 			{
-				std::filesystem::path FilePath = File.c_str();
-				xr_string FileName = FilePath.filename().generic_string().c_str();
+				xr_path FilePath = File;
+				xr_string FileName = FilePath.xfilename();
 				xr_string OutPath = CurrentWD + FileName;
 
 				// Make temp file
@@ -84,27 +83,40 @@ void DragFile(xr_string File)
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
+	splash::show(IDB_AE);
+
+	splash::update(2, "Initializing Debugger");
+
 	if (!IsDebuggerPresent())
 		Debug._initialize(false);
+
+	splash::update(5, "Core Initialization");
 
 	const char* FSName = "fs.ltx";
 	Core._initialize("Actor", ELogCallback, 1, FSName);
 
-	Tools = xr_new<CActorTools>();
+	splash::update(20, "Initializing Actor Tools");
+
+	Tools = new CActorTools();
 	ATools = (CActorTools*)Tools;
-	UI = xr_new<CActorMain>();
+
+	splash::update(35, "Registering UI Commands");
+
+	UI = new CActorMain();
 	UI->RegisterCommands();
 
-	UIMainForm* MainForm = xr_new<UIMainForm>();
+	splash::update(50, "Creating Main UI Form");
+
+	UIMainForm* MainForm = new UIMainForm();
 	::MainForm = MainForm;
 
-	//GameMaterialLibraryEditors->Load();
+	splash::update(75, "Loading Game Materials");
+
 	PGMLib->Load();
 
-	FileOpen = new CUFileOpen;
+	splash::update(85, "Initializing UI");
 	UI->PushBegin(MainForm, false);
-	UI->Push(FileOpen, false);
-
+	splash::update(90, "Processing Command-Line Arguments");
 	int ArgsCount = 0;
 	auto Commands = CommandLineToArgvW(GetCommandLine(), &ArgsCount);
 
@@ -117,6 +129,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 		}
 	}
 
+	splash::update(100, "Finalizing");
+	splash::hide();
+
 	bool NeedExit = false;
 
 	while (!NeedExit)
@@ -126,6 +141,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 		{
 			switch (Event.type)
 			{
+			case SDL_EVENT_WINDOW_MAXIMIZED:
+				EDevice->MaximizedWindow();
+				break;
 			case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
 				EPrefs->SaveConfig();
 				NeedExit = true;

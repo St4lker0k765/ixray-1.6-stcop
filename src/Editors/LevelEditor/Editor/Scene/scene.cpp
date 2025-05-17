@@ -1,5 +1,8 @@
 #include "stdafx.h"
-#include "lephysics.h"
+#include "LEPhysics.h"
+#include "../xrEngine/xr_input.h"
+#include "../xrEngine/xr_object.h"
+#include "../xrServerEntities/clsid_game.h"
 
 EScene* Scene;
 
@@ -40,31 +43,18 @@ void st_LevelOptions::SetHighQuality()
 	m_LightSunQuality	= 3;
 }
 
-
-#define MAX_VISUALS 16384
-#ifdef USE_ARENA_ALLOCATOR
-extern char* s_fake_array;
-#endif
 EScene::EScene()
 {
-#ifdef USE_ARENA_ALLOCATOR
-	s_fake_array = xr_new<char>(64 * 1024 * 1024);
-#endif
 	m_Valid = false;
 	m_Locked = 0;
 
 	for (int i=0; i<OBJCLASS_COUNT; i++)
 		m_SceneTools.insert(std::make_pair((ObjClassID)i,(ESceneToolBase*)NULL));
-	g_SpatialSpace = xr_new<ISpatial_DB>();
-	g_SpatialSpacePhysic = xr_new<ISpatial_DB>();
-	// first init scene graph for objects
-   // mapRenderObjects.init(MAX_VISUALS);
+	g_SpatialSpace = new ISpatial_DB();
+	g_SpatialSpacePhysic = new ISpatial_DB();
+
 // 	Build options
 	m_SummaryInfo	= 0;
-	//ClearSnapList	(false);
-//   g_frmConflictLoadObject 		= xr_new<TfrmAppendObjectInfo>((TComponent*)NULL);
-
-
 }
 
 EScene::~EScene()
@@ -75,10 +65,6 @@ EScene::~EScene()
 
 	VERIFY( m_Valid == false );
 	m_ESO_SnapObjects.clear	();
-
-#ifdef USE_ARENA_ALLOCATOR
-	xr_free(s_fake_array);
-#endif
 }
 
 void EScene::OnCreate()
@@ -91,14 +77,12 @@ void EScene::OnCreate()
 	m_Valid 				= true;
 	m_RTFlags.zero			();
 	ExecCommand				(COMMAND_UPDATE_CAPTION);
-	//m_SummaryInfo 			= TProperties::CreateForm("Level Summary Info", 0, alNone, 0,0,0, TProperties::plFolderStore|TProperties::plItemFolders);
 }
 
 void EScene::OnDestroy()
 {
 	g_scene_physics.DestroyAll();
 
-	//TProperties::DestroyForm(m_SummaryInfo);
 	Unload					(FALSE);
 	UndoClear				();
 	ELog.Msg				( mtInformation, "Scene: cleared" );
@@ -121,7 +105,7 @@ void EScene::AppendObject( CCustomObject* object, bool bUndo )
 		break;
 
 	case OBJCLASS_SPAWNPOINT:
-		CSpawnPoint* Spawn = dynamic_cast<CSpawnPoint*>(object);
+		CSpawnPoint* Spawn = smart_cast<CSpawnPoint*>(object);
 		if (Spawn && Spawn->IsGraphPoint())
 		{
 			m_RTFlags.set(flIsBuildedGameGraph, FALSE);
@@ -139,6 +123,8 @@ void EScene::AppendObject( CCustomObject* object, bool bUndo )
 		object->Select	(true);
 		UndoSave();
 	}
+
+	object->SetLoadedState();
 }
 
 bool EScene::RemoveObject( CCustomObject* object, bool bUndo, bool bDeleting )
@@ -153,7 +139,7 @@ bool EScene::RemoveObject( CCustomObject* object, bool bUndo, bool bDeleting )
 		UI->RedrawScene();
 		break;
 	case OBJCLASS_SPAWNPOINT:
-		CSpawnPoint* Spawn = dynamic_cast<CSpawnPoint*>(object);
+		CSpawnPoint* Spawn = smart_cast<CSpawnPoint*>(object);
 		if (Spawn && Spawn->IsGraphPoint())
 		{
 			m_RTFlags.set(flIsBuildedGameGraph, FALSE);
@@ -214,7 +200,7 @@ int EScene::MultiRenameObjects()
 		SceneToolsMapPairIt t_end 	= m_SceneTools.end();
 		for (; t_it!=t_end; t_it++)
 		{
-			ESceneCustomOTool* ot	= dynamic_cast<ESceneCustomOTool*>(t_it->second);
+			ESceneCustomOTool* ot	= smart_cast<ESceneCustomOTool*>(t_it->second);
 			if (ot&&(t_it->first!=OBJCLASS_DUMMY))
 				cnt					+= ot->MultiRenameObjects	();
 		}
@@ -227,23 +213,44 @@ int EScene::MultiRenameObjects()
 
 void EScene::OnFrame( float dT )
 {
-	if( !valid() ) return;
-	if( locked() ) return;
+	if(!valid()) return;
+	if(locked()) return;
 
-	SceneToolsMapPairIt t_it 	= m_SceneTools.begin();
-	SceneToolsMapPairIt t_end 	= m_SceneTools.end();
-	for (; t_it!=t_end; t_it++)
-		if (t_it->second && t_it->second->IsEnabled() && t_it->second->IsVisible())
+	SceneToolsMapPairIt t_it = m_SceneTools.begin();
+	SceneToolsMapPairIt t_end = m_SceneTools.end();
+
+	for(; t_it != t_end; t_it++) {
+		if(t_it->second && t_it->second->IsEnabled() && t_it->second->IsVisible()) {
 			t_it->second->OnFrame();
+		}
+	}
 
-	if(m_RTFlags.test(flUpdateSnapList) )
-		UpdateSnapListReal();    
-	if (m_RTFlags.test(flIsStopPlayInEditor))
+	if(m_RTFlags.test(flUpdateSnapList))
+		UpdateSnapListReal();
+
+	if(IsPlayInEditor()) 
+	{
+		if(pInput->iGetAsyncKeyState(SDL_SCANCODE_LALT)) 
+		{
+			if (pInput->IsAcquire)
+			{
+				pInput->unacquire();
+				pInput->KeyboardButtonUpdate(SDL_SCANCODE_LALT, false);
+				UI->IsEnableInput = true;
+				ShowCursor(TRUE);
+			}
+		}
+	}
+
+	if(m_RTFlags.test(flIsStopPlayInEditor))
 	{
 		m_RTFlags.set(flIsStopPlayInEditor, FALSE);
-		if (IsPlayInEditor())
+		if(IsPlayInEditor())
 		{
 			ShowCursor(TRUE);
+			pInput->unacquire();
+			SDL_WarpMouseInWindow(g_AppInfo.Window, 
+			Device.TargetWidth / 2, Device.TargetHeight / 2);
 			g_pGameLevel->IR_Release();
 			Device.seqParallel.clear();
 			g_pGameLevel->net_Stop();
@@ -253,7 +260,6 @@ void EScene::OnFrame( float dT )
 			GetTool(OBJCLASS_SPAWNPOINT)->m_EditFlags.set(ESceneToolBase::flVisible, true);
 			UI->RedrawScene();
 		}
-	
 	}
 }
 
@@ -270,11 +276,10 @@ void EScene::Reset()
 	g_scene_physics.UpdateLevelCollision();
 }
 
-void EScene::Unload		(BOOL bEditableOnly)
+void EScene::Unload(BOOL bEditableOnly)
 {
-	m_LastAvailObject 	= 0;
-	Clear				(bEditableOnly);
-	//if (m_SummaryInfo) 	m_SummaryInfo->HideProperties();
+	m_LastAvailObject = 0;
+	Clear(bEditableOnly);
 }
 
 ECORE_API xrGUID generate_guid();
@@ -304,15 +309,20 @@ void EScene::Clear(BOOL bEditableToolsOnly)
 	m_CreateTime = time(NULL);
 
 	m_SaveCache.free();
-	m_cfrom_builder.clear();
+	m_cform_builder.clear();
 	m_level_graph.clear();
 	m_game_graph.clear();
 	m_RTFlags.set(flIsBuildedAIMap | flIsBuildedGameGraph | flIsBuildedCForm, FALSE);
+
+	if (!bEditableToolsOnly)
+	{
+		SDL_SetWindowTitle(g_AppInfo.Window, "IX-Ray Level Editor");
+	}
 }
 
 const Fvector& EScene::GetCameraPosition() const
 {
-	return EDevice->m_Camera.GetPosition();
+	return UI->CurrentView().m_Camera.GetPosition();
 }
 
 bool EScene::GetBox(Fbox& box, ObjClassID classfilter)
@@ -359,7 +369,7 @@ void EScene::Modified()
 		{
 			for (CCustomObject* Obj : lst)
 			{
-				CSpawnPoint* Spawn = dynamic_cast<CSpawnPoint*>(Obj);
+				CSpawnPoint* Spawn = smart_cast<CSpawnPoint*>(Obj);
 				if (Spawn&&Spawn->IsGraphPoint())
 				{
 					m_RTFlags.set(flIsBuildedGameGraph, FALSE);
@@ -403,7 +413,7 @@ bool EScene::IfModified()
 		return false;
 	}
 	if (m_RTFlags.is(flRT_Unsaved) && (ObjCount()||!Tools->GetEditFileName().empty())){
-		int mr = ELog.DlgMsg(mtConfirmation, "The scene has been modified. Do you want to save your changes?");
+		int mr = ELog.DlgMsg(mtInformation, mbYes|mbNo|mbCancel, "The scene has been modified. Do you want to save your changes?");
 		switch(mr){
 		case mrYes: if (!ExecCommand(COMMAND_SAVE)) return false; break;
 		case mrNo:{ 
@@ -418,26 +428,29 @@ bool EScene::IfModified()
 
 void EScene::OnObjectsUpdate()
 {
-	SceneToolsMapPairIt t_it 	= m_SceneTools.begin();
-	SceneToolsMapPairIt t_end 	= m_SceneTools.end();
-	for (; t_it!=t_end; t_it++)
-		if (t_it->second)		t_it->second->OnSceneUpdate();
+	for (auto& [ClassID, ToolPtr] : m_SceneTools)
+	{
+		if (ToolPtr != nullptr)
+			ToolPtr->OnSceneUpdate();
+	}
 }
 
 void EScene::OnDeviceCreate()
 {
-	SceneToolsMapPairIt t_it 	= m_SceneTools.begin();
-	SceneToolsMapPairIt t_end 	= m_SceneTools.end();
-	for (; t_it!=t_end; t_it++)
-		if (t_it->second)		t_it->second->OnDeviceCreate();
+	for (auto& [ClassID, ToolPtr] : m_SceneTools)
+	{
+		if (ToolPtr != nullptr)
+			ToolPtr->OnDeviceCreate();
+	}
 }
 
 void EScene::OnDeviceDestroy()
 {
-	SceneToolsMapPairIt t_it 	= m_SceneTools.begin();
-	SceneToolsMapPairIt t_end 	= m_SceneTools.end();
-	for (; t_it!=t_end; t_it++)
-		if (t_it->second)		t_it->second->OnDeviceDestroy();
+	for (auto& [ClassID, ToolPtr] : m_SceneTools)
+	{
+		if (ToolPtr != nullptr)
+			ToolPtr->OnDeviceDestroy();
+	}
 }
 
 void EScene::OnShowHint(AStringVec& dest)
@@ -483,7 +496,7 @@ bool EScene::Validate(bool bNeedOkMsg, bool bTestPortal, bool bTestHOM, bool bTe
 			if (O->m_objectFlags.is(CEditableObject::eoHOM)){ bHasHOM = true; break; }
 		}
 		if (!bHasHOM)
-			Msg("!Level doesn't contain HOM objects!");
+			Msg("! Level doesn't contain HOM objects!");
 //.			if (mrNo==ELog.DlgMsg(mtConfirmation,mbYes |mbNo,"Level doesn't contain HOM.\nContinue anyway?"))
 //.				return false;
 	}
@@ -491,20 +504,22 @@ bool EScene::Validate(bool bNeedOkMsg, bool bTestPortal, bool bTestHOM, bool bTe
 		ELog.Msg(mtError,"*ERROR: Can't find any Spawn Object.");
 		bRes = false;
 	}
-	if (ObjCount(OBJCLASS_LIGHT)==0){
+/* St4lker0k765: what's the point of these checks?
+	if (ObjCount(OBJCLASS_LIGHT) == 0) {
 		ELog.Msg(mtError,"*ERROR: Can't find any Light Object.");
 		bRes = false;
-	}
+	}*/
 	if (ObjCount(OBJCLASS_SCENEOBJECT)==0){
 		ELog.Msg(mtError,"*ERROR: Can't find any Scene Object.");
 		bRes = false;
 	}
-	if (bTestGlow){
+/*	if (bTestGlow)
+	{
 		if (ObjCount(OBJCLASS_GLOW)==0){
 			ELog.Msg(mtError,"*ERROR: Can't find any Glow Object.");
 			bRes = false;
 		}
-	}
+	}*/
 	if (FindDuplicateName()){
 		ELog.Msg(mtError,"*ERROR: Found duplicate object name.");
 		bRes = false;
@@ -546,7 +561,7 @@ bool EScene::Validate(bool bNeedOkMsg, bool bTestPortal, bool bTestHOM, bool bTe
 		for(ObjectIt it=lst.begin();it!=lst.end();it++){
 			EParticlesObject* S = (EParticlesObject*)(*it);
 			if (!S->GetParticles()){
-				ELog.Msg(mtError,"*ERROR: Particle System hasn't reference.");
+				ELog.Msg(mtError,"*ERROR: Particle System has no reference.");
 				bRes = false;
 			}
 		}
@@ -555,7 +570,7 @@ bool EScene::Validate(bool bNeedOkMsg, bool bTestPortal, bool bTestHOM, bool bTe
 	if (bRes){
 		if (bNeedOkMsg) ELog.DlgMsg(mtInformation,"Validation OK!");
 	}else{
-		ELog.DlgMsg(mtInformation,"Validation FAILED!");
+		ELog.DlgMsg(mtWarning,"Validation FAILED!");
 	}
 	return bRes;
 }
@@ -576,7 +591,7 @@ void EScene::SelectLightsForObject(CCustomObject* obj)
 	if(!t)
 		return;
 
-	ESceneLightTool* lt 		= dynamic_cast<ESceneLightTool*>(t);
+	ESceneLightTool* lt 		= smart_cast<ESceneLightTool*>(t);
 	VERIFY						(lt);
 	lt->SelectLightsForObject	(obj);
 }
@@ -623,7 +638,7 @@ void EScene::OnNameChange(PropValue* sender)
 	UI->RedrawScene();
 }
 
-
+// TODO: Fix this shit (it doesn't show up in LE props)
 void EScene::FillProp(LPCSTR pref, PropItemVec& items, ObjClassID cls_id)
 {
 	PHelper().CreateCaption		(items,PrepareKey(pref,"Scene\\Name"),			LTools->m_LastFileName.c_str());
@@ -701,14 +716,34 @@ void EScene::Play()
 {
 	if (IsPlayInEditor())
 		return;
+
+	if (MainForm->GetTopBarForm()->UseCameraPosForActor)
+	{
+		ActorNewPos = UI->CurrentView().m_Camera.GetPosition();
+	}
+
 	if (!BuildSpawn())
 		return;
-   // Console->Execute("main_menu off");
+
+	UI->Invalidate();
+
+	pInput->acquire();
+	UI->IsEnableInput = false;
+
+	// FX: Set first viewport for PIE
+	UI->ViewID = 0;
+
+	g_pGamePersistent->m_game_params.reset();
+	g_pGamePersistent->m_game_params.m_e_game_type = eGameIDNoGame;
 	g_hud = (CCustomHUD*)NEW_INSTANCE(CLSID_HUDMANAGER);
 	g_pGameLevel = (IGame_Level*)NEW_INSTANCE(CLSID_EDITOR_LEVEL);
 	g_pGameLevel->net_Start("all/single/alife/new", "localhost");
+	g_pGameLevel->LoadEditor(m_LevelOp.m_FNLevelPath);
 	g_pGameLevel->IR_Capture();
 	GetTool(OBJCLASS_SPAWNPOINT)->m_EditFlags.set(ESceneToolBase::flVisible, false);
+
+	Device.seqFrameMT.Add(this);
+
 	ShowCursor(FALSE);
 }
 
@@ -719,18 +754,31 @@ bool EScene::IsPlayInEditor()
 
 void EScene::Stop()
 {
-	if (!IsPlayInEditor())return;
+	if (!IsPlayInEditor())
+		return;
+
+	UI->IsEnableInput = true;
+	pInput->unacquire();
+
+	::Sound->set_geometry_env(nullptr);
+	::Sound->set_geometry_som(nullptr);
+
+	Console->Hide();
 	m_RTFlags.set(flIsStopPlayInEditor, TRUE);
+
+	g_pGamePersistent->Environment().Invalidate();
+	Device.seqFrameMT.Remove(this);
+	IsAppliedPos = false;
 }
 
-void EScene::LoadCFrom(CObjectSpace* Space, CDB::build_callback cb)
+void EScene::LoadCForm(CObjectSpace* Space, CDB::build_callback cb)
 {
-	m_cfrom_builder.Load(Space, cb);
+	m_cform_builder.Load(Space, cb);
 }
 
 IReader* EScene::LoadSpawn()
 {
-	return xr_new<IReader>(m_spawn_data.pointer(), m_spawn_data.size());
+	return new IReader(m_spawn_data.pointer(), m_spawn_data.size());
 }
 
 
@@ -754,7 +802,6 @@ bool EScene::BuildAIMap()
 		{
 			return false;;
 		}
-		UI->CloseConsole();
 		m_game_graph.clear();
 		m_RTFlags.set(flIsBuildedAIMap, TRUE);
 		m_RTFlags.set(flIsBuildedGameGraph, FALSE);
@@ -772,14 +819,12 @@ bool EScene::BuildGameGraph()
 			if (!BuildAIMap())
 				return false;
 		}
-		UI->ShowConsole();
+
 		if (!m_graph_builder.build_graph())
 		{
-			UI->CloseConsole();
 			return false;
 		}
 
-		UI->CloseConsole();
 		m_RTFlags.set(flIsBuildedGameGraph, TRUE);
 		UI->RedrawScene();
 	}
@@ -790,7 +835,7 @@ bool EScene::BuildCForm()
 {
 	if (!m_RTFlags.is(flIsBuildedCForm))
 	{
-		if (!m_cfrom_builder.build())
+		if (!m_cform_builder.build())
 		{
 			Msg("! CForm is empty!");
 			return false;
@@ -799,6 +844,18 @@ bool EScene::BuildCForm()
 		UI->RedrawScene();
 	}
 
+	if (!m_RTFlags.is(flIsBuildedSndEnv))
+	{
+		CMemoryWriter stream;
+		Builder.PreparePath();
+		xr_string lev_sound_env = Builder.MakeLevelPath("level.snd_env");
+		EFS.MarkFile(lev_sound_env.c_str(), true);
+
+		if (LSndLib->MakeEnvGeometry(stream, false))
+			stream.save_to(lev_sound_env.c_str());
+
+		m_RTFlags.set(flIsBuildedSndEnv, TRUE);
+	}
 	return true;
 }
 
@@ -844,4 +901,25 @@ bool EScene::GetSubstObjectName(const xr_string& _from, xr_string& _to) const
 	}
 
 	return (It!=It_e);
+}
+
+void EScene::OnFrame()
+{
+	if (!IsAppliedPos)
+	{
+		if (MainForm->GetTopBarForm()->UseCameraPosForActor)
+		{
+			CLASS_ID CLS = TEXT2CLSID("S_ACTOR");
+			CObject* GameActor = g_pGameLevel->Objects.FindObjectByCLS_ID(CLS);
+
+			if (GameActor == nullptr)
+				return;
+
+			string128 Command = {};
+			xr_sprintf(Command, "set_actor_position %.3f, %.3f, %.3f", ActorNewPos.x, ActorNewPos.y, ActorNewPos.z);
+			Console->Execute(Command);
+
+			IsAppliedPos = true;
+		}
+	}
 }

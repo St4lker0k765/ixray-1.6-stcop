@@ -1,9 +1,9 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 //#include "PHdynamicdata.h"
 //#include "Physics.h"
 #include "Level.h"
 #include "../xrEngine/x_ray.h"
-#include "../xrEngine/igame_persistent.h"
+#include "../xrEngine/IGame_Persistent.h"
 
 #include "ai_space.h"
 #include "game_cl_base.h"
@@ -11,10 +11,10 @@
 #include "file_transfer.h"
 #include "HUDManager.h"
 
-#include "../xrPhysics/iphworld.h"
+#include "../xrPhysics/IPHWorld.h"
 
 
-#include "phcommander.h"
+#include "PHCommander.h"
 #include "physics_game.h"
 extern	pureFrame*				g_pNetProcessor;
 
@@ -38,7 +38,7 @@ bool	CLevel::net_start_client1				()
 /*
 	string256					temp;
 	xr_sprintf						(temp,"%s %s",
-								CStringTable().translate("st_client_connecting_to").c_str(), name_of_server);
+								g_pStringTable->translate("st_client_connecting_to").c_str(), name_of_server);
 
 	g_pGamePersistent->LoadTitle				(temp);
 */
@@ -234,7 +234,7 @@ bool	CLevel::net_start_client6				()
 
 			if (game->Type() != eGameIDSingle)
 			{
-				m_file_transfer = xr_new<file_transfer::client_site>();
+				m_file_transfer = new file_transfer::client_site();
 			}
 		}
 

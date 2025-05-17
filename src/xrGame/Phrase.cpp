@@ -1,13 +1,13 @@
 ///////////////////////////////////////////////////////////////
 // Phrase.cpp
-// класс, описывающий фразу (элемент диалога)
+// РєР»Р°СЃСЃ, РѕРїРёСЃС‹РІР°СЋС‰РёР№ С„СЂР°Р·Сѓ (СЌР»РµРјРµРЅС‚ РґРёР°Р»РѕРіР°)
 ///////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
-#include "phrase.h"
+#include "StdAfx.h"
+#include "Phrase.h"
 
 #include "ai_space.h"
-#include "gameobject.h"
+#include "GameObject.h"
 #include "script_game_object.h"
 
 CPhrase::CPhrase()

@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "Actor.h"
 #include "Weapon.h"
 #include "MercuryBall.h"
@@ -7,7 +7,7 @@
 #include "../xrEngine/xr_level_controller.h"
 #include "UsableScriptObject.h"
 #include "CustomZone.h"
-#include "../xrEngine/gamemtllib.h"
+#include "../xrEngine/GameMtlLib.h"
 #include "ui/UIMainIngameWnd.h"
 #include "UIGameCustom.h"
 #include "Grenade.h"
@@ -118,7 +118,7 @@ void	CActor::PickupModeUpdate_COD	()
 
 	for (u32 o_it=0; o_it<ISpatialResult.size(); o_it++)
 	{
-		ISpatial*		spatial_	= ISpatialResult[o_it];
+		ISpatial*		spatial_	= ISpatialResult[o_it].get();
 		CInventoryItem*	pIItem	= smart_cast<CInventoryItem*> (spatial_->dcast_CObject        ());
 
 		if (0 == pIItem)											continue;
@@ -198,13 +198,13 @@ void	CActor::Check_for_AutoPickUp()
 	Fbox APU_Box;
 	APU_Box.set			(Fvector().sub(bc, m_AutoPickUp_AABB), Fvector().add(bc, m_AutoPickUp_AABB));
 
-	xr_vector<ISpatial*>	ISpatialResult_;
+	xr_vector<ISpatialShared>	ISpatialResult_;
 	g_SpatialSpace->q_box   (ISpatialResult_, 0, STYPE_COLLIDEABLE, bc, m_AutoPickUp_AABB);
 
 	// Determine visibility for dynamic part of scene
 	for (u32 o_it=0; o_it<ISpatialResult_.size(); o_it++)
 	{
-		ISpatial*		spatial_	= ISpatialResult_[o_it];
+		ISpatial*		spatial_	= ISpatialResult_[o_it].get();
 		CInventoryItem*	pIItem	= smart_cast<CInventoryItem*> (spatial_->dcast_CObject());
 
 		if (0 == pIItem)														continue;

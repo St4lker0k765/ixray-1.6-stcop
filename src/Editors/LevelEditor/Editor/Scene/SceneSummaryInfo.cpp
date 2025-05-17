@@ -89,7 +89,7 @@ void SSceneSummary::STextureInfo::Prepare	()
 
 void SSceneSummary::STextureInfo::OnHighlightClick(ButtonValue* sender, bool& bDataModified, bool& bSafe)
 {
-	ButtonValue* V = dynamic_cast<ButtonValue*>(sender); R_ASSERT(V);
+	ButtonValue* V = smart_cast<ButtonValue*>(sender); R_ASSERT(V);
     switch (V->btn_num){
     case 0: Scene->HighlightTexture	((LPCSTR)sender->tag,false,info.width,info.height,false); break;
     case 1: Scene->HighlightTexture	((LPCSTR)sender->tag,true,info.width,info.height,false); break;
@@ -116,7 +116,7 @@ void SSceneSummary::STextureInfo::FillProp	(PropItemVec& items, LPCSTR main_pref
         PHelper().CreateCaption(items,PrepareKey(pref.c_str(),"Effective Area"),shared_str().printf("%3.2f m^2",effective_area));
         PHelper().CreateCaption(items,PrepareKey(pref.c_str(),"Pixel Density"),	shared_str().printf("%3.2f p/m",_sqrt((pixel_area*info.width*info.height)/effective_area)));
 /*
-//. óáðàë èç-çà êîë-âà > 4096 
+//. ÑƒÐ±Ñ€Ð°Ð» Ð¸Ð·-Ð·Ð° ÐºÐ¾Ð»-Ð²Ð° > 4096 
         xr_string tmp 		= "on demand";
         for (objinf_map_it o_it=objects.begin(); o_it!=objects.end(); o_it++){
         	tmp += xr_string().sprintf("%s%s[%d*%3.2f]",tmp.Length()?"; ":"",o_it->first.c_str(),o_it->second.ref_count,o_it->second.area);
@@ -182,7 +182,7 @@ void SSceneSummary::STextureInfo::Export	(IWriter* F, u32& mem_use)
 
 void SSceneSummary::OnFileClick(ButtonValue* sender, bool& bModif, bool& bSafe)
 {
-	ButtonValue* V = dynamic_cast<ButtonValue*>(sender); R_ASSERT(V);
+	ButtonValue* V = smart_cast<ButtonValue*>(sender); R_ASSERT(V);
     switch (V->btn_num){
     case 0:{
     	xr_string fn = Scene->m_LevelOp.m_FNLevelPath.c_str();
@@ -307,7 +307,7 @@ void SSceneSummary::FillProp(PropItemVec& items)
     BB->OnBtnClickEvent.bind(this,&SSceneSummary::OnHighlightClick);
     for (PDVecIt pd_it=pm_colors.begin(); pd_it!=pm_colors.end(); pd_it++){
     	string128 tmp;		
-        sprintf				(tmp,"Textures\\Highlight Textures\\Color Legend\\Item #%d",pd_it-pm_colors.begin());
+        sprintf				(tmp,"Textures\\Highlight Textures\\Color Legend\\Item #%d", int(pd_it-pm_colors.begin()));
     	PHelper().CreateColor(items,PrepareKey(tmp,"Color").c_str(),&pd_it->color);
     	FloatValue* V		= PHelper().CreateFloat(items,PrepareKey(tmp,"Weight (p/m)").c_str(),&pd_it->pm,0,1000000,1,0);
         V->OnAfterEditEvent.bind(this,&SSceneSummary::OnWeightAfterEditClick);
@@ -428,14 +428,14 @@ void EScene::CollectSummaryInfo	()
     s_summary.Prepare				();
 }
 
-void EScene::ShowSummaryInfo		()
+void EScene::ShowSummaryInfo()
 {
-	PropItemVec items;
+    PropItemVec items;
     // fill items
-    s_summary.FillProp				(items);
+    s_summary.FillProp(items);
 
-   /* m_SummaryInfo->ShowProperties	();
-	m_SummaryInfo->AssignItems		(items);*/
+    LTools->GetProperties()->ClearProperties();
+    LTools->GetProperties()->AssignItems(items);
 }
 
 void EScene::ExportSummaryInfo	(LPCSTR f_name)

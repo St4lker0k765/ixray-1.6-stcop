@@ -6,17 +6,17 @@
 //	Description : ALife Simulator
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 #include "alife_simulator.h"
 #include "xrServer_Objects_ALife.h"
 #include "ai_space.h"
 #include "../xrEngine/IGame_Persistent.h"
 #include "../xrScripts/script_engine.h"
-#include "mainmenu.h"
+#include "MainMenu.h"
 #include "object_factory.h"
 #include "alife_object_registry.h"
-#include "../xrEngine/xr_ioconsole.h"
+#include "../xrEngine/XR_IOConsole.h"
 
 #ifdef DEBUG
 #	include "moving_objects.h"
@@ -29,6 +29,11 @@ extern void destroy_lua_knife_params();
 
 void restart_all				()
 {
+	if (Core.ParamsData.test(ECoreParams::keep_lua))
+	{
+		return;
+	}
+
 	destroy_lua_wpn_params		();
 	destroy_lua_knife_params	();
 	MainMenu()->DestroyInternal	(true);
@@ -57,14 +62,20 @@ CALifeSimulator::CALifeSimulator		(xrServer *server, shared_str *command_line) :
 	typedef IGame_Persistent::params params;
 	params						&p = g_pGamePersistent->m_game_params;
 	
-	string256					temp;
+	bool is_single = !xr_strcmp(p.m_game_type, "single");
+
+	if (is_single)
+	{
+		string256					temp;
 	xr_strcpy						(temp,p.m_game_or_spawn);
 	xr_strcat						(temp,"/");
 	xr_strcat						(temp,p.m_game_type);
 	xr_strcat						(temp,"/");
 	xr_strcat						(temp,p.m_alife);
 	*command_line				= temp;
-	
+
+	}
+
 	LPCSTR						start_game_callback = pSettings->r_string(alife_section,"start_game_callback");
 	luabind::functor<void>		functor;
 	R_ASSERT2					(ai().script_engine().functor(start_game_callback,functor),"failed to get start game callback");
@@ -75,9 +86,7 @@ CALifeSimulator::CALifeSimulator		(xrServer *server, shared_str *command_line) :
 		load_from_editor();
 		return;
 	}
-
-	if (!xr_strcmp(p.m_game_type, "single")) 
-	{
+	if (is_single) {
 		load(p.m_game_or_spawn, !xr_strcmp(p.m_new_or_load, "load") ? false : true, !xr_strcmp(p.m_new_or_load, "new"));
 	}
 	else //if(!xr_strcmp(p.m_alife, "alife"))

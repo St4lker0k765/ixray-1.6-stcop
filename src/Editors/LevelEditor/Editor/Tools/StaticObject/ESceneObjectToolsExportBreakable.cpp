@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "..\..\Utils\GeometryPartExtractor.h"
+#include "../../Utils/GeometryPartExtractor.h"
 #include "../xrServerEntities/xrServer_Object_Base.h"
 #include "../xrServerEntities/xrServer_Objects_Abstract.h"
 #include "../xrServerEntities/xrServer_Objects.h"
@@ -72,7 +72,7 @@ bool ESceneObjectTool::ExportBreakableObjects(SExportStreams* F)
     Fbox 		bb;
     if (!GetBox(bb)) return false;
 
-    extractor	= xr_new<CGeomPartExtractor>();
+    extractor	= new CGeomPartExtractor();
     extractor->Initialize(bb,EPS_L,2);
 
     UI->SetStatus	("Export breakable objects...");
@@ -81,7 +81,7 @@ bool ESceneObjectTool::ExportBreakableObjects(SExportStreams* F)
 	    SPBItem* pb = UI->ProgressStart(m_Objects.size(),"Prepare geometry...");
         for (ObjectIt it=m_Objects.begin(); it!=m_Objects.end(); it++){
 	        pb->Inc();
-            CSceneObject* obj 		= dynamic_cast<CSceneObject*>(*it); VERIFY(obj);
+            CSceneObject* obj 		= smart_cast<CSceneObject*>(*it); VERIFY(obj);
             if (obj->IsStatic()){
                 CEditableObject *O 	= obj->GetReference();
                 const Fmatrix& T 	= obj->_Transform();
@@ -182,7 +182,7 @@ bool ESceneObjectTool::ExportClimableObjects(SExportStreams* F)
     if (!GetBox(bb))
         return  false;
 
-    extractor	                    = xr_new<CGeomPartExtractor>();
+    extractor	                    = new CGeomPartExtractor();
     extractor->Initialize           (bb,EPS_L,int_max);
 
     UI->SetStatus	("Export climable objects...");
@@ -192,7 +192,7 @@ bool ESceneObjectTool::ExportClimableObjects(SExportStreams* F)
         for (ObjectIt it=m_Objects.begin(); it!=m_Objects.end(); it++)
         {
 	        pb->Inc();
-            CSceneObject* obj 		= dynamic_cast<CSceneObject*>(*it);
+            CSceneObject* obj 		= smart_cast<CSceneObject*>(*it);
             VERIFY                  (obj);
             if (obj->IsStatic())
             {
@@ -264,7 +264,7 @@ bool ESceneObjectTool::ExportClimableObjects(SExportStreams* F)
                     else
                     {
                         Fmatrix M; M.set			(P->m_OBB.m_rotate.i,P->m_OBB.m_rotate.j,P->m_OBB.m_rotate.k,P->m_OBB.m_translate);
-                        M.getXYZ					(P->m_RefRotate); // íå i ïîòîìó ÷òî â äâèæêå òàê
+                        M.getXYZ					(P->m_RefRotate); // Ð½Ðµ i Ð¿Ð¾Ñ‚Ð¾Ð¼Ñƒ Ñ‡Ñ‚Ð¾ Ð² Ð´Ð²Ð¸Ð¶ÐºÐµ Ñ‚Ð°Ðº
                         m_Data->position().set		(P->m_RefOffset); 
                         m_Data->angle().set			(P->m_RefRotate);
 

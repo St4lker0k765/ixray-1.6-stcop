@@ -1,21 +1,39 @@
-// ShaderEditor.cpp : Определяет точку входа для приложения.
+// ShaderEditor.cpp : РћРїСЂРµРґРµР»СЏРµС‚ С‚РѕС‡РєСѓ РІС…РѕРґР° РґР»СЏ РїСЂРёР»РѕР¶РµРЅРёСЏ.
 //
 #include "stdafx.h"
 #include "../../xrEngine/xr_input.h"
+#include "xrECore/Splash.h"
+
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
+    splash::show(IDB_SE);
+
+    splash::update(5, "Initializing Debugger");
+
     if (!IsDebuggerPresent()) Debug._initialize(false);
+
+    splash::update(15, "Initializing Core System");
+
     const char* FSName = "fs.ltx";
     Core._initialize("Shader", ELogCallback, 1, FSName);
 
-    Tools = xr_new<CShaderTool>();
+    splash::update(35, "Initializing Shader Tools");
+
+    Tools = new CShaderTool();
     STools = (CShaderTool*)Tools;
-    UI = xr_new<CShaderMain>();
+
+    splash::update(60, "Registering UI Commands");
+
+    UI = new CShaderMain();
     UI->RegisterCommands();
 
-    UIMainForm* MainForm = xr_new< UIMainForm>();
+    splash::update(85, "Creating Main UI Form");
+    UIMainForm* MainForm = new UIMainForm();
     ::MainForm = MainForm;
     UI->Push(MainForm, false);
+
+    splash::update(100, "Finalizing");
+    splash::hide();
 
     bool NeedExit = false;
     while (!NeedExit)
@@ -25,6 +43,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
         {
             switch (Event.type)
             {
+            case SDL_EVENT_WINDOW_MAXIMIZED:
+                EDevice->MaximizedWindow();
+                break;
             case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
                 EPrefs->SaveConfig();
                 NeedExit = true;

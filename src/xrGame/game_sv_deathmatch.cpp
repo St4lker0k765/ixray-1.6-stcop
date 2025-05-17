@@ -1,15 +1,15 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "game_sv_deathmatch.h"
 #include "xrServer_Objects_ALife_Monsters.h"
 #include "Level.h"
-#include "xrserver.h"
+#include "xrServer.h"
 #include "Inventory.h"
 #include "CustomZone.h"
-#include "../xrEngine/igame_persistent.h"
+#include "../xrEngine/IGame_Persistent.h"
 #include "Actor.h"
 #include "game_cl_base.h"
 #include "../xrEngine/xr_level_controller.h"
-#include "hudItem.h"
+#include "HudItem.h"
 #include "Weapon.h"
 #include "eatable_item_object.h" 
 #include "Missile.h"
@@ -18,7 +18,7 @@
 
 //#define DELAYED_ROUND_TIME	7000
 #include "ui/UIBuyWndShared.h"
-#include "../xrEngine/xr_ioconsole.h"
+#include "../xrEngine/XR_IOConsole.h"
 #include <functional>
 
 #define UNBUYABLESLOT		20
@@ -167,7 +167,7 @@ void game_sv_Deathmatch::OnRoundStart()
 		m_dwLastRPoints[i] = u32(-1);
 	}
 	//-------------------------------------
-	fastdelegate::FastDelegate1<IClient*, void> tmp_delegate;
+	xr_delegate<void(IClient*)> tmp_delegate;
 	tmp_delegate.bind(this, &game_sv_Deathmatch::RespawnPlayerAsSpectator);
 	m_server->ForEachClientDoSender(tmp_delegate);
 	m_item_respawner.respawn_all_items();

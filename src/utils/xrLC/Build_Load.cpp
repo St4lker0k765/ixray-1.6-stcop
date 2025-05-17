@@ -1,12 +1,12 @@
-#include "stdafx.h"
-#include "elight_def.h"
+#include "StdAfx.h"
+#include "ELight_def.h"
 
 
 
-#include "build.h"
+#include "Build.h"
 
 #include "../xrLC_Light/xrLC_GlobalData.h"
-#include "../xrLC_Light/xrface.h"
+#include "../xrLC_Light/xrFace.h"
 
 
 #include "../xrLC_Light/xrMU_Model.h"
@@ -164,7 +164,7 @@ void CBuild::Load	(const b_params& Params, const IReader& _in_FS)
 	{
 		while (!F->eof())
 		{
-			mu_models().push_back				(xr_new<xrMU_Model>());
+			mu_models().push_back				(new xrMU_Model());
 			mu_models().back()->Load			(*F, version );
 		}
 		F->close				();
@@ -174,7 +174,7 @@ void CBuild::Load	(const b_params& Params, const IReader& _in_FS)
 	{
 		while (!F->eof())
 		{
-			mu_refs().push_back				(xr_new<xrMU_Reference>());
+			mu_refs().push_back				(new xrMU_Reference());
 			mu_refs().back()->Load			( *F, mu_models() );
 		}		
 		F->close				();

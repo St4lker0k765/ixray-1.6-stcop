@@ -1,16 +1,10 @@
 #include "stdafx.h"
 
+static constexpr size_t	s_arena_size = 8 * 1024 * 1024;
+static char s_fake_array[s_arena_size];
 
-#ifdef USE_ARENA_ALLOCATOR
-static const u32	s_arena_size = 32 * 1024 * 1024;
-char* s_fake_array = nullptr;
-doug_lea_allocator	g_render_lua_allocator("render:lua");
-#else // #ifdef USE_ARENA_ALLOCATOR
-doug_lea_allocator	g_render_lua_allocator("render:lua");
-#endif // #ifdef USE_ARENA_ALLOCATOR
-
-
-
+doug_lea_area_allocator	g_render_lua_allocator_area(s_fake_array,"render:sdk", s_arena_size);
+//doug_lea_allocator g_render_lua_allocator("render:lua");
 
 #define RENDER_OBJECT(P,B)\
 {\
@@ -92,26 +86,27 @@ void EScene::Render( const Fmatrix& camera )
             	// before render
             	t_it->second->BeforeRender(); 
                 // sort tools
-                ESceneCustomOTool* mt = dynamic_cast<ESceneCustomOTool*>(t_it->second);
-                if (mt)           	object_tools.insert(mt);
+                ESceneCustomOTool* mt = smart_cast<ESceneCustomOTool*>(t_it->second);
+                if (mt)           	
+                    object_tools.insert(mt);
                 scene_tools.insert	(t_it->second);
             }
     }
 
     // insert objects
+    for (auto SceneTool : object_tools)
     {
-	    SceneOToolsIt t_it	= object_tools.begin();
-	    SceneOToolsIt t_end	= object_tools.end();
-        for (; t_it!=t_end; t_it++)
+        if (!SceneTool->IsLoaded)
+            continue;
+
+        ObjectList& lst = SceneTool->GetObjects();
+
+        for (CCustomObject* Obj : lst)
         {
-            ObjectList& lst = (*t_it)->GetObjects();
-            ObjectIt o_it 	= lst.begin();
-            ObjectIt o_end 	= lst.end();
-            for(;o_it!=o_end;o_it++){
-                if( (*o_it)->Visible()&& (*o_it)->IsRender() ){
-                    float distSQ = EDevice->vCameraPosition.distance_to_sqr((*o_it)->FPosition);
-                    mapRenderObjects.insertInAnyWay(distSQ,*o_it);
-                }
+            if (Obj->Visible() && Obj->IsRender())
+            {
+                float distSQ = EDevice->vCameraPosition.distance_to_sqr(Obj->FPosition);
+                mapRenderObjects.insertInAnyWay(distSQ, Obj);
             }
         }
     }

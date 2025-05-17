@@ -107,7 +107,7 @@ bool CLight::LoadLTX(CInifile& ini, LPCSTR sect_name)
 
 	if (m_Flags.is(ELight::flPointFuzzy))
     {
-        m_FuzzyData	= xr_new<SFuzzyData>();
+        m_FuzzyData	= new SFuzzyData();
         m_FuzzyData->LoadLTX(ini, sect_name);
     }
 
@@ -195,7 +195,7 @@ bool CLight::LoadStream(IReader& F)
 
 	if (D3DLIGHT_DIRECTIONAL==m_Type)
     {
-    	ESceneLightTool* lt = dynamic_cast<ESceneLightTool*>(FParentTools); VERIFY(lt);
+    	ESceneLightTool* lt = smart_cast<ESceneLightTool*>(FParentTools); VERIFY(lt);
         lt->m_SunShadowDir.set(FRotation.x,FRotation.y);
         ELog.DlgMsg( mtError, "CLight: Can't load sun.");
     	return false;
@@ -215,7 +215,7 @@ bool CLight::LoadStream(IReader& F)
 
     if (F.find_chunk(LIGHT_CHUNK_FUZZY_DATA))
     {
-        m_FuzzyData	= xr_new<SFuzzyData>();
+        m_FuzzyData	= new SFuzzyData();
         m_FuzzyData->LoadStream(F);
 		m_Flags.set(ELight::flPointFuzzy,TRUE);
     }else{

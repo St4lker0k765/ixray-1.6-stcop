@@ -14,6 +14,7 @@ bool ESceneCustomOTool::OnLoadSelectionAppendObject(CCustomObject* obj)
     Scene->GenObjectName	(obj->FClassID,buf,obj->GetName());
     obj->SetName(buf);
     Scene->AppendObject		(obj, false);
+    obj->Select             (1);
     return					true;
 }
 
@@ -61,6 +62,8 @@ void ESceneCustomOTool::SaveSelection(IWriter& F)
 
 bool ESceneCustomOTool::LoadLTX(CInifile& ini)
 {
+    IsLoaded = false;
+
 	inherited::LoadLTX	(ini);
 
     u32 count			= ini.r_u32("main", "objects_count");
@@ -88,6 +91,8 @@ bool ESceneCustomOTool::LoadLTX(CInifile& ini)
       }
 
 	UI->ProgressEnd		(pb);
+
+    IsLoaded = true;
 
     return true;
 }

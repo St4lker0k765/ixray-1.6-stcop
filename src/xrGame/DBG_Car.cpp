@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #ifdef DEBUG
 #include "PHDebug.h"
 #include "alife_space.h"
@@ -6,7 +6,7 @@
 #include "PHDestroyable.h"
 #include "Car.h"
 #include "Level.h"
-#include "ui_base.h"
+#include "../../xrUI/ui_base.h"
 
 void CCar::InitDebug()
 {

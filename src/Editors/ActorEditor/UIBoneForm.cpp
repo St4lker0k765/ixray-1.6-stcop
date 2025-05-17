@@ -1,4 +1,4 @@
-﻿#include "stdafx.h"
+#include "stdafx.h"
 
 UIBoneForm* UIBoneForm::Form = nullptr;
 UIBoneForm::UIBoneForm() {}
@@ -179,7 +179,7 @@ void UIBoneForm::Show()
         return;
     }
     VERIFY(!Form);
-    Form = xr_new<UIBoneForm>();
+    Form = new UIBoneForm();
     Form->m_EditObject = ATools->CurrentObject();
     if (Form->m_EditObject)
     {

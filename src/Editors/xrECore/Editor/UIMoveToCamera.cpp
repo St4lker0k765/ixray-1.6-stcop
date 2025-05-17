@@ -1,10 +1,10 @@
-﻿#include "stdafx.h"
+#include "stdafx.h"
 #include "UIMoveToCamera.h"
 #include "ui_main.h"
 
 UIMoveToCamera::UIMoveToCamera()
 {
-    const Fvector& CameraCurrentPosition = EDevice->m_Camera.GetPosition();
+    const Fvector& CameraCurrentPosition = UI->CurrentView().m_Camera.GetPosition();
 
     OldCameraPosition = CameraCurrentPosition;
     NewCameraPosition = CameraCurrentPosition;
@@ -40,7 +40,7 @@ void UIMoveToCamera::Draw()
 
 void UIMoveToCamera::Ok()
 {
-    EDevice->m_Camera.Set(EDevice->m_Camera.GetHPB(), NewCameraPosition);
+    UI->CurrentView().m_Camera.Set(UI->CurrentView().m_Camera.GetHPB(), NewCameraPosition);
     UI->RedrawScene();
 }
 

@@ -1,11 +1,11 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 #include "GameObject.h"
 #include "../Include/xrRender/RenderVisual.h"
 #include "../xrPhysics/PhysicsShell.h"
 #include "ai_space.h"
 #include "CustomMonster.h" 
-#include "physicobject.h"
+#include "PhysicObject.h"
 #include "HangingLamp.h"
 #include "../xrPhysics/PhysicsShell.h"
 #include "game_sv_single.h"
@@ -78,13 +78,8 @@ void CGameObject::init			()
 
 void CGameObject::Load(LPCSTR section)
 {
-	inherited::Load			(section);
-	ISpatial*		self				= smart_cast<ISpatial*> (this);
-	if (self)	{
-		// #pragma todo("to Dima: All objects are visible for AI ???")
-		// self->spatial.type	|=	STYPE_VISIBLEFORAI;	
-		self->spatial.type	&= ~STYPE_REACTTOSOUND;
-	}
+	inherited::Load(section);
+	SpatialComponent->spatial.type &= ~STYPE_REACTTOSOUND;
 }
 
 void CGameObject::reinit()
@@ -258,9 +253,9 @@ BOOL CGameObject::net_Spawn		(CSE_Abstract*	DC)
 	const CSE_Visual				*visual	= smart_cast<const CSE_Visual*>(E);
 	if (visual) {
 		cNameVisual_set				(visual_name(E));
-		if (visual->flags.test(CSE_Visual::flObstacle)) {
-			ISpatial				*self = smart_cast<ISpatial*>(this);
-			self->spatial.type		|=	STYPE_OBSTACLE;
+		if (visual->flags.test(CSE_Visual::flObstacle))
+		{
+			SpatialComponent->spatial.type |= STYPE_OBSTACLE;
 		}
 	}
 
@@ -322,13 +317,15 @@ BOOL CGameObject::net_Spawn		(CSE_Abstract*	DC)
 	if (!demo_spectator)
 		g_pGameLevel->Objects.net_Register	(this);
 
-	m_server_flags.one				();
-	if (O) {
-		m_server_flags					= O->m_flags;
+	m_server_flags.one();
+
+	if (O) 
+	{
+		m_server_flags = O->m_flags;
 		if (O->m_flags.is(CSE_ALifeObject::flVisibleForAI))
-			spatial.type				|= STYPE_VISIBLEFORAI;
+			SpatialComponent->spatial.type |= STYPE_VISIBLEFORAI;
 		else
-			spatial.type				= (spatial.type | STYPE_VISIBLEFORAI) ^ STYPE_VISIBLEFORAI;
+			SpatialComponent->spatial.type = (SpatialComponent->spatial.type | STYPE_VISIBLEFORAI) ^ STYPE_VISIBLEFORAI;
 	}
 
 	reload(*cNameSect());
@@ -708,7 +705,7 @@ void CGameObject::u_EventSend(NET_Packet& P, u32 dwFlags )
 	Level().Send(P, dwFlags);
 }
 
-#include "bolt.h"
+#include "Bolt.h"
 void CGameObject::OnH_B_Chield()
 {
 	inherited::OnH_B_Chield();
@@ -771,6 +768,11 @@ void VisualCallback	(IKinematics *tpKinematics)
 	CGameObject						*game_object = static_cast<CGameObject*>(static_cast<CObject*>(tpKinematics->GetUpdateCallbackParam()));
 	VERIFY							(game_object);
 	
+	if (game_object == nullptr)
+	{
+		return;
+	}
+
 	CGameObject::CALLBACK_VECTOR_IT	I = game_object->visual_callbacks().begin();
 	CGameObject::CALLBACK_VECTOR_IT	E = game_object->visual_callbacks().end();
 	for ( ; I != E; ++I)

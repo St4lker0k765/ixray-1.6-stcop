@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "UIChangeWeather.h"
-#include "UIXmlInit.h"
-#include "UI3tButton.h"
+#include "../../xrUI/UIXmlInit.h"
+#include "../../xrUI/Widgets/UI3tButton.h"
 #include "../game_cl_teamdeathmatch.h"
 #include "UIKickPlayer.h"
 #include "UIChangeMap.h"
@@ -85,7 +85,7 @@ bool CUIChangeWeather::OnKeyboardAction(int dik, EUIMessages keyboard_action){
 	return false;
 }
 
-#include "../../xrEngine/xr_ioconsole.h"
+#include "../../xrEngine/XR_IOConsole.h"
 
 void CUIChangeWeather::OnBtn(int i)
 {

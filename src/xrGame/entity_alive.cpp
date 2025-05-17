@@ -1,18 +1,18 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 #include "entity_alive.h"
-#include "inventoryowner.h"
+#include "InventoryOwner.h"
 #include "Inventory.h"
-#include "../xrPhysics/physicsshell.h"
-#include "../xrEngine/gamemtllib.h"
-#include "phmovementcontrol.h"
-#include "wound.h"
+#include "../xrPhysics/PhysicsShell.h"
+#include "../xrEngine/GameMtlLib.h"
+#include "PHMovementControl.h"
+#include "Wound.h"
 #include "xrMessages.h"
 #include "Level.h"
 #include "../Include/xrRender/Kinematics.h"
 #include "relation_registry.h"
 #include "monster_community.h"
-#include "entitycondition.h"
+#include "EntityCondition.h"
 #include "script_game_object.h"
 #include "Hit.h"
 #include "PHDestroyable.h"
@@ -100,8 +100,8 @@ void CEntityAlive::LoadBloodyWallmarks (LPCSTR section)
 {
 	VERIFY					(0==m_pBloodMarksVector);
 	VERIFY					(0==m_pBloodDropsVector);
-	m_pBloodMarksVector		= xr_new<FactoryPtr<IWallMarkArray> >();
-	m_pBloodDropsVector		= xr_new<FactoryPtr<IWallMarkArray> >();
+	m_pBloodMarksVector		= new FactoryPtr<IWallMarkArray>();
+	m_pBloodDropsVector		= new FactoryPtr<IWallMarkArray>();
 	
 	//кровавые отметки на стенах
 	string256	tmp;
@@ -205,6 +205,7 @@ void CEntityAlive::reload		(LPCSTR section)
 
 void CEntityAlive::shedule_Update(u32 dt)
 {
+	PROF_EVENT("CEntityAlive::shedule_Update")
 	inherited::shedule_Update	(dt);
 
 	//condition update with the game time pass
@@ -323,8 +324,7 @@ void CEntityAlive::Die	(CObject* who)
 	}
 
 	// disable react to sound
-	ISpatial* self	= smart_cast<ISpatial*> (this);
-	if (self)		self->spatial.type &=~STYPE_REACTTOSOUND;
+	SpatialComponent->spatial.type &=~STYPE_REACTTOSOUND;
 	if(character_physics_support())
 		character_physics_support()->in_Die();
 }

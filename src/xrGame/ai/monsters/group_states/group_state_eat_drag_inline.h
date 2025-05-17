@@ -1,9 +1,8 @@
 #pragma once
 
-//#include "../../../PHCharacter.h"
 #include "../../../../xrPhysics/IPHCapture.h"
 #include "../../../CaptureBoneCallback.h"
-#include "../../../../include/xrrender/Kinematics.h"
+#include "../../../../Include/xrRender/Kinematics.h"
 
 #define TEMPLATE_SPECIALIZATION template <\
 	typename _Object\
@@ -113,7 +112,7 @@ void CStateGroupDragAbstract::execute()
 {
 	if (m_failed) return;
 	
-	// Óñòàíîâèòü ïàðàìåòðû äâèæåíèÿ
+	// Ð£ÑÑ‚Ð°Ð½Ð¾Ð²Ð¸Ñ‚ÑŒ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹ Ð´Ð²Ð¸Ð¶ÐµÐ½Ð¸Ñ
 	this->object->set_action				(ACT_DRAG);
 	this->object->anim().SetSpecParams	(ASP_MOVE_BKWD);
 
@@ -133,7 +132,7 @@ void CStateGroupDragAbstract::finalize()
 {
 	inherited::finalize();	
 
-	// áðîñèòü òðóï
+	// Ð±Ñ€Ð¾ÑÐ¸Ñ‚ÑŒ Ñ‚Ñ€ÑƒÐ¿
 	if (this->object->character_physics_support()->movement()->PHCapture())
 		this->object->character_physics_support()->movement()->PHReleaseObject();
 }
@@ -143,7 +142,7 @@ void CStateGroupDragAbstract::critical_finalize()
 {
 	inherited::critical_finalize();
 
-	// áðîñèòü òðóï
+	// Ð±Ñ€Ð¾ÑÐ¸Ñ‚ÑŒ Ñ‚Ñ€ÑƒÐ¿
 	if (this->object->character_physics_support()->movement()->PHCapture())
 			this->object->character_physics_support()->movement()->PHReleaseObject();
 }

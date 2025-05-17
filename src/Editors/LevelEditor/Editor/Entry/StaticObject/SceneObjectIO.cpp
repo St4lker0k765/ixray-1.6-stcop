@@ -37,16 +37,17 @@ bool CSceneObject::LoadLTX(CInifile& ini, LPCSTR sect_name)
                     bRes = SetReference(_new_name.c_str());
                 }
             }
-            if(!bRes)
-            {
-             
 
-               /* if ( (mr==mrNone||mr==mrYes) && TfrmChoseItem::SelectItem(smObject,new_val,1))
+            if(!bRes && !Scene->isSkipCantFindDialog())
+            {
+                if (ELog.DlgMsg(mtSkip, "CSceneObject: '%s' not found in library", ref_name.data()) == mrSkip)
                 {
-                    bRes = SetReference(new_val);
-                    if(bRes)
-                        Scene->RegisterSubstObjectName(ref_name.c_str(), new_val);
-                }*/
+                    Scene->setSkipCantFindDialog(true);
+                }
+            }
+            else 
+            {
+                Msg("! CSceneObject: '%s' not found in library", ref_name.data());
             }
 
             Scene->Modified();
@@ -106,6 +107,8 @@ bool CSceneObject::LoadLTX(CInifile& ini, LPCSTR sect_name)
 
         if (!bRes) break;
     }while(0);
+
+    IsLoaded = true;
 
     return bRes;
 }
@@ -170,32 +173,34 @@ bool CSceneObject::LoadStream(IReader& F)
 
         if (!SetReference(buf))
         {
-            ELog.Msg            ( mtError, "CSceneObject: '%s' not found in library", buf );
-            bRes                = false;
-            int mr              = mrNone;
+            ELog.Msg(mtError, "CSceneObject: '%s' not found in library", buf);
+            bRes = false;
+            int mr = mrNone;
 
             xr_string       _new_name;
-            bool b_found    = Scene->GetSubstObjectName(buf, _new_name);
-            if(b_found)
+            bool b_found = Scene->GetSubstObjectName(buf, _new_name);
+            if (b_found)
             {
                 xr_string _message;
-                _message = "Object ["+xr_string(buf)+"] not found. Relace it with ["+_new_name+"] or select other from library?";
-                mr = ELog.DlgMsg(mtConfirmation,mbYes |mbNo, _message.c_str());
-                if(mrYes==mr)
+                _message = "Object [" + xr_string(buf) + "] not found. Relace it with [" + _new_name + "] or select other from library?";
+                mr = ELog.DlgMsg(mtConfirmation, mbYes | mbNo, _message.c_str());
+                if (mrYes == mr)
                 {
                     bRes = SetReference(_new_name.c_str());
                 }
             }
-            if(!bRes)
-            {
-     
 
-                /*if ( (mr==mrNone||mr==mrYes) && TfrmChoseItem::SelectItem(smObject,new_val,1))
+            static bool SkipErrors = false;
+            if (!bRes)
+            {
+                if (SkipErrors)
                 {
-                    bRes = SetReference(new_val);
-                    if(bRes)
-                        Scene->RegisterSubstObjectName(buf, new_val);
-                }*/
+                    ELog.Msg(mtError, "CSceneObject: '%s' not found in library", buf);
+                }
+                else
+                {
+                    SkipErrors = ELog.DlgMsg(mtSkip, "CSceneObject: '%s' not found in library", buf) == mrSkip;
+                }
             }
 
             Scene->Modified();
@@ -273,7 +278,8 @@ void CSceneObject::SaveStream(IWriter& F)
     
     if (m_Flags.test(flUseSurface))
     {
-        F.open_chunk(SCENEOBJ_CHUNK_FLAGS);
+        F.open_chunk(SCENEOBJ_CHUNK_SURFACE);
+
         F.w_u32(m_Surfaces.size());
         for (SurfaceIt sf_it = m_Surfaces.begin(); sf_it != m_Surfaces.end(); ++sf_it)
         {

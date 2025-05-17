@@ -1,11 +1,11 @@
 #include "StdAfx.h"
 
 #include "UIStatsPlayerInfo.h"
-#include "UIStatic.h"
+#include "../../xrUI/Widgets/UIStatic.h"
 #include "../game_cl_base.h"
 #include "UIStatsIcon.h"
 #include "../game_cl_artefacthunt.h"
-#include "../level.h"
+#include "../Level.h"
 #include "../../xrEngine/string_table.h"
 
 CUIStatsPlayerInfo::CUIStatsPlayerInfo(xr_vector<PI_FIELD_INFO>* info, CGameFont* pF, u32 text_col)

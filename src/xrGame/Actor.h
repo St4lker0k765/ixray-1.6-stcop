@@ -1,11 +1,11 @@
 #pragma once
 
-#include "../xrEngine/feel_touch.h"
-#include "../xrEngine/feel_sound.h"
+#include "../xrEngine/Feel_Touch.h"
+#include "../xrEngine/Feel_Sound.h"
 #include "../xrEngine/IInputReceiver.h"
 #include "../xrEngine/IGame_Actor.h"
 #include "../Include/xrRender/KinematicsAnimated.h"
-#include "actor_flags.h"
+#include "Actor_Flags.h"
 #include "actor_defs.h"
 #include "fire_disp_controller.h"
 #include "entity_alive.h"
@@ -14,7 +14,7 @@
 #include "InventoryOwner.h"
 #include "../xrEngine/StatGraph.h"
 #include "PhraseDialogManager.h"
-#include "ui_defs.h"
+#include "../../xrUI/ui_defs.h"
 
 #include "step_manager.h"
 #include "../xrScripts/script_export_space.h"
@@ -62,10 +62,9 @@ class CActorStatisticMgr;
 class CLocationManager;
 class CPickUpManager;
 
-class	CActor: 
+class CActor: 
 	public IGame_Actor, 
 	public CEntityAlive, 
-	public IInputReceiver,
 	public Feel::Touch,
 	public CInventoryOwner,
 	public CPhraseDialogManager,
@@ -257,6 +256,7 @@ public:
 	void					detach_Vehicle			();
 	void					steer_Vehicle			(float angle);
 	void					attach_Vehicle			(CHolderCustom* vehicle);
+	bool					use_MountedWeapon		(CHolderCustom* object);
 
 	virtual bool			can_attach				(const CInventoryItem *inventory_item) const;
 protected:
@@ -265,7 +265,6 @@ protected:
 	bool					use_Holder				(CHolderCustom* holder);
 
 	bool					use_Vehicle				(CHolderCustom* object);
-	bool					use_MountedWeapon		(CHolderCustom* object);
 	void					ActorUse				();
 
 protected:
@@ -408,13 +407,13 @@ public:
 	float					CurrentHeight; // Alex ADD: for smooth crouch
 	bool					CanSprint				();
 	bool					CanRun					();
-	void					StopAnyMove				();
+	virtual void			StopAnyMove				() override;
 
 	bool					AnyAction				()	{return (mstate_real & mcAnyAction) != 0;};
 	bool					AnyMove					()	{return (mstate_real & mcAnyMove) != 0;};
 
 	bool					is_jump					();
-protected:
+public:
 	u32						mstate_wishful;
 	u32						mstate_old;
 	u32						mstate_real;
@@ -730,7 +729,7 @@ public:
 	virtual	void				On_B_NotCurrentEntity			();
 
 private:
-	xr_vector<ISpatial*>		ISpatialResult;
+	xr_vector<ISpatialShared>		ISpatialResult;
 
 private:
 	CLocationManager				*m_location_manager;
@@ -760,6 +759,7 @@ public:
 
 			void			set_inventory_disabled (bool is_disabled) { m_inventory_disabled = is_disabled; }
 			bool			inventory_disabled () const { return m_inventory_disabled; }
+	virtual IInputReceiver* GetIIR() override { return this; }
 private:
 			void			set_state_box(u32	mstate);
 private:
@@ -767,7 +767,11 @@ private:
 	bool					m_inventory_disabled;
 //static CPhysicsShell		*actor_camera_shell;
 
-DECLARE_SCRIPT_REGISTER_FUNCTION
+	DECLARE_SCRIPT_REGISTER_FUNCTION
+
+public:
+	bool OnLadder = false;
+	IC bool is_ladder() const { return OnLadder; };
 };
 
 extern bool		isActorAccelerated			(u32 mstate, bool ZoomMode);

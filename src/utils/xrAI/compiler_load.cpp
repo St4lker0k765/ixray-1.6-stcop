@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "compiler.h"
 //.#include "communicate.h"
 #include "levelgamedef.h"
@@ -58,7 +58,7 @@ void xrLoad(LPCSTR name, bool draft_mode)
 		// shaders
 		string_path				N__;
 		FS.update_path			(N__,"$game_data$","shaders_xrlc.xr");
-		g_shaders_xrlc			= xr_new<Shader_xrLC_LIB> ();
+		g_shaders_xrlc			= new Shader_xrLC_LIB ();
 		g_shaders_xrlc->Load	(N__);
 
 		// Load CFORM

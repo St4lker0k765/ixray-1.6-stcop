@@ -3,7 +3,7 @@
 UIParticlesTool::UIParticlesTool()
 {
     m_Current = nullptr;
-    m_ParticlesList = xr_new<UIItemListForm>();
+    m_ParticlesList = new UIItemListForm();
     m_ParticlesList->SetOnItemFocusedEvent(TOnILItemFocused(this, &UIParticlesTool::OnItemFocused));
     ListItemsVec items;
     for (PS::PEDIt E = ::RImplementation.PSLibrary.FirstPED(); E != ::RImplementation.PSLibrary.LastPED(); E++) {
@@ -56,13 +56,15 @@ void UIParticlesTool::Draw()
 	}
 	ImGui::Separator();
     ImGui::SetNextItemOpen(true, ImGuiCond_FirstUseEver);
-    if (ImGui::TreeNode("Particles"))
-	{
-		ImGui::Unindent(ImGui::GetTreeNodeToLabelSpacing());
-		m_ParticlesList->Draw();
-		ImGui::Indent(ImGui::GetTreeNodeToLabelSpacing());
-        ImGui::TreePop();
+}
+
+void UIParticlesTool::DrawObjectsList()
+{
+    if (ImGui::Begin("Edit group items"))
+    {
+        m_ParticlesList->Draw();
     }
+    ImGui::End();
 }
 
 void UIParticlesTool::SelByRef(bool flag)

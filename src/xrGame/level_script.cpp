@@ -6,7 +6,7 @@
 //	Description : Level script export
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 #include "Level.h"
 #include "Actor.h"
@@ -14,11 +14,11 @@
 #include "patrol_path_storage.h"
 #include "xrServer.h"
 #include "client_spawn_manager.h"
-#include "../xrEngine/igame_persistent.h"
+#include "../xrEngine/IGame_Persistent.h"
 #include "game_cl_base.h"
 #include "UIGameCustom.h"
-#include "UI/UIDialogWnd.h"
-#include "date_time.h"
+#include "../xrUI/Widgets/UIDialogWnd.h"
+#include "../xrEngine/date_time.h"
 #include "ai_space.h"
 #include "level_graph.h"
 #include "PHCommander.h"
@@ -32,28 +32,20 @@
 #include "physics_world_scripted.h"
 #include "alife_simulator.h"
 #include "alife_time_manager.h"
-#include "UI/UIGameTutorial.h"
+#include "ui/UIGameTutorial.h"
 #include "../xrEngine/string_table.h"
 #include "ui/UIInventoryUtilities.h"
 #include "alife_object_registry.h"
 #include "xrServer_Objects_ALife_Monsters.h"
 #include "HUDAnimItem.h"
 #include "ActorCondition.h"
+#include "player_hud.h"
 
 using namespace luabind;
 
-namespace ixray::save
+void show_legs(bool val)
 {
-	xr_string CurrentSaveStage = "";
-	void SaveError()
-	{
-		R_ASSERT2(!"Save file is big. Chunk: ", CurrentSaveStage.c_str());
-	}
-
-	void SaveStage(const char* Name)
-	{
-		CurrentSaveStage = Name;
-	}
+	g_player_hud->m_show_legs = val;
 }
 
 void block_action_script(int cmd) {
@@ -636,7 +628,7 @@ void iterate_sounds2				(LPCSTR prefix, u32 max_count, luabind::object object, l
 	iterate_sounds				(prefix,max_count,temp);
 }
 
-#include "actoreffector.h"
+#include "ActorEffector.h"
 float add_cam_effector(LPCSTR fn, int id, bool cyclic, LPCSTR cb_func)
 {
 	CAnimatorCamEffectorScriptCB* e		= new CAnimatorCamEffectorScriptCB(cb_func);
@@ -703,7 +695,7 @@ void remove_complex_effector(int id)
 	RemoveEffector(Actor(),id);
 }
 
-#include "postprocessanimator.h"
+#include "PostprocessAnimator.h"
 void add_pp_effector(LPCSTR fn, int id, bool cyclic)
 {
 	CPostprocessAnimator* pp		= new CPostprocessAnimator(id, cyclic);
@@ -833,7 +825,7 @@ void stop_tutorial()
 
 LPCSTR translate_string(LPCSTR str)
 {
-	return *CStringTable().translate(str);
+	return *g_pStringTable->translate(str);
 }
 
 bool has_active_tutotial()
@@ -1151,11 +1143,16 @@ void CLevel::script_register(lua_State *L)
 		def("play", &CHUDAnimItem::PlayHudAnim)
 	];
 
-	module(L,"actor_stats")
+	module(L, "player_hud")
 	[
-		def("add_points",						&add_actor_points),
-		def("add_points_str",					&add_actor_points_str),
-		def("get_points",						&get_actor_points)
+		def("show_legs", &show_legs)
+	];
+
+	module(L, "actor_stats")
+	[
+		def("add_points", &add_actor_points),
+		def("add_points_str", &add_actor_points_str),
+		def("get_points", &get_actor_points)
 	];
 
 	module(L)
@@ -1179,12 +1176,6 @@ void CLevel::script_register(lua_State *L)
 		def("community_relation",				&g_get_community_relation),
 		def("set_community_relation",			&g_set_community_relation),
 		def("get_general_goodwill_between",		&g_get_general_goodwill_between)
-	];
-
-	module(L,"save")
-	[
-		def("call_error",	&ixray::save::SaveError),
-		def("set_stage",	&ixray::save::SaveStage)
 	];
 
 	module(L,"game")

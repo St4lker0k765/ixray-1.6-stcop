@@ -1,9 +1,9 @@
-#include "stdafx.h"
-#include "build.h"
+#include "StdAfx.h"
+#include "Build.h"
 #include "../xrQSlim/src/MxStdModel.h"
 #include "../xrQSlim/src/MxQSlim.h"
-#include "../../xrcdb/xrcdb.h"
-#include "../../common/face_smoth_flags.h"
+#include "../../xrCDB/xrCDB.h"
+#include "../xrLC_Light/face_smoth_flags.h"
 
 #define MAX_DECIMATE_ERROR 0.0005f
 #define COMPACTNESS_RATIO  0.001f
@@ -78,7 +78,7 @@ void SimplifyCFORM		(CDB::CollectorPacked& CL)
 	}
 
 	// prepare model
-	MxStdModel* mdl			= xr_new<MxStdModel>(base_verts_cnt,base_faces_cnt);
+	MxStdModel* mdl			= new MxStdModel(base_verts_cnt,base_faces_cnt);
 
 	// transfer vertices
 	for (u32 v_idx=0; v_idx<base_verts_cnt; v_idx++){
@@ -95,7 +95,7 @@ void SimplifyCFORM		(CDB::CollectorPacked& CL)
 	CL.clear				();
 
 	// create and initialize qslim
-	MxEdgeQSlim* slim		= xr_new<MxEdgeQSlim>(mdl);
+	MxEdgeQSlim* slim		= new MxEdgeQSlim(mdl);
 	slim->boundary_weight	= 1000000.f;
 	slim->compactness_ratio	= COMPACTNESS_RATIO;
 	slim->meshing_penalty	= 1000000.f;

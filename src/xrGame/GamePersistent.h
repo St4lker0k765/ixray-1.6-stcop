@@ -16,7 +16,7 @@ class CGamePersistent:
 	using inherited = IGame_Persistent;
 
 	// ambient particles
-	CParticlesObject*	ambient_particles; 
+	xr_shared_ptr<CParticlesObject>	ambient_particles; 
 	u32					ambient_sound_next_time		[20]; //max snd channels
 	u32					ambient_effect_next_time;
 	u32					ambient_effect_stop_time;
@@ -33,7 +33,7 @@ class CGamePersistent:
 	EVENT				eQuickLoad;
 	Fvector				m_dof		[4];	// 0-dest 1-current 2-from 3-original
 
-	fastdelegate::FastDelegate0<> m_intro_event;
+	xr_delegate<void()> m_intro_event;
 
 	void 		start_logo_intro		();
 	void 		update_logo_intro		();
@@ -53,7 +53,6 @@ class CGamePersistent:
 	void				UpdateDof				();
 
 public:
-	ui_core*			m_pUI_core;
 	IReader*			pDemoFile;
 	u32					uTime2Change;
 	EVENT				eDemoStart;

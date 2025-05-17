@@ -10,16 +10,15 @@
 #include <commctrl.h>
 #pragma warning(default:4995)
 
-#define ENGINE_API
 #define SCRIPTS_API
 #define ECORE_API
 #define XR_EPROPS_API
-#include "../../xrcore/clsid.h"
+#include "../../xrCore/clsid.h"
 #include "defines.h"
 #include "../xrForms/cl_log.h"
-#include "../../xrcdb/xrCDB.h"
+#include "../../xrCDB/xrCDB.h"
 #include "_d3d_extensions.h"
-
+#include "../../xrEngine/stdafx.h"
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>

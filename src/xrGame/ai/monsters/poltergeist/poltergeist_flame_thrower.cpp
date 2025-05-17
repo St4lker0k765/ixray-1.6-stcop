@@ -1,13 +1,13 @@
 #include "stdafx.h"
 #include "poltergeist.h"
-#include "../../../../xrServerEntities/xrmessages.h"
+#include "../../../../xrServerEntities/xrMessages.h"
 #include "../../../ai_object_location.h"
 #include "../../../level_graph.h"
-#include "../../../level.h"
+#include "../../../Level.h"
 #include "../../../ai_space.h"
 #include "../../../restricted_object.h"
-#include "../../../actor.h"
-#include "../../../actorEffector.h"
+#include "../../../Actor.h"
+#include "../../../ActorEffector.h"
 #include "../ai_monster_effector.h"
 
 CPolterFlame::CPolterFlame(CPoltergeist *polter) : inherited (polter)
@@ -121,7 +121,7 @@ void CPolterFlame::select_state(SFlameElement *elem, EFlameState state)
 		break;
 	case eStop:		
 		// stop fire particles
-		if (elem->particles_object) CParticlesObject::Destroy(elem->particles_object);
+		if (elem->particles_object) Particles::Details::Destroy(elem->particles_object);
 		
 		// start finish particles
 		m_object->PlayParticles(m_particles_stop,elem->position,elem->target_dir,TRUE);
@@ -193,7 +193,7 @@ void CPolterFlame::update_schedule()
 
 	// remove all flames in state stop
 	
-	// óäàëèòü âñå ýëåìåíòû, âûïîëíåíèå êîòîðûõ çàêîí÷åíî
+	// ÑƒÐ´Ð°Ð»Ð¸Ñ‚ÑŒ Ð²ÑÐµ ÑÐ»ÐµÐ¼ÐµÐ½Ñ‚Ñ‹, Ð²Ñ‹Ð¿Ð¾Ð»Ð½ÐµÐ½Ð¸Ðµ ÐºÐ¾Ñ‚Ð¾Ñ€Ñ‹Ñ… Ð·Ð°ÐºÐ¾Ð½Ñ‡ÐµÐ½Ð¾
 	m_flames.erase	(
 		std::remove_if(
 			m_flames.begin(),
@@ -230,10 +230,10 @@ void CPolterFlame::on_destroy()
 	FLAME_ELEMS_IT I = m_flames.begin();
 	FLAME_ELEMS_IT E = m_flames.end();
 
-	// Ïðîéòè ïî âñåì îáúåêòàì è ïðîâåðèòü íà õèò âðàãà
+	// ÐŸÑ€Ð¾Ð¹Ñ‚Ð¸ Ð¿Ð¾ Ð²ÑÐµÐ¼ Ð¾Ð±ÑŠÐµÐºÑ‚Ð°Ð¼ Ð¸ Ð¿Ñ€Ð¾Ð²ÐµÑ€Ð¸Ñ‚ÑŒ Ð½Ð° Ñ…Ð¸Ñ‚ Ð²Ñ€Ð°Ð³Ð°
 	for ( ;I != E; ++I) {
 		if ((*I)->sound._feedback()) (*I)->sound.stop();
-		if ((*I)->particles_object) CParticlesObject::Destroy((*I)->particles_object);
+		if ((*I)->particles_object) Particles::Details::Destroy((*I)->particles_object);
 
 		xr_delete((*I));
 	}

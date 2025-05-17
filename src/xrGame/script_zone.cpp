@@ -6,7 +6,7 @@
 //	Description : Script zone object
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 #include "script_zone.h"
 #include "script_game_object.h"
@@ -50,6 +50,7 @@ void CScriptZone::net_Destroy	()
 
 void CScriptZone::shedule_Update(u32 dt)
 {
+	PROF_EVENT("CScriptZone::shedule_Update");
 	inherited::shedule_Update	(dt);
 
 	const Fsphere				&s = CFORM()->getSphere();

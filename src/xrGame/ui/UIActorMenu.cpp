@@ -1,13 +1,13 @@
 #include "stdafx.h"
 #include "UIActorMenu.h"
 #include "UIActorStateInfo.h"
-#include "../actor.h"
-#include "../uigamesp.h"
-#include "../inventory.h"
+#include "../Actor.h"
+#include "../UIGameSP.h"
+#include "../Inventory.h"
 #include "../inventory_item.h"
 #include "../InventoryBox.h"
 #include "object_broker.h"
-#include "../ai/monsters/BaseMonster/base_monster.h"
+#include "../ai/monsters/basemonster/base_monster.h"
 #include "UIInventoryUtilities.h"
 #include "game_cl_base.h"
 
@@ -25,20 +25,20 @@
 #include "../CustomDetector.h"
 #include "../eatable_item.h"
 
-#include "UIProgressBar.h"
-#include "UICursor.h"
+#include "../../xrUI/Widgets/UIProgressBar.h"
+#include "../../xrUI/UICursor.h"
 #include "UICellItem.h"
 #include "UICharacterInfo.h"
 #include "UIItemInfo.h"
 #include "UIDragDropListEx.h"
 #include "UIDragDropReferenceList.h"
 #include "UIInventoryUpgradeWnd.h"
-#include "UI3tButton.h"
-#include "UIBtnHint.h"
+#include "../../xrUI/Widgets/UI3tButton.h"
+#include "../../xrUI/Widgets/UIBtnHint.h"
 #include "UIMessageBoxEx.h"
-#include "UIPropertiesBox.h"
+#include "../../xrUI/Widgets/UIPropertiesBox.h"
 #include "UIMainIngameWnd.h"
-#include "../Trade.h"
+#include "../trade.h"
 #include "Car.h"
 #include "../xrEngine/string_table.h"
 
@@ -57,7 +57,7 @@ void CUIActorMenu::SetActor(CInventoryOwner* io)
 	}
 	else
 	{
-		UpdateActorMP();
+		SetActorInfoMP();
 	}
 }
 
@@ -242,6 +242,7 @@ void CUIActorMenu::Draw()
 	CurrentGameUI()->UIMainIngameWnd->DrawMainIndicatorsForInventory();
 
 	inherited::Draw	();
+	//m_ActorStateInfo->Draw();
 	m_ItemInfo->Draw();
 	m_hint_wnd->Draw();
 }
@@ -880,25 +881,40 @@ void CUIActorMenu::ResetMode()
 	SetCurrentItem				(nullptr);
 }
 
-void CUIActorMenu::UpdateActorMP()
+void CUIActorMenu::UpdateActorMoneyMP()
 {
 	if ( !&Level() || !Level().game || !Game().local_player || !m_pActorInvOwner || IsGameTypeSingle() )
 	{
-		m_ActorCharacterInfo->ClearInfo();
-		m_ActorMoney->SetText( "" );
+		m_ActorMoney->SetText("");
 		return;
 	}
 
-	int money = Game().local_player->money_for_round;
+	s32 money = Game().local_player->money_for_round;
 
 	string64 buf;
 	xr_sprintf( buf, "%d RU", money );
 	m_ActorMoney->SetText( buf );
-
-	m_ActorCharacterInfo->InitCharacterMP( Game().local_player->getName(), "ui_npc_u_nebo_1" );
-
 }
 
+void CUIActorMenu::SetActorInfoMP()
+{
+	if (!&Level() || !Level().game || !Game().local_player || !m_pActorInvOwner || IsGameTypeSingle())
+	{
+		m_ActorCharacterInfo->ClearInfo();
+		return;
+	}
+
+	if (IsGameTypeSingleCompatible())
+	{
+		m_ActorCharacterInfo->InitCharacterMP(m_pActorInvOwner);
+	}
+	else
+	{
+		m_ActorCharacterInfo->InitCharacterMP(Game().local_player->getName(), "ui_npc_u_nebo_1");
+	}
+
+	UpdateActorMoneyMP();
+}
 bool CUIActorMenu::CanSetItemToList(PIItem item, CUIDragDropListEx* l, u16& ret_slot)
 {
 	u16 item_slot = item->BaseSlot();

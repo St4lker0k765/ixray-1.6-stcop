@@ -1,8 +1,8 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 #include "UIGameCustom.h"
 #include "Level.h"
-#include "ui/uistatic.h"
+#include "../../xrUI/Widgets/uistatic.h"
 
 using namespace luabind;
 
@@ -19,7 +19,7 @@ void CUIGameCustom::script_register(lua_State *L)
 			.def_readwrite("m_endTime",		&SDrawStaticStruct::m_endTime)
 			.def("wnd",					&SDrawStaticStruct::wnd),
 
-			class_< CUIGameCustom >("CUIGameCustom")
+			class_<CUIGameCustom, CDialogHolder>("CUIGameCustom")
 			.def("AddDialogToRender",		&CUIGameCustom::AddDialogToRender)
 			.def("RemoveDialogToRender",	&CUIGameCustom::RemoveDialogToRender)
 			.def("AddCustomStatic",			&CUIGameCustom::AddCustomStatic)

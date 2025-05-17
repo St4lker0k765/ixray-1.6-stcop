@@ -1,13 +1,13 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "xrHemisphere.h"
-#include "build.h"
+#include "Build.h"
 
 #include "../xrForms/xrThread.h"
 #include "../xrLC_Light/xrLC_GlobalData.h"
-#include "../xrLC_Light/xrface.h"
+#include "../xrLC_Light/xrFace.h"
 
-#include "../../xrcore/xrSyncronize.h"
-#include "../../xrcdb/xrcdb.h"
+#include "../../xrCore/xrSyncronize.h"
+#include "../../xrCDB/xrCDB.h"
 
 
 #define	GI_THREADS		2
@@ -203,7 +203,7 @@ void	CBuild::xrPhase_Radiosity	()
 	// perform all the work
 	u32	setup_old = (u32)task->size();
 	for (int t=0; t<GI_THREADS; t++)	{
-		gi.start(xr_new<CGI>(t));
+		gi.start(new CGI(t));
 		Sleep	(10);
 	}
 	gi.wait					();

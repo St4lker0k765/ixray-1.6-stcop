@@ -3,21 +3,21 @@
 
 #include "UITalkDialogWnd.h"
 
-#include "../actor.h"
+#include "../Actor.h"
 #include "../trade.h"
 #include "../UIGameSP.h"
 #include "../PDA.h"
 #include "../../xrServerEntities/character_info.h"
-#include "../level.h"
+#include "../Level.h"
 
 #include "../PhraseDialog.h"
 #include "../PhraseDialogManager.h"
 
 #include "../game_cl_base.h"
 #include "../../xrEngine/string_table.h"
-#include "../../xrEngine/cameraBase.h"
-#include "UIXmlInit.h"
-#include "UI3tButton.h"
+#include "../../xrEngine/CameraBase.h"
+#include "../../xrUI/UIXmlInit.h"
+#include "../../xrUI/Widgets/UI3tButton.h"
 
 CUITalkWnd::CUITalkWnd()
 {
@@ -62,14 +62,14 @@ void CUITalkWnd::InitTalkDialog()
 	m_pOurDialogManager = smart_cast<CPhraseDialogManager*>(m_pOurInvOwner);
 	m_pOthersDialogManager = smart_cast<CPhraseDialogManager*>(m_pOthersInvOwner);
 
-	//èìåíà ñîáåñåäíèêîâ
+	//Ð¸Ð¼ÐµÐ½Ð° ÑÐ¾Ð±ÐµÑÐµÐ´Ð½Ð¸ÐºÐ¾Ð²
 	UITalkDialogWnd->UICharacterInfoLeft.InitCharacter		(m_pOurInvOwner->object_id());
 	UITalkDialogWnd->UICharacterInfoRight.InitCharacter		(m_pOthersInvOwner->object_id());
 
 //.	UITalkDialogWnd->UIDialogFrame.UITitleText.SetText		(m_pOthersInvOwner->Name());
 //.	UITalkDialogWnd->UIOurPhrasesFrame.UITitleText.SetText	(m_pOurInvOwner->Name());
 	
-	//î÷èñòèòü ëîã ñîîáùåíèé
+	//Ð¾Ñ‡Ð¸ÑÑ‚Ð¸Ñ‚ÑŒ Ð»Ð¾Ð³ ÑÐ¾Ð¾Ð±Ñ‰ÐµÐ½Ð¸Ð¹
 	UITalkDialogWnd->ClearAll();
 
 	InitOthersStartDialog					();
@@ -90,11 +90,11 @@ void CUITalkWnd::InitOthersStartDialog()
 		m_pCurrentDialog = m_pOthersDialogManager->AvailableDialogs().front();
 		m_pOthersDialogManager->InitDialog(m_pOurDialogManager, m_pCurrentDialog);
 		
-		//ñêàçàòü ôðàçó
+		//ÑÐºÐ°Ð·Ð°Ñ‚ÑŒ Ñ„Ñ€Ð°Ð·Ñƒ
 		AddAnswer(m_pCurrentDialog->GetPhraseText("0"), m_pOthersInvOwner->Name());
 		m_pOthersDialogManager->SayPhrase(m_pCurrentDialog, "0");
 
-		//åñëè äèàëîã çàâåðøèëñÿ, ïåðåéòè â ðåæèì âûáîðà òåìû
+		//ÐµÑÐ»Ð¸ Ð´Ð¸Ð°Ð»Ð¾Ð³ Ð·Ð°Ð²ÐµÑ€ÑˆÐ¸Ð»ÑÑ, Ð¿ÐµÑ€ÐµÐ¹Ñ‚Ð¸ Ð² Ñ€ÐµÐ¶Ð¸Ð¼ Ð²Ñ‹Ð±Ð¾Ñ€Ð° Ñ‚ÐµÐ¼Ñ‹
 		if(!m_pCurrentDialog || m_pCurrentDialog->IsFinished()) ToTopicMode();
 	}
 }
@@ -108,8 +108,8 @@ void CUITalkWnd::UpdateQuestions()
 {
 	UITalkDialogWnd->ClearQuestions();
 
-	//åñëè íåò àêòèâíîãî äèàëîãà, òî
-	//ðåæèìà âûáîðà òåìû
+	//ÐµÑÐ»Ð¸ Ð½ÐµÑ‚ Ð°ÐºÑ‚Ð¸Ð²Ð½Ð¾Ð³Ð¾ Ð´Ð¸Ð°Ð»Ð¾Ð³Ð°, Ñ‚Ð¾
+	//Ñ€ÐµÐ¶Ð¸Ð¼Ð° Ð²Ñ‹Ð±Ð¾Ñ€Ð° Ñ‚ÐµÐ¼Ñ‹
 	if(!m_pCurrentDialog)
 	{
 		m_pOurDialogManager->UpdateAvailableDialogs(m_pOthersDialogManager);
@@ -124,14 +124,14 @@ void CUITalkWnd::UpdateQuestions()
 	{
 		if(m_pCurrentDialog->IsWeSpeaking(m_pOurDialogManager))
 		{
-			//åñëè â ñïèñêå äîïóñòèìûõ ôðàç òîëüêî îäíà ôðàçà ïóñòûøêà, òî ïðîñòî
-			//ñêàçàòü (èãðîê ñàì íå ïðîèçâîäèò íèêàêèõ äåéñòâèé)
+			//ÐµÑÐ»Ð¸ Ð² ÑÐ¿Ð¸ÑÐºÐµ Ð´Ð¾Ð¿ÑƒÑÑ‚Ð¸Ð¼Ñ‹Ñ… Ñ„Ñ€Ð°Ð· Ñ‚Ð¾Ð»ÑŒÐºÐ¾ Ð¾Ð´Ð½Ð° Ñ„Ñ€Ð°Ð·Ð° Ð¿ÑƒÑÑ‚Ñ‹ÑˆÐºÐ°, Ñ‚Ð¾ Ð¿Ñ€Ð¾ÑÑ‚Ð¾
+			//ÑÐºÐ°Ð·Ð°Ñ‚ÑŒ (Ð¸Ð³Ñ€Ð¾Ðº ÑÐ°Ð¼ Ð½Ðµ Ð¿Ñ€Ð¾Ð¸Ð·Ð²Ð¾Ð´Ð¸Ñ‚ Ð½Ð¸ÐºÐ°ÐºÐ¸Ñ… Ð´ÐµÐ¹ÑÑ‚Ð²Ð¸Ð¹)
 			if( !m_pCurrentDialog->PhraseList().empty() && m_pCurrentDialog->allIsDummy() ){
 				CPhrase* phrase = m_pCurrentDialog->PhraseList()[Random.randI(m_pCurrentDialog->PhraseList().size())];
 				SayPhrase(phrase->GetID());
 			};
 
-			//âûáîð äîñòóïíûõ ôðàç èç àêòèâíîãî äèàëîãà
+			//Ð²Ñ‹Ð±Ð¾Ñ€ Ð´Ð¾ÑÑ‚ÑƒÐ¿Ð½Ñ‹Ñ… Ñ„Ñ€Ð°Ð· Ð¸Ð· Ð°ÐºÑ‚Ð¸Ð²Ð½Ð¾Ð³Ð¾ Ð´Ð¸Ð°Ð»Ð¾Ð³Ð°
 			if( m_pCurrentDialog && !m_pCurrentDialog->allIsDummy() )
 			{			
 				int number = 0;
@@ -173,6 +173,7 @@ void CUITalkWnd::SendMessage(CUIWindow* pWnd, s16 msg, void* pData)
 //////////////////////////////////////////////////////////////////////////
 void UpdateCameraDirection(CGameObject* pTo)
 {
+	if (!pTo) return;
 	CCameraBase* cam = Actor()->cam_Active();
 
 	Fvector des_dir; 
@@ -196,7 +197,7 @@ void UpdateCameraDirection(CGameObject* pTo)
 
 void CUITalkWnd::Update()
 {
-	//îñòàíîâèòü ðàçãîâîð, åñëè íóæíî
+	//Ð¾ÑÑ‚Ð°Ð½Ð¾Ð²Ð¸Ñ‚ÑŒ Ñ€Ð°Ð·Ð³Ð¾Ð²Ð¾Ñ€, ÐµÑÐ»Ð¸ Ð½ÑƒÐ¶Ð½Ð¾
 	if (g_actor && m_pActor && !m_pActor->IsTalking() )
 	{
 		StopTalk();
@@ -269,7 +270,7 @@ void CUITalkWnd::AskQuestion()
 	if(m_bNeedToUpdateQuestions) return;//quick dblclick:(
 	shared_str					phrase_id;
 
-	//èãðîê âûáðàë òåìó ðàçãîâîðà
+	//Ð¸Ð³Ñ€Ð¾Ðº Ð²Ñ‹Ð±Ñ€Ð°Ð» Ñ‚ÐµÐ¼Ñƒ Ñ€Ð°Ð·Ð³Ð¾Ð²Ð¾Ñ€Ð°
 	if(TopicMode())
 	{
 		if ( (UITalkDialogWnd->m_ClickedQuestionID =="") ||
@@ -300,7 +301,7 @@ void CUITalkWnd::SayPhrase(const shared_str& phrase_id)
 
 	AddAnswer(m_pCurrentDialog->GetPhraseText(phrase_id), m_pOurInvOwner->Name());
 	m_pOurDialogManager->SayPhrase(m_pCurrentDialog, phrase_id);
-	//åñëè äèàëîã çàâåðøèëñÿ, ïåðåéòè â ðåæèì âûáîðà òåìû
+	//ÐµÑÐ»Ð¸ Ð´Ð¸Ð°Ð»Ð¾Ð³ Ð·Ð°Ð²ÐµÑ€ÑˆÐ¸Ð»ÑÑ, Ð¿ÐµÑ€ÐµÐ¹Ñ‚Ð¸ Ð² Ñ€ÐµÐ¶Ð¸Ð¼ Ð²Ñ‹Ð±Ð¾Ñ€Ð° Ñ‚ÐµÐ¼Ñ‹
 	if(m_pCurrentDialog->IsFinished()) ToTopicMode();
 }
 
@@ -314,7 +315,7 @@ void CUITalkWnd::AddQuestion(const shared_str& text, const shared_str& value, in
 
 void CUITalkWnd::AddAnswer(const shared_str& text, LPCSTR SpeakerName)
 {
-	//äëÿ ïóñòîé ôðàçû âîîáùå íè÷åãî íå âûâîäèì
+	//Ð´Ð»Ñ Ð¿ÑƒÑÑ‚Ð¾Ð¹ Ñ„Ñ€Ð°Ð·Ñ‹ Ð²Ð¾Ð¾Ð±Ñ‰Ðµ Ð½Ð¸Ñ‡ÐµÐ³Ð¾ Ð½Ðµ Ð²Ñ‹Ð²Ð¾Ð´Ð¸Ð¼
 	if(text.size() == 0)
 	{
 		return;
@@ -385,7 +386,10 @@ bool CUITalkWnd::OnKeyboardAction(int dik, EUIMessages keyboard_action)
 void CUITalkWnd::PlaySnd(LPCSTR text)
 {
 	u32 text_len = xr_strlen(text);
-	if ( text_len == 0 )
+	
+	// Very crude hack with check for maximum path size
+	// Script result passes here not the text ID, but the fully localized variant
+	if ( text_len == 0 || text_len >= _MAX_PATH)
 	{
 		return;
 	}

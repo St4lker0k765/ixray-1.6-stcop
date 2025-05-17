@@ -3,8 +3,8 @@
 #pragma hdrstop
 
 #include "SHGameMtlPairTools.h"
-#include "UI_ShaderTools.h"
-#include "../xrEProps/folderlib.h"
+#include "UI_shadertools.h"
+#include "../xrEProps/FolderLib.h"
 //------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
@@ -69,6 +69,15 @@ void CSHGameMtlPairTools::FillItemList()
                 LHelper().CreateItem(items, GameMaterialLibraryEditors->MtlPairToName(M0->GetID(),M1->GetID()),0);
         }
     }
+
+    // Sort motions 
+    std::sort(items.begin(), items.end(), [](ListItem* ItemA, ListItem* ItemB)
+    {
+        xr_string NameA = ItemA->Key();
+        xr_string NameB = ItemB->Key();
+        return NameA < NameB;
+    });
+
 	Ext.m_Items->AssignItems(items);
 	m_MtlPair=0;
 }
@@ -78,8 +87,6 @@ void CSHGameMtlPairTools::Load()
 {
     m_bLockUpdate		= TRUE;
 
-    GameMaterialLibraryEditors->Unload		();
-    GameMaterialLibraryEditors->Load			();
     ResetCurrentItem	();
 
     m_bLockUpdate		= FALSE;
@@ -110,8 +117,12 @@ void CSHGameMtlPairTools::RealUpdateList()
 void CSHGameMtlPairTools::RealUpdateProperties()
 {
 	PropItemVec items;
-    if (m_MtlPair)	static_cast<SGameMtlPairEditor*>(m_MtlPair)->FillProp(items);
-    Ext.m_ItemProps->AssignItems		(items);
+
+    if (m_MtlPair)
+        dynamic_cast<SGameMtlPairEditor*>(m_MtlPair)->FillProp(items);
+
+    Ext.m_ItemProps->ClearProperties();
+    Ext.m_ItemProps->AssignItems(items);
 }
 //---------------------------------------------------------------------------
 

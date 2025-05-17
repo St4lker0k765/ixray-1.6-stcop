@@ -9,20 +9,19 @@
 #include "stdafx.h"
 #include "pch_script.h"
 #include "base_monster.h"
-#include "../../../actor.h"
+#include "../../../Actor.h"
 #include "../../../ActorEffector.h"
 #include "../ai_monster_effector.h"
 #include "../../../../Include/xrRender/KinematicsAnimated.h"
 #include "../../../sound_player.h"
-#include "../../../level.h"
+#include "../../../Level.h"
 #include "../../../script_game_object.h"
 #include "../../../game_object_space.h"
 #include "../../../ai_monster_space.h"
 #include "../control_animation_base.h"
 #include "../../../UIGameCustom.h"
-#include "../../../UI/UIStatic.h"
+#include "../../../../xrUI/Widgets/UIStatic.h"
 #include "../../../ai_object_location.h"
-#include "../../../profiler.h"
 #include "../../../ActorEffector.h"
 #include "../../../../xrEngine/CameraBase.h"
 
@@ -32,6 +31,8 @@ void CBaseMonster::feel_sound_new(CObject* who, int eType, CSound_UserDataPtr us
 
 	// ignore my sounds
 	if (this == who)	return;
+
+	PROF_EVENT("CBaseMonster::feel_sound_new");
 
 	if (user_data)
 		user_data->accept	(sound_user_data_visitor());
@@ -82,7 +83,7 @@ void CBaseMonster::HitEntity(const CEntity *pEntity, float fDamage, float impuls
 		Fvector position_in_bone_space;
 		position_in_bone_space.set(0.f,0.f,0.f);
 
-		// перевод из локальных координат в мировые вектора направления импульса
+		// РїРµСЂРµРІРѕРґ РёР· Р»РѕРєР°Р»СЊРЅС‹С… РєРѕРѕСЂРґРёРЅР°С‚ РІ РјРёСЂРѕРІС‹Рµ РІРµРєС‚РѕСЂР° РЅР°РїСЂР°РІР»РµРЅРёСЏ РёРјРїСѓР»СЊСЃР°
 		Fvector hit_dir;
 		XFORM().transform_dir	(hit_dir,dir);
 		hit_dir.normalize		();
@@ -201,16 +202,17 @@ BOOL  CBaseMonster::feel_vision_isRelevant(CObject* O)
 	if (!g_Alive())					return FALSE;
 	if (0==smart_cast<CEntity*>(O))	return FALSE;
 	
-	if ((O->spatial.type & STYPE_VISIBLEFORAI) != STYPE_VISIBLEFORAI) return FALSE;
+	if ((O->SpatialComponent->spatial.type & STYPE_VISIBLEFORAI) != STYPE_VISIBLEFORAI) 
+		return FALSE;
 	
-	// если спит, то ничего не видит
+	// РµСЃР»Рё СЃРїРёС‚, С‚Рѕ РЅРёС‡РµРіРѕ РЅРµ РІРёРґРёС‚
 	if (m_bSleep) return FALSE;
 	
-	// если не враг - не видит
+	// РµСЃР»Рё РЅРµ РІСЂР°Рі - РЅРµ РІРёРґРёС‚
 	CEntityAlive* entity = smart_cast<CEntityAlive*> (O);
 	if (entity && entity->g_Alive()) {
 		if (!EnemyMan.is_enemy(entity)) {
-			// если видит друга - проверить наличие у него врагов
+			// РµСЃР»Рё РІРёРґРёС‚ РґСЂСѓРіР° - РїСЂРѕРІРµСЂРёС‚СЊ РЅР°Р»РёС‡РёРµ Сѓ РЅРµРіРѕ РІСЂР°РіРѕРІ
 			CBaseMonster *monster = smart_cast<CBaseMonster *>(entity);
 			if (monster && !m_skip_transfer_enemy) EnemyMan.transfer_enemy(monster);
 			return FALSE;
@@ -229,7 +231,7 @@ void CBaseMonster::HitSignal(float amount, Fvector& vLocalDir, CObject* who, s16
 
 	if (element < 0) return;
 
-	// Определить направление хита (перед || зад || лево || право)
+	// РћРїСЂРµРґРµР»РёС‚СЊ РЅР°РїСЂР°РІР»РµРЅРёРµ С…РёС‚Р° (РїРµСЂРµРґ || Р·Р°Рґ || Р»РµРІРѕ || РїСЂР°РІРѕ)
 	float yaw,pitch;
 	vLocalDir.getHP(yaw,pitch);
 	
@@ -254,7 +256,7 @@ void CBaseMonster::HitSignal(float amount, Fvector& vLocalDir, CObject* who, s16
 		element
 	);
 
-	// если нейтрал - добавить как врага
+	// РµСЃР»Рё РЅРµР№С‚СЂР°Р» - РґРѕР±Р°РІРёС‚СЊ РєР°Рє РІСЂР°РіР°
 	CEntityAlive	*obj = smart_cast<CEntityAlive*>(who);
 	if (obj && (tfGetRelationType(obj) == ALife::eRelationTypeNeutral)) EnemyMan.add_enemy(obj);
 }

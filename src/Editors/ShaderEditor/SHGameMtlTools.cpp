@@ -4,8 +4,8 @@
 #include "SHGameMtlTools.h"
 #include "../Public/PropertiesListHelper.h"
 #include "ui_shadermain.h"
-#include "../xrEProps/folderlib.h"
-#include "UI_ShaderTools.h"
+#include "../xrEProps/FolderLib.h"
+#include "UI_shadertools.h"
 //------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
@@ -227,6 +227,8 @@ void CSHGameMtlTools::RealUpdateProperties()
 	PropItemVec items;
     if (m_Mtl)
     	static_cast<SGameMtlEditor*>( m_Mtl)->FillProp	(items,m_CurrentItem);
+
+    Ext.m_ItemProps->ClearProperties();
     Ext.m_ItemProps->AssignItems		(items);
     Ext.m_ItemProps->SetModifiedEvent	(TOnModifiedEvent(this,&CSHGameMtlTools::Modified));
 }

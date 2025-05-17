@@ -3,8 +3,8 @@
 #include "pch_script.h"
 #include "UIInventoryUtilities.h"
 #include "../WeaponAmmo.h"
-#include "../UIStaticItem.h"
-#include "UIStatic.h"
+#include "../../../xrUI/Widgets/UIStaticItem.h"
+#include "../../../xrUI/Widgets/UIStatic.h"
 #include "../eatable_item.h"
 #include "../Level.h"
 #include "../date_time.h"
@@ -14,7 +14,7 @@
 
 #include "../InfoPortion.h"
 #include "game_base_space.h"
-#include "../actor.h"
+#include "../Actor.h"
 
 #include "../ai_space.h"
 #include "../../xrScripts/script_engine.h"

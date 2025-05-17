@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "UIVotingCategory.h"
-#include "UIXmlInit.h"
-#include "UI3tButton.h"
+#include "../../xrUI/UIXmlInit.h"
+#include "../../xrUI/Widgets/UI3tButton.h"
 #include "UIKickPlayer.h"
 #include "UIChangeMap.h"
 #include "UIChangeWeather.h"
@@ -103,7 +103,7 @@ bool CUIVotingCategory::OnKeyboardAction(int dik, EUIMessages keyboard_action)
 	return false;
 }
 
-#include "../../xrEngine/xr_ioconsole.h"
+#include "../../xrEngine/XR_IOConsole.h"
 
 void CUIVotingCategory::OnBtn(int i)
 {

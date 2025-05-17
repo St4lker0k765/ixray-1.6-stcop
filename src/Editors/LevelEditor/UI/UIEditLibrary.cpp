@@ -1,20 +1,30 @@
-﻿#include "stdafx.h"
+#include "stdafx.h"
 #include "UIEditLibrary.h"
 #include "../../xrECore/Editor/Library.h"
 
+static FS_FileSet modif_map;
 UIEditLibrary* UIEditLibrary::Form = nullptr;
+
+static void ViewportFocusCallback()
+{
+	LUI->EndEState(esEditScene);
+	LUI->BeginEState(esEditLibrary);
+}
 
 UIEditLibrary::UIEditLibrary()
 {
-	m_ObjectList = xr_new<UIItemListForm>();
+	m_ObjectList = new UIItemListForm();
 	InitObjects();
 	m_ObjectList->SetOnItemFocusedEvent(TOnILItemFocused(this, &UIEditLibrary::OnItemFocused));
+	m_ObjectList->SetOnItemUnfocusedEvent(TOnILItemFocused(this, &UIEditLibrary::OnItemUnfocused));
 	m_ObjectList->m_Flags.set(UIItemListForm::fMultiSelect, true);
-	m_Props = xr_new<UIPropertiesForm>();
-	m_PropsObjects = xr_new<UIPropertiesForm>();
-	m_Preview = false;
+	m_Props = new UIPropertiesForm();
+	m_PropsObjects = new UIPropertiesForm();
+	m_Preview = ((CLevelPreferences*)(EPrefs))->PreviewRenderLibrary;
 	m_SelectLods = false;
 	m_RealTexture = nullptr;
+
+	View.OnFocusCallback = ViewportFocusCallback;
 }
 
 void UIEditLibrary::OnItemFocused(ListItem* item)
@@ -37,16 +47,15 @@ void UIEditLibrary::OnItemFocused(ListItem* item)
 		}
 		else
 		{
-			PHelper().CreateCaption(Info, "Face Count", "THM not found");
-			PHelper().CreateCaption(Info, "Vertex Count", "THM not found");
+			PHelper().CreateCaption(Info, "Faces", "THM not found");
+			PHelper().CreateCaption(Info, "Vertexes", "THM not found");
 			m_Props->AssignItems(Info);
 		}
 
 		if (m_Preview)
 		{
-			ListItemsVec vec;
-			vec.push_back(item);
-			SelectionToReference(&vec);
+			FocusedItems = m_ObjectList->m_SelectedItems;
+			SelectionToReference(&FocusedItems);
 		}
 
 		if (bShowProps)
@@ -58,6 +67,23 @@ void UIEditLibrary::OnItemFocused(ListItem* item)
 	}
 
 	UI->RedrawScene();
+}
+
+void UIEditLibrary::OnItemUnfocused(ListItem* item)
+{
+	if (!m_Preview)
+		return;
+
+	if (item != nullptr)
+	{
+		auto Iter = std::find(FocusedItems.begin(), FocusedItems.end(), item);
+		
+		if (Iter != FocusedItems.end())
+		{
+			FocusedItems.erase(Iter);
+			SelectionToReference(&FocusedItems);
+		}
+	}
 }
 
 UIEditLibrary::~UIEditLibrary() 
@@ -102,20 +128,22 @@ void UIEditLibrary::Show()
 
 	if (!Form)
 	{
-		Form = xr_new<UIEditLibrary>();
+		Form = new UIEditLibrary();
 	}
 	else
 	{
 		Form->bOpen = true;
 	}
 	UI->Push(Form, false);
+	modif_map.clear();
 }
 
 void UIEditLibrary::Close()
 {
 	UI->EndEState(esEditLibrary);
 	// TODO: возможно еще кого то надо грохнуть
-	xr_delete(Form);
+	Form->bOpen = false;
+	//xr_delete(Form);
 }
 
 void UIEditLibrary::DrawObjects()
@@ -207,7 +235,6 @@ void UIEditLibrary::MakeLOD(bool bHighQuality)
 		return;
 	}
 
-	R_ASSERT(res == mrYes);
 	UIChooseForm::SelectItem(smObject, 512, 0);
 	m_SelectLods = true;
 	m_HighQualityLod = true;
@@ -263,27 +290,29 @@ void UIEditLibrary::OnPropertiesClick()
 
 		/////////////////////////////////////////////
 		NE->FillBasicProps("", Info);
-		for (auto Surf : NE->m_Surfaces)
+
+		//for (auto Surf : NE->m_Surfaces)
+		//{
+		//	NE->FillSurfaceProps(Surf, Surf->_GameMtlName(), Info);
+		//}
+
+		for (SurfaceIt it = NE->m_Surfaces.begin(); it != NE->m_Surfaces.end(); it++)
 		{
-			NE->FillSurfaceProps(Surf, Surf->_GameMtlName(), Info);
+			AnsiString	pref = AnsiString("Surfaces\\") + (*it)->_Name();
+			PropValue* V = PHelper().CreateCaption(Info, pref.c_str(), "");
+			V->tag = (int)*it;
+			NE->FillSurfaceProps(*it, pref.c_str(), Info);
 		}
 
 		xr_delete(SO);
 	}
 
 	m_PropsObjects->AssignItems(Info);
+	m_PropsObjects->SetModifiedEvent(OnModified);
 }
 
 void UIEditLibrary::DrawRightBar()
 {
-
-	if (bShowProps)
-	{
-		ImGui::Begin("Objects properties", &bShowProps);
-		m_PropsObjects->Draw();
-		ImGui::End();
-	}
-
 	if (ImGui::BeginChild("Right", ImVec2(0, 0)))
 	{
 		ImGui::Image(m_RealTexture ? m_RealTexture : EDevice->texture_null->pSurface, ImVec2(200, 200));
@@ -307,22 +336,38 @@ void UIEditLibrary::DrawRightBar()
 
 			if (ImGui::Button("Make Thumbnail", ImVec2(-1, 0)))
 			{
-				OnMakeThmClick();
+				UI->RedrawScene(false);
 
-				for (auto Item : m_ObjectList->m_SelectedItems)
+				UI->CommandList[TUI::ECommandListID::CurrentFrame].push_back([this]
 				{
-					OnItemFocused(Item);
-				}
+					UI->ViewID = View.ViewportID;
+					View.OnFocusCallback();
+				});
+				
+				UI->CommandList[TUI::ECommandListID::NextFrame].push_back([this]
+				{
+					OnMakeThmClick();
+
+					for (auto Item : m_ObjectList->m_SelectedItems)
+					{
+						OnItemFocused(Item);
+					}
+				});
 			}
 			if (ImGui::IsItemHovered())
 				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
 
-			if (ImGui::Button("Make LOD (High Quality)", ImVec2(-1, 0)))
+			ImGui::Text("Make LOD:");
+			ImGui::SameLine();
+
+			if (ImGui::Button("HQ", ImVec2(25, 0)))
 				MakeLOD(true);
 			if (ImGui::IsItemHovered())
 				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
 
-			if (ImGui::Button("Make LOD (Low Quality)", ImVec2(-1, 0)))
+			ImGui::SameLine();
+
+			if (ImGui::Button("LQ", ImVec2(25, 0)))
 				MakeLOD(false);
 			if (ImGui::IsItemHovered())
 				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
@@ -335,7 +380,15 @@ void UIEditLibrary::DrawRightBar()
 		}
 
 		if (ImGui::Checkbox("Preview", &m_Preview))
+		{
+			((CLevelPreferences*)(EPrefs))->PreviewRenderLibrary = m_Preview;
 			OnPreviewClick();
+		}
+
+		ImGui::SameLine();
+
+		if (ImGui::Checkbox("Dropper", &m_Dropper))
+			PickSurface();
 
 		if (ImGui::IsItemHovered())
 			ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
@@ -375,14 +428,24 @@ void UIEditLibrary::DrawRightBar()
 		if (ImGui::IsItemHovered())
 			ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
 
-		if (ImGui::Button("Save", ImVec2(-1, 0)))
-		{
-		}
-		if (ImGui::IsItemHovered())
-			ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
-
 		ImGui::PopItemFlag();
 		ImGui::PopStyleVar();
+
+		if (!IsModify)
+		{
+			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+			RenderSaveButton();
+			ImGui::PopItemFlag();
+			ImGui::PopStyleVar();
+		}
+		else
+		{
+			RenderSaveButton();
+		}
+
+		if (ImGui::IsItemHovered())
+			ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
 
 		if (ImGui::Button("Close", ImVec2(-1, 0)))
 			Close();
@@ -415,6 +478,19 @@ void UIEditLibrary::DrawRightBar()
 	}
 }
 
+void UIEditLibrary::RenderSaveButton()
+{
+	if (ImGui::Button("Save", ImVec2(-1, 0)))
+	{
+		RStringVec sel_strings;
+		ChangeReference(sel_strings);
+		Lib.Save(&modif_map);
+		modif_map.clear();
+		RefreshSelected();
+		IsModify = false;
+	}
+}
+
 void UIEditLibrary::OnPreviewClick()
 {
 	RefreshSelected();
@@ -426,7 +502,7 @@ void UIEditLibrary::RefreshSelected()
 
 	if (m_Preview)
 	{
-		if (m_ObjectList->m_SelectedItems.empty())
+		if (!m_ObjectList->m_SelectedItems.empty())
 		{
 			ListItemsVec vec;
 			for (ListItem* ListItem : m_ObjectList->m_SelectedItems)
@@ -440,6 +516,53 @@ void UIEditLibrary::RefreshSelected()
 	}
 
 	UI->RedrawScene();
+}
+
+void UIEditLibrary::PickSurface()
+{
+	if (m_Dropper)
+	{
+		View.OnClickCallback.bind(this, &UIEditLibrary::PickCallback);
+		return;
+	}
+
+	View.OnClickCallback.clear();
+}
+
+void UIEditLibrary::PickCallback()
+{
+	Fvector StartDir;
+	Fvector StartPos;
+
+	UIPropertiesItem* Itm = m_PropsObjects->FindPropItem(PrevClick.c_str());
+	if (Itm != nullptr)
+	{
+		Itm->SetUnselect();
+	}
+
+	UI->CurrentView().m_Camera.MouseRayFromPoint(StartPos, StartDir, View.GetMousePos());
+
+	for (CSceneObject* Obj : m_pEditObjects)
+	{
+		float dis = UI->ZFar();
+		SRayPickInfo pinf;
+		pinf.IsForcePickup = true;
+
+		Obj->RayPick(dis, StartPos, StartDir, &pinf);
+
+		if (pinf.e_mesh == nullptr)
+			continue;
+
+		CSurface* surf = pinf.e_mesh->GetSurfaceByFaceID(pinf.inf.id);
+		PrevClick = AnsiString("Surfaces\\") + AnsiString(surf->_Name());
+
+		UIPropertiesItem* Itm = m_PropsObjects->FindPropItem(PrevClick.c_str());
+		
+		if (Itm == nullptr)
+			continue;
+		
+		Itm->SetSelect();
+	}
 }
 
 /// ---------------------------------------------------------------------------
@@ -471,6 +594,7 @@ void UIEditLibrary::ShowProperty()
 }
 
 #include "../xrECore/Editor/ExportObjectOGF.h"
+#include <imgui_internal.h>
 
 void UIEditLibrary::ExportOneOBJ(CEditableObject* EO)
 {
@@ -490,7 +614,7 @@ void UIEditLibrary::ExportObj()
 	if (!m_Preview)
 	{
 		SPBItem* pb = UI->ProgressStart(m_pEditObjects.size(), "Expotring to OBJ");
-		CSceneObject* SO = xr_new<CSceneObject>((LPVOID)0, (LPSTR)0);
+		CSceneObject* SO = new CSceneObject((LPVOID)0, (LPSTR)0);
 
 		for (ListItem* item : m_ObjectList->m_SelectedItems)
 		{
@@ -535,6 +659,28 @@ void UIEditLibrary::ExportObj()
 	ELog.DlgMsg(mtInformation, "Done.");
 }
 
+void UIEditLibrary::OnModified()
+{
+	if (!Form) 				return;
+	Form->IsModify = true;
+
+	auto it = Form->m_ObjectList->m_SelectedItems.begin();
+	auto it_e = Form->m_ObjectList->m_SelectedItems.end();
+	for (; it != it_e; ++it)
+	{
+		CSceneObject* SO = new CSceneObject(nullptr, nullptr);
+		SO->SetReference((*it)->Key());
+		CEditableObject* E = SO->GetReference();
+		if (E)
+		{
+			modif_map.insert(FS_File(E->GetName()));
+			E->Modified();
+			SO->UpdateTransform();
+		}
+	}
+	UI->RedrawScene();
+}
+
 void UIEditLibrary::ChangeReference(const RStringVec& items)
 {
 	xr_vector<CSceneObject*>::iterator it = m_pEditObjects.begin();
@@ -552,7 +698,7 @@ void UIEditLibrary::ChangeReference(const RStringVec& items)
 
 	for (; sit != sit_e; ++sit)
 	{
-		CSceneObject* SO = xr_new<CSceneObject>((LPVOID)0, (LPSTR)0);
+		CSceneObject* SO = new CSceneObject((LPVOID)0, (LPSTR)0);
 		m_pEditObjects.push_back(SO);
 		SO->SetReference((*sit).c_str());
 
@@ -620,6 +766,24 @@ void UIEditLibrary::Draw()
 {
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(550, 650));
 
+	// Render child windows
+	if (bOpen)
+	{
+		if (m_Preview)
+		{
+			View.Draw();
+		}
+
+		if (bShowProps)
+		{
+			if (ImGui::Begin("Objects properties", &bShowProps))
+			{
+				m_PropsObjects->Draw();
+			}
+			ImGui::End();
+		}
+	}
+
 	if (!ImGui::Begin("Object Library", &bOpen))
 	{
 		ImGui::PopStyleVar(1);
@@ -630,7 +794,7 @@ void UIEditLibrary::Draw()
 	{
 		ImGui::BeginGroup();
 
-		if (ImGui::BeginChild("Left", ImVec2(-200, -ImGui::GetFrameHeight() - 4), true))
+		if (ImGui::BeginChild("Left", ImVec2(-220, -ImGui::GetFrameHeight() - 4), true))
 			DrawObjects();
 
 		ImGui::EndChild();
@@ -665,14 +829,14 @@ void UIEditLibrary::ImportClick()
 		for (AStringIt it = lst.begin(); it != lst.end(); ++it)
 		{
 			nm = ChangeFileExt(EFS.ExtractFileName((*it).c_str()), "").c_str();
-			CEditableObject* O = xr_new<CEditableObject>(nm.c_str());
+			CEditableObject* O = new CEditableObject(nm.c_str());
 			FS.TryLoad(*it);
 			if (O->Load(it->c_str()))
 			{
 				save_nm = xr_string(FS.get_path(_objects_)->m_Path) + folder.c_str() + EFS.ChangeFileExt(nm, ".object");
 
 				if (FS.exist(save_nm.c_str()))
-					if (mrNo == ELog.DlgMsg(mtConfirmation, TMsgDlgButtons() << mbYes << mbNo, "Object '%s' already exist. Owerwrite it?", nm.c_str()))
+					if (mrNo == ELog.DlgMsg(mtConfirmation, (mbYes | mbNo), "Object '%s' already exist. Owerwrite it?", nm.c_str()))
 					{
 						xr_delete(O);
 						break;

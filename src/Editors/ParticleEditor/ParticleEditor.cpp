@@ -1,10 +1,9 @@
-﻿// ParticleEditor.cpp : Определяет точку входа для приложения.
+// ParticleEditor.cpp : Определяет точку входа для приложения.
 //
 #include "stdafx.h"
-#include "../xrEProps/UIFileLoad.h"
 #include "../../xrEngine/xr_input.h"
 
-CUFileOpen* FileOpen = nullptr;
+#include "xrECore/Splash.h"
 
 void BeginRender()
 {
@@ -27,26 +26,41 @@ void EndRender()
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
+    splash::show(IDB_PE);
+
+    splash::update(5, "Initializing Debugger");
+
     if (!IsDebuggerPresent()) Debug._initialize(false);
     const char* FSName = "fs.ltx";
 
+    splash::update(10, "Initializing COM Library");
+
     CoInitialize(nullptr);
+
+    splash::update(20, "Core Initialization");
 
     Core._initialize("Patricle", ELogCallback, 1, FSName);
 
     psDeviceFlags.set(rsFullscreen, false);
 
-    Tools = xr_new<CParticleTool>();
+    splash::update(35, "Initializing Particle Tools");
+
+    Tools = new CParticleTool();
     PTools = (CParticleTool*)Tools;
-    UI = xr_new<CParticleMain>();
+
+    splash::update(55, "Registering UI Commands");
+
+    UI = new CParticleMain();
     UI->RegisterCommands();
     
-    FileOpen = new CUFileOpen;
+    splash::update(75, "Creating Main UI Form");
 
-    UIMainForm* MainForm = xr_new< UIMainForm>();
+    UIMainForm* MainForm = new UIMainForm();
     ::MainForm = MainForm;
     UI->Push(MainForm, false);
-    UI->Push(FileOpen, false);
+
+    splash::update(100, "Finalizing");
+    splash::hide();
 
     //MainForm->Frame();
     bool NeedExit = false;
@@ -57,6 +71,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
         {
             switch (Event.type)
             {
+            case SDL_EVENT_WINDOW_MAXIMIZED:
+                EDevice->MaximizedWindow();
+                break;
             case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
                 EPrefs->SaveConfig();
                 NeedExit = true;
@@ -82,7 +99,11 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
                 break;
 
             case SDL_EVENT_KEY_DOWN:
-                if (UI)UI->KeyDown(Event.key.keysym.scancode, UI->GetShiftState());
+                if (UI)
+                {
+                    UI->KeyDown(Event.key.keysym.scancode, UI->GetShiftState());
+                    UI->ApplyShortCutInput(Event.key.keysym.scancode);
+                }
                 break;
             case SDL_EVENT_KEY_UP:
                 if (UI)UI->KeyUp(Event.key.keysym.scancode, UI->GetShiftState());

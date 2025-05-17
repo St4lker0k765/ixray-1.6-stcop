@@ -1,16 +1,16 @@
 #include "stdafx.h"
-#include "igame_level.h"
-#include "igame_persistent.h"
+#include "IGame_Level.h"
+#include "IGame_Persistent.h"
 
 #include "x_ray.h"
 #include "std_classes.h"
-#include "customHUD.h"
-#include "render.h"
-#include "gamefont.h"
+#include "CustomHUD.h"
+#include "Render.h"
+#include "GameFont.h"
 #include "xrLevel.h"
 #include "CameraManager.h"
 #include "xr_object.h"
-#include "feel_sound.h"
+#include "Feel_Sound.h"
 
 #include "FPSCounter.h"
 
@@ -54,8 +54,10 @@ IGame_Level::~IGame_Level()
 
 	Sound->set_geometry_occ(nullptr);
 	Sound->set_handler(nullptr);
+
 #ifdef DEBUG
-	Device.DumpResourcesMemoryUsage();
+	if (!Device.IsEditorMode())
+		Device.DumpResourcesMemoryUsage();
 #endif // DEBUG
 
 	u32		m_base = 0, c_base = 0, m_lmaps = 0, c_lmaps = 0;
@@ -154,8 +156,14 @@ bool IsFpsShow = false;
 void	IGame_Level::OnRender		( ) 
 {
 	if (!g_dedicated_server) {
-		Render->Calculate();
-		Render->Render();
+		{
+			PROF_EVENT("IGame_Level::OnRender: Calculate");
+			Render->Calculate();
+		}
+		{
+			PROF_EVENT("IGame_Level::OnRender: Render");
+			Render->Render();
+		}
 
 		if (IsFpsShow) {
 			pFPSCounter->OnRender();
@@ -165,6 +173,7 @@ void	IGame_Level::OnRender		( )
 
 void	IGame_Level::OnFrame		( ) 
 {
+	PROF_EVENT("IGame_Level::OnFrame");
 	// Update all objects
 	VERIFY						(bReady);
 	Objects.Update				(false);
@@ -233,6 +242,7 @@ void IGame_Level::SetViewEntity( CObject* O  )
 
 void	IGame_Level::SoundEvent_Register	( ref_sound_data_ptr S, float range )
 {
+	PROF_EVENT("IGame_Level::SoundEvent_Register")
 	if (!g_bLoaded)									return;
 	if (!S)											return;
 	if (S->g_object && S->g_object->getDestroy())	{S->g_object=0; return;}
@@ -257,8 +267,8 @@ void	IGame_Level::SoundEvent_Register	( ref_sound_data_ptr S, float range )
 	g_SpatialSpace->q_box	(snd_ER,0,STYPE_REACTTOSOUND,snd_position,bb_size);
 
 	// Iterate
-	xr_vector<ISpatial*>::iterator	it	= snd_ER.begin	();
-	xr_vector<ISpatial*>::iterator	end	= snd_ER.end	();
+	auto it	= snd_ER.begin	();
+	auto end	= snd_ER.end	();
 	for (; it!=end; it++)	{
 		Feel::Sound* L		= (*it)->dcast_FeelSound	();
 		if (0==L)			continue;
@@ -288,6 +298,7 @@ void	IGame_Level::SoundEvent_Register	( ref_sound_data_ptr S, float range )
 
 void	IGame_Level::SoundEvent_Dispatch	( )
 {
+	PROF_EVENT("IGame_Level::SoundEvent_Dispatch");
 	while	(!snd_Events.empty())	{
 		_esound_delegate&	D	= snd_Events.back	();
 		VERIFY				(D.dest && D.source);
@@ -309,6 +320,7 @@ void	IGame_Level::SoundEvent_Dispatch	( )
 // Lain: added
 void   IGame_Level::SoundEvent_OnDestDestroy (Feel::Sound* obj)
 {
+	PROF_EVENT("IGame_Level::SoundEvent_OnDestDestroy")
 	struct rem_pred
 	{
 		rem_pred(Feel::Sound* obj) : m_obj(obj) {}

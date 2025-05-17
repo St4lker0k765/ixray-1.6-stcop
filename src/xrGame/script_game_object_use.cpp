@@ -1,11 +1,10 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 #include "script_game_object.h"
 #include "UsableScriptObject.h"
 #include "GameObject.h"
 #include "../xrScripts/script_storage_space.h"
 #include "../xrScripts/script_engine.h"
-#include "stalker_planner.h"
 #include "ai/stalker/ai_stalker.h"
 #include "searchlight.h"
 #include "game_object_space.h"
@@ -16,8 +15,9 @@
 #include "PHCommander.h"
 #include "PHScriptCall.h"
 #include "PHSimpleCalls.h"
-#include "../xrPhysics/iphworld.h"
+#include "../xrPhysics/IPHWorld.h"
 #include "doors_manager.h"
+#include "Legacy/StalkerPlanner/stalker_planner.h"
 
 void CScriptGameObject::SetTipText (LPCSTR tip_text)
 {
@@ -95,7 +95,12 @@ shared_str CScriptGameObject::cName				() const
 
 LPCSTR CScriptGameObject::Section				() const
 {
-	return			(*object().cNameSect());
+	if (m_game_object == nullptr)
+	{
+		return nullptr;
+	}
+
+	return *object().cNameSect();
 }
 
 void CScriptGameObject::Kill					(CScriptGameObject* who)
@@ -234,6 +239,6 @@ void CScriptGameObject::set_const_force(const Fvector &dir,float value,u32 time_
 	CPHExpireOnStepCondition *cn=new CPHExpireOnStepCondition();
 	cn->set_time_interval(time_interval);
 	//ph_world->AddCall(cn,a);
-	Level().ph_commander_physics_worldstep().add_call_threadsafety(cn,a);
+	Level().ph_commander_physics_worldstep().add_call(cn,a);
 	
 }

@@ -6,7 +6,7 @@
 //	Description : ALife Simulator update manager
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "alife_update_manager.h"
 #include "alife_simulator_header.h"
 #include "alife_time_manager.h"
@@ -15,12 +15,11 @@
 #include "alife_spawn_registry.h"
 #include "alife_object_registry.h"
 #include "ef_storage.h"
-#include "xrserver.h"
+#include "xrServer.h"
 #include "Level.h"
 #include "graph_engine.h"
 #include "../xrEngine/x_ray.h"
 #include "restriction_space.h"
-#include "profiler.h"
 #include "mt_config.h"
 #include "../xrEngine/string_table.h"
 
@@ -28,7 +27,8 @@ using namespace ALife;
 
 extern string_path g_last_saved_game;
 
-class CSwitchPredicate {
+class CSwitchPredicate 
+{
 private:
 	CALifeSwitchManager *m_switch_manager;
 
@@ -56,7 +56,9 @@ public:
 CALifeUpdateManager::CALifeUpdateManager	(xrServer *server, LPCSTR section) :
 	CALifeSwitchManager		(server,section),
 	CALifeSurgeManager		(server,section),
-	CALifeStorageManager	(server,section) {
+	CALifeStorageManager	(server,section),
+	CALifeSimulatorBase		(server,section)
+{
 	shedule.t_min			= pSettings->r_s32	(section,"schedule_min");
 	shedule.t_max			= pSettings->r_s32	(section,"schedule_max");
 	shedule_register		();
@@ -72,7 +74,7 @@ CALifeUpdateManager::~CALifeUpdateManager	()
 {
 	shedule_unregister		();
 	Device.remove_from_seq_parallel	(
-		fastdelegate::FastDelegate0<>(
+		xr_delegate<void()>(
 			this,
 			&CALifeUpdateManager::update
 		)
@@ -103,10 +105,11 @@ void CALifeUpdateManager::update_scheduled	(bool init_ef)
 	STOP_PROFILE
 }
 
-void CALifeUpdateManager::update			()
+void CALifeUpdateManager::update()
 {
-	update_switch						();
-	update_scheduled					(false);
+	PROF_EVENT("AI: A-Life Update");
+	update_switch();
+	update_scheduled(false);
 }
 
 void CALifeUpdateManager::new_game_for_editor()
@@ -141,7 +144,7 @@ void CALifeUpdateManager::shedule_Update	(u32 dt)
 
 	if (!m_first_time && g_mt_config.test(mtALife)) {
 		Device.seqParallel.push_back(
-			fastdelegate::FastDelegate0<>(
+			xr_delegate<void()>(
 				this,
 				&CALifeUpdateManager::update
 			)
@@ -249,7 +252,7 @@ bool CALifeUpdateManager::change_level	(NET_Packet &net_packet)
 	return							(true);
 }
 
-#include "../xrEngine/igame_persistent.h"
+#include "../xrEngine/IGame_Persistent.h"
 void CALifeUpdateManager::new_game			(LPCSTR save_name)
 {
 //	g_pGamePersistent->LoadTitle		("st_creating_new_game");
@@ -367,9 +370,8 @@ void CALifeUpdateManager::set_interactive		(ALife::_OBJECT_ID id, bool value)
 void CALifeUpdateManager::jump_to_level			(LPCSTR level_name) const
 {
 	const IGameGraph::SLevel			&level = ai().game_graph().header().level(level_name);
-	GameGraph::_GRAPH_ID				dest = GameGraph::_GRAPH_ID(-1);
-	GraphEngineSpace::CGameLevelParams	evaluator(level.id());
-	bool								failed = !ai().graph_engine().search(ai().game_graph(),graph().actor()->m_tGraphID,GameGraph::_GRAPH_ID(-1),0,evaluator);
+	u32 dest = u32(-1);
+	bool								failed = !ai().game_graph().SearchNearestVertex(graph().actor()->m_tGraphID,level.id(),dest);
 	if (failed) {
 #ifndef MASTER_GOLD
 		Msg								("! Cannot build path via game graph from the current level to the level %s!",level_name);
@@ -390,11 +392,10 @@ void CALifeUpdateManager::jump_to_level			(LPCSTR level_name) const
 			return;
 		}
 	}
-	else
-		dest							= (GameGraph::_GRAPH_ID)evaluator.selected_vertex_id();
+
 	NET_Packet							net_packet;
 	net_packet.w_begin					(M_CHANGE_LEVEL);
-	net_packet.w						(&dest,sizeof(dest));
+	net_packet.w_u16					(dest);
 	
 	u32									vertex_id = ai().game_graph().vertex(dest)->level_vertex_id();
 	net_packet.w						(&vertex_id,sizeof(vertex_id));

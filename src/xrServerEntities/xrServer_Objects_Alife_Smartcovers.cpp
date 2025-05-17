@@ -8,7 +8,7 @@
 
 #include "stdafx.h"
 #include "pch_script.h"
-#include "xrServer_Objects_ALife_Smartcovers.h"
+#include "xrServer_Objects_Alife_Smartcovers.h"
 
 #ifndef AI_COMPILER
 #	include "character_info.h"
@@ -23,7 +23,6 @@
 #		include <shlwapi.h>
 #	pragma warning(pop)
 
-#pragma comment(lib, "shlwapi.lib")
 static SFillPropData			fp_data;
 #endif // XRSE_FACTORY_EXPORTS
 

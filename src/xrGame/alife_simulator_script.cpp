@@ -6,7 +6,7 @@
 //	Description : ALife Simulator script export
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 #include "alife_simulator.h"
 #include "ai_space.h"
@@ -428,8 +428,9 @@ void CALifeSimulator::script_register			(lua_State *L)
 			.def("switch_distance",			&CALifeSimulator::switch_distance)
 			.def("switch_distance",			&CALifeSimulator::set_switch_distance)
 			.def("objects",					&alife_objects, return_stl_pair_iterator)
+			.def("jump_to_level",			(void (CALifeSimulator::*) (LPCSTR))(&CALifeSimulator::jump_to_level))
 
-			.def("teleport_object", &teleport_object)
+			.def("teleport_object", &::teleport_object)
 			.def("iterate_info", &IterateInfo)
 			.def("clone_weapon", &try_to_clone_object)
 			.def("register", &reprocess_spawn)

@@ -6,7 +6,7 @@
 //	Description : Script particle action class
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "script_particle_action.h"
 #include "../xrParticles/stdafx.h"
 #include "../xrParticles/ParticlesObject.h"
@@ -20,7 +20,7 @@ void CScriptParticleAction::SetParticle			(LPCSTR caParticleToRun, bool bAutoRem
 {
 	m_caParticleToRun	= caParticleToRun;
 	m_tGoalType			= eGoalTypeParticleAttached;
-	m_tpParticleSystem	= CParticlesObject::Create(*m_caParticleToRun,BOOL(m_bAutoRemove = bAutoRemove));
+	m_tpParticleSystem	= Particles::Details::Create(*m_caParticleToRun,BOOL(m_bAutoRemove = bAutoRemove));
 	m_bStartedToPlay	= false;
 	m_bCompleted		= false;
 }

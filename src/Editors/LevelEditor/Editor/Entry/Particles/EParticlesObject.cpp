@@ -28,7 +28,7 @@ void EParticlesObject::Construct(LPVOID data)
 
 EParticlesObject::~EParticlesObject()
 {
-    auto model = dynamic_cast<IRenderVisual*>(m_Particles);
+    auto model = smart_cast<IRenderVisual*>(m_Particles);
 	::Render->model_Delete	(model);
     m_Particles = nullptr;
 }
@@ -67,32 +67,40 @@ void EParticlesObject::OnFrame()
 
 void EParticlesObject::Render(int priority, bool strictB2F)
 {
-	inherited::Render(priority,strictB2F);
+    if (!IsLoaded)
+        return;
+
+    inherited::Render(priority, strictB2F);
     Fbox bb; GetBox(bb);
-	if (::Render->occ_visible(bb)){
+
+    if (::Render->occ_visible(bb))
+    {
         RCache.set_xform_world(Fidentity);
-	    if (1==priority){
-            if (false==strictB2F){
+        if (1 == priority) 
+        {
+            if (!strictB2F) 
+            {
                 // draw emitter
-	    		EDevice->SetShader(EDevice->m_WireShader);
-                if( !Selected() )
-    				DU_impl.DrawCross	(GetPosition(),0.30f,0.1f,0.3f,0.3f,0.3f,0.3f,0xFFFFEBAA,false);
-                    
-				Fvector p = GetPosition();
-                DU_impl.DrawRomboid	(p,0.1f,0x0AFFEBAA);
-                if( Selected() )
+                EDevice->SetShader(EDevice->m_WireShader);
+
+                if (!Selected())
+                    DU_impl.DrawCross(GetPosition(), 0.30f, 0.1f, 0.3f, 0.3f, 0.3f, 0.3f, 0xFFFFEBAA, false);
+
+                Fvector p = GetPosition();
+                DU_impl.DrawRomboid(p, 0.1f, 0x0AFFEBAA);
+                if (Selected())
                 {
                     Fbox bb; GetBox(bb);
-                    u32 clr = 0xFFFFFFFF;
-                    DU_impl.DrawSelectionBoxB(bb,&clr);
+                    u32 clr = Locked() ? 0xFFFF0000 : 0xFFFFFFFF;
+                    DU_impl.DrawSelectionBoxB(bb, &clr);
                 }
             }
         }
+
         if (m_Particles)
-        	::RImplementation.model_Render(dynamic_cast<IRenderVisual*>(m_Particles), _Transform(),priority,strictB2F,1.f);
+            ::RImplementation.model_Render(smart_cast<IRenderVisual*>(m_Particles), _Transform(), priority, strictB2F, 1.f);
     }
 }
-
 
 void EParticlesObject::RenderSingle()
 {
@@ -100,60 +108,70 @@ void EParticlesObject::RenderSingle()
 	Render(1,true);
 }
 
-
 bool EParticlesObject::FrustumPick(const CFrustum& frustum)
 {
     return (frustum.testSphere_dirty(GetPosition(),PSOBJECT_SIZE))?true:false;
 }
 
-
 bool EParticlesObject::RayPick(float& distance, const Fvector& start, const Fvector& direction, SRayPickInfo* pinf)
 {
-	Fvector pos,ray2;
+    if (!IsLoaded)
+        return false;
+
+    Fvector pos, ray2;
     pos.set(GetPosition());
-	ray2.sub( pos, start );
+    ray2.sub(pos, start);
 
     float d = ray2.dotproduct(direction);
-    if( d > 0  ){
+
+    if (d > 0)
+    {
         float d2 = ray2.magnitude();
-        if( ((d2*d2-d*d) < (PSOBJECT_SIZE*PSOBJECT_SIZE)) && (d>PSOBJECT_SIZE) ){
-        	if (d<distance){
-	            distance = d;
-    	        return true;
+        if (((d2 * d2 - d * d) < (PSOBJECT_SIZE * PSOBJECT_SIZE)) && (d > PSOBJECT_SIZE))
+        {
+            if (d < distance)
+            {
+                distance = d;
+                return true;
             }
         }
     }
-	return false;
+    return false;
 }
-
 
 void EParticlesObject::Play()
 {
-	if (m_Particles) m_Particles->Play();
+	if (m_Particles)
+        m_Particles->Play();
 }
 
 
 void EParticlesObject::Stop()
 {
-	if (m_Particles) m_Particles->Stop();
+	if (m_Particles) 
+        m_Particles->Stop();
 }
 
 bool EParticlesObject::LoadLTX(CInifile& ini, LPCSTR sect_name)
 {
-	u32 version = ini.r_u32(sect_name,"version");
+    u32 version = ini.r_u32(sect_name, "version");
 
+    inherited::LoadLTX(ini, sect_name);
 
-	inherited::LoadLTX(ini, sect_name);
+    if (version >= 0x0012)
+        m_GameType.LoadLTX(ini, sect_name, false);
 
-    if(version>=0x0012)
-		m_GameType.LoadLTX(ini, sect_name, false);
+    m_RefName = ini.r_string(sect_name, "ref_name");
 
-    m_RefName		= ini.r_string(sect_name, "ref_name");
+    xr_string Copy = *m_RefName;
     if (!Compile(*m_RefName))
     {
-        ELog.DlgMsg( mtError, "EParticlesObject: '%s' not found in library", *m_RefName );
+        ELog.DlgMsg(mtError, "EParticlesObject: '%s' not found in library", Copy.c_str());
+        IsLoaded = true;
         return false;
     }
+ 
+    IsLoaded = true;
     return true;
 }
 
@@ -191,9 +209,10 @@ bool EParticlesObject::LoadStream(IReader& F)
 		m_GameType.LoadStream(F);
     }
 
+    xr_string CopyName = *m_RefName;
     if (!Compile(*m_RefName))
     {
-        ELog.DlgMsg( mtError, "EParticlesObject: '%s' not found in library", *m_RefName );
+        ELog.DlgMsg( mtError, "EParticlesObject: '%s' not found in library", CopyName.c_str());
         return false;
     }
 
@@ -249,13 +268,13 @@ bool EParticlesObject::ExportGame(SExportStreams* F)
 
 bool EParticlesObject::Compile(LPCSTR ref_name)
 {
-    auto model = dynamic_cast<IRenderVisual*>(m_Particles);
+    auto model = smart_cast<IRenderVisual*>(m_Particles);
     ::Render->model_Delete(model);
     m_Particles = nullptr;
     if (ref_name)
     {
     	IRenderVisual* base = ::Render->model_CreateParticles(ref_name);
-		m_Particles 		= dynamic_cast<IParticleCustom*>(base);
+		m_Particles 		= smart_cast<IParticleCustom*>(base);
         if (m_Particles){
 			UpdateTransform	();
 		    m_RefName		= ref_name;
@@ -277,7 +296,7 @@ void EParticlesObject::OnRefChange(PropValue* V)
 
 void EParticlesObject::OnControlClick(ButtonValue* sender, bool& bModif, bool& bSafe)
 {
-	ButtonValue* V = dynamic_cast<ButtonValue*>(sender); R_ASSERT(V);
+	ButtonValue* V = smart_cast<ButtonValue*>(sender); R_ASSERT(V);
     switch (V->btn_num){
     case 0: Play();	break;
     case 1: Stop();	break;

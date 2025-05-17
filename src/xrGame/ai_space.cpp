@@ -6,7 +6,7 @@
 //	Description : AI space class
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "game_graph.h"
 #include "level_graph.h"
 #include "graph_engine.h"
@@ -28,7 +28,6 @@ CAI_Space::CAI_Space				()
 {
 	m_ef_storage			= 0;
 	m_game_graph			= 0;
-	m_graph_engine			= 0;
 	m_cover_manager			= 0;
 	m_level_graph			= 0;
 	m_alife_simulator		= 0;
@@ -44,9 +43,6 @@ void CAI_Space::init				()
 	VERIFY					(!m_ef_storage);
 	m_ef_storage			= new CEF_Storage();
 
-	VERIFY					(!m_graph_engine);
-	m_graph_engine			= new CGraphEngine(1024);
-
 	VERIFY					(!m_cover_manager);
 	m_cover_manager			= new CCoverManager();
 
@@ -54,7 +50,7 @@ void CAI_Space::init				()
 	m_patrol_path_storage	= new CPatrolPathStorage();
 
 	VERIFY					(!m_moving_objects);
-	m_moving_objects		= xr_new<::moving_objects>();
+	m_moving_objects		= new ::moving_objects();
 
 #endif //#ifndef NO_SINGLE
 
@@ -82,7 +78,6 @@ CAI_Space::~CAI_Space				()
 	xr_delete				(m_moving_objects);
 	xr_delete				(m_patrol_path_storage);
 	xr_delete				(m_cover_manager);
-	xr_delete				(m_graph_engine);
 	xr_delete				(m_ef_storage);
 	VERIFY					(!m_game_graph);
 }
@@ -112,12 +107,6 @@ void CAI_Space::load				(LPCSTR level_name)
 	game_graph().set_current_level(current_level.id());
 	R_ASSERT2				(cross_table().header().level_guid() == level_graph().header().guid(), "cross_table doesn't correspond to the AI-map");
 	R_ASSERT2				(cross_table().header().game_guid() == game_graph().header().guid(), "graph doesn't correspond to the cross table");
-	m_graph_engine			= new CGraphEngine(
-		_max(
-			game_graph().header().vertex_count(),
-			level_graph().header().vertex_count()
-		)
-	);
 	
 	R_ASSERT2				(current_level.guid() == level_graph().header().guid(), "graph doesn't correspond to the AI-map");
 	
@@ -131,7 +120,7 @@ void CAI_Space::load				(LPCSTR level_name)
 	m_moving_objects->on_level_load			();
 
 	VERIFY					(!m_doors_manager);
-	m_doors_manager			= xr_new<::doors::manager>( ai().level_graph().header().box() );
+	m_doors_manager			= new ::doors::manager( ai().level_graph().header().box() );
 
 #ifdef DEBUG
 	Msg						("* Loading ai space is successfully completed (%.3fs, %7.3f Mb)",timer.GetElapsed_sec(),float(Memory.mem_usage() - mem_usage)/1048576.0);
@@ -143,12 +132,9 @@ void CAI_Space::unload				(bool reload)
 	script_engine().unload	();
 
 	xr_delete				(m_doors_manager);
-	xr_delete				(m_graph_engine);
 
 	if(!Device.IsEditorMode()) xr_delete(m_level_graph);
 
-	if (!reload && m_game_graph)
-		m_graph_engine		= new CGraphEngine( game_graph().header().vertex_count() );
 }
 
 #ifdef DEBUG
@@ -203,7 +189,7 @@ void CAI_Space::patrol_path_storage_from_editor()
 		return;
 
 	xr_delete(m_patrol_path_storage);
-	m_patrol_path_storage = xr_new<CPatrolPathStorage>();
+	m_patrol_path_storage = new CPatrolPathStorage();
 }
 
 void CAI_Space::set_alife				(CALifeSimulator *alife_simulator)
@@ -217,7 +203,6 @@ void CAI_Space::set_alife				(CALifeSimulator *alife_simulator)
 
 	VERIFY					(m_game_graph);
 	m_game_graph			= 0;
-	xr_delete				(m_graph_engine);
 }
 
 void CAI_Space::game_graph				(IGameGraph *game_graph)
@@ -228,13 +213,11 @@ void CAI_Space::game_graph				(IGameGraph *game_graph)
 	m_game_graph			= game_graph;
 
 //	VERIFY					(!m_graph_engine);
-	xr_delete				(m_graph_engine);
-	m_graph_engine			= new CGraphEngine(this->game_graph().header().vertex_count());
 }
 
 void CAI_Space::destroy_game_graph()
 {
-	// Pavel: фикс краша при перезаходе клиентом в мп
+	// Pavel: С„РёРєСЃ РєСЂР°С€Р° РїСЂРё РїРµСЂРµР·Р°С…РѕРґРµ РєР»РёРµРЅС‚РѕРј РІ РјРї
 	xr_delete(m_game_graph);
 }
 

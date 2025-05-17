@@ -1,28 +1,38 @@
 project(xrECore)
 
 # Files import
-file(GLOB_RECURSE ECORE_SOURCE_ALL_FILES CONFIGURE_DECORENDS
+file(GLOB_RECURSE ECORE_SOURCE_ALL_FILES CONFIGURE_DEPENDS
     "*.h"
     "*.cpp"
 )
 
-file(GLOB_RECURSE ECORE_SOURCE_ENGINE_FILES CONFIGURE_DECORENDS
+file(GLOB_RECURSE ECORE_SOURCE_ENGINE_FILES CONFIGURE_DEPENDS
     "Engine/*.*"
 )
 
-file(GLOB_RECURSE ECORE_SOURCE_EDITOR_FILES CONFIGURE_DECORENDS
+file(GLOB_RECURSE ECORE_SOURCE_EDITOR_FILES CONFIGURE_DEPENDS
     "Editor/*.*"
 )
 
-file(GLOB_RECURSE ECORE_SOURCE_WM_FILES CONFIGURE_DECORENDS
+file(GLOB_RECURSE ECORE_SOURCE_WM_FILES CONFIGURE_DEPENDS
     "WildMagic/*.*"
 )
 
-file(GLOB_RECURSE ECORE_SOURCE_ERR_FILES CONFIGURE_DECORENDS
+file(GLOB_RECURSE ECORE_SOURCE_RENDER_FILESEX CONFIGURE_DEPENDS
+    "Render/*.*"
+)
+
+file(GLOB_RECURSE ECORE_SOURCE_ERR_FILES CONFIGURE_DEPENDS
     "dxerr/*.*"
 )
 
-file(GLOB_RECURSE ECORE_SOURCE_RENDER_FILES CONFIGURE_DECORENDS
+file(GLOB_RECURSE ECORE_SOURCE_RES_FILES 
+    "*.ico"
+    "*.rc"
+    "*.bmp"
+)
+
+file(GLOB_RECURSE ECORE_SOURCE_RENDER_FILES CONFIGURE_DEPENDS
     "../../Layers/xrRenderDX9/dx9r_constants_cache.*"
     "../../Layers/xrRender/Animation.*"
     "../../Layers/xrRender/blenders/Blender.*"
@@ -113,7 +123,7 @@ file(GLOB_RECURSE ECORE_SOURCE_RENDER_FILES CONFIGURE_DECORENDS
     "../../Layers/xrRenderPC_R1/Blender_Vertex.*"
 )
 
-file(GLOB_RECURSE ECORE_SOURCE_EXT_FILES CONFIGURE_DECORENDS
+file(GLOB_RECURSE ECORE_SOURCE_EXT_FILES CONFIGURE_DEPENDS
  #   "../../xrEngine/motion.cpp"
  #  "../../xrEngine/fmesh.cpp"
     "../../xrEngine/ObjectAnimator.cpp"
@@ -128,13 +138,16 @@ source_group("Engine" FILES ${ECORE_SOURCE_ENGINE_FILES})
 source_group("Editor" FILES ${ECORE_SOURCE_EDITOR_FILES})
 source_group("WildMagic" FILES ${ECORE_SOURCE_WM_FILES})
 source_group("Render" FILES ${ECORE_SOURCE_RENDER_FILES})
+source_group("RenderEx" FILES ${ECORE_SOURCE_RENDEREX_FILES})
 source_group("Other"  FILES ${ECORE_SOURCE_EXT_FILES})
 source_group("dxerr"  FILES ${ECORE_SOURCE_ERR_FILES})
+source_group("Resources"  FILES ${ECORE_SOURCE_RES_FILES})
 
 # Apply list
 list(APPEND ECORE_SRC_FILES ${ECORE_SOURCE_ALL_FILES})
 list(APPEND ECORE_SRC_FILES ${ECORE_SOURCE_RENDER_FILES})
 list(APPEND ECORE_SRC_FILES ${ECORE_SOURCE_EXT_FILES})
+list(APPEND ECORE_SRC_FILES ${ECORE_SOURCE_RES_FILES})
 
 # Remove unused files
 list(FILTER ECORE_SRC_FILES EXCLUDE REGEX "cl_raypick.cpp$")
@@ -148,7 +161,6 @@ target_precompile_headers(xrECore PRIVATE "stdafx.h")
 
 # Project defines
 target_compile_definitions(xrECore PRIVATE XRECORE_EXPORTS)
-#target_compile_definitions(xrECore PRIVATE _EDITOR)
 target_compile_definitions(xrECore PRIVATE _WINDOWS)
 target_compile_definitions(xrECore PRIVATE _USRDLL)
 target_compile_definitions(xrECore PUBLIC XR_EDITOR_NEW)
@@ -170,11 +182,22 @@ target_link_libraries(xrECore PUBLIC xrAbstractions)
 target_link_libraries(xrECore PUBLIC xrPhysics)
 target_link_libraries(xrECore PUBLIC xrDXT)
 target_link_libraries(xrECore PUBLIC MagicFM)
+target_link_libraries(xrECore PUBLIC NvMender2003)
 target_link_libraries(xrECore PUBLIC "d3d9.lib")
 target_link_libraries(xrECore PUBLIC "d3dcompiler.lib")
 
-# Move precompiled header
-target_validate_pch(xrECore ${CMAKE_CURRENT_SOURCE_DIR})
+# UnityBuild Preferences
+#if (IXRAY_UNITYBUILD)
+#	set_target_properties(xrECore PROPERTIES UNITY_BUILD ON UNITY_BUILD_BATCH_SIZE 32)
+#	target_compile_options(xrECore PRIVATE /bigobj)
+#    
+#	file(GLOB_RECURSE ECORE_SOURCE_ALL_C_FILES "*.c")
+#	set_source_files_properties(${ECORE_SOURCE_ALL_C_FILES} PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
+#else()
+    # Move precompiled header
+    target_validate_pch(xrECore ${CMAKE_CURRENT_SOURCE_DIR})
+#endif()
+
 
 ## DirectX SDK
 if(NOT "${CMAKE_VS_PLATFORM_NAME}" MATCHES "(x64)")
@@ -207,13 +230,3 @@ target_include_directories(xrECore PRIVATE "${SNDE_VOB}/native/include/")
 ## OpenAL
 target_link_libraries(xrECore PRIVATE ${SNDE_OAL}/native/lib/${CMAKE_VS_PLATFORM_NAME}/Release/OpenAL32.lib)
 target_include_directories(xrECore PRIVATE "${SNDE_OAL}/native/include/")
-
-## RedImage
-target_link_libraries(xrECore PRIVATE ${REDIMAGE_PATH}/runtimes/win-x64/native/Release/RedImageTool.lib)
-target_include_directories(xrECore PRIVATE "${REDIMAGE_PATH}/build/native/include/")
-
-### Copy binaries
-add_custom_command(TARGET ${PROJECT_NAME}
-    POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${REDIMAGE_PATH}/runtimes/win-x64/native/Release/RedImageTool.dll ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<CONFIG>/
-)

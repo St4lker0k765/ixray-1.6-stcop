@@ -7,7 +7,7 @@
 #include "../monster_cover_manager.h"
 #include "../monster_home.h"
 
-#include "../../../actor.h"
+#include "../../../Actor.h"
 #include "../../../actor_memory.h"
 #include "../../../visual_memory_manager.h"
 
@@ -21,9 +21,9 @@
 TEMPLATE_SPECIALIZATION
 CStateBloodsuckerPredatorAbstract::CStateBloodsuckerPredator(_Object *obj) : inherited(obj)
 {
-	add_state	(eStatePredator_MoveToCover,	xr_new<CStateMonsterMoveToPointEx<_Object> >(obj));
-	add_state	(eStatePredator_LookOpenPlace,	xr_new<CStateMonsterLookToPoint<_Object> >	(obj));
-	add_state	(eStatePredator_Camp,			xr_new<CStateMonsterCustomAction<_Object> >	(obj));
+	add_state	(eStatePredator_MoveToCover,	new CStateMonsterMoveToPointEx<_Object> (obj));
+	add_state	(eStatePredator_LookOpenPlace,	new CStateMonsterLookToPoint<_Object> 	(obj));
+	add_state	(eStatePredator_Camp,			new CStateMonsterCustomAction<_Object> 	(obj));
 }
 
 TEMPLATE_SPECIALIZATION

@@ -4,9 +4,9 @@
 #include "xrLC_GlobalData.h"
 #include "xrMU_Model.h"
 
-#include "../../xrcdb/xrcdb.h"
-#include "../shader_xrlc.h"
-#include "xrface.h"
+#include "../../xrCDB/xrCDB.h"
+#include "../Shader_xrLC.h"
+#include "xrFace.h"
  
 
 void xrMU_Reference::Load( IReader& F, xr_vector<xrMU_Model*>& mu_models )
@@ -30,8 +30,8 @@ void xrMU_Reference::Load( IReader& F, xr_vector<xrMU_Model*>& mu_models )
 void xrMU_Reference::export_cform_game(CDB::CollectorPacked& CL)
 {
 	// Collecting data
-	xrMU_Model::v_faces*	cfFaces		= xr_new<xrMU_Model::v_faces>		();
-	xrMU_Model::v_vertices*	cfVertices	= xr_new<xrMU_Model::v_vertices>	();
+	xrMU_Model::v_faces*	cfFaces		= new xrMU_Model::v_faces();
+	xrMU_Model::v_vertices*	cfVertices	= new xrMU_Model::v_vertices();
 	{
 		xr_vector<bool>	cfVertexMarks;
 		cfVertexMarks.assign(model->m_vertices.size(),false);

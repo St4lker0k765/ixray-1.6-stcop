@@ -63,7 +63,7 @@ indent_style = space
 insert_final_newline = true
 
 # X-Ray configs
-[{*.ltx,*.seq,*.txt}]
+[{*.ltx,*.seq}]
 charset = cp1251
 end_of_line = crlf
 indent_size = 4

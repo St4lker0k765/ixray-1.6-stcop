@@ -1,24 +1,24 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "HUDManager.h"
-#include "hudtarget.h"
+#include "HUDTarget.h"
 #include "Actor.h"
-#include "../xrEngine/igame_level.h"
+#include "../xrEngine/IGame_Level.h"
 #include "../xrEngine/xr_input.h"
 #include "GamePersistent.h"
 #include "MainMenu.h"
-#include "grenade.h"
-#include "spectator.h"
+#include "Grenade.h"
+#include "Spectator.h"
 #include "Car.h"
 #include "UIGameCustom.h"
-#include "UICursor.h"
+#include "../../xrUI/UICursor.h"
 #include "../xrEngine/string_table.h"
 #include "game_cl_base.h"
 #ifdef	DEBUG
-#include "phdebug.h"
+#include "PHDebug.h"
 #endif
-#include "UIFontDefines.h"
+#include "../../xrUI/UIFontDefines.h"
 
-extern CUIGameCustom*	CurrentGameUI()	{return HUD().GetGameUI();}
+extern CUIGameCustom* CurrentGameUI() {return HUD().GetGameUI();}
 
 //--------------------------------------------------------------------
 CHUDManager::CHUDManager() : pUIGame(nullptr), m_pHUDTarget(new CHUDTarget())
@@ -35,7 +35,7 @@ CHUDManager::~CHUDManager()
 	xr_delete		(pUIGame);
 	xr_delete		(m_pHUDTarget);
 }
-
+#include "GametaskManager.h"
 //--------------------------------------------------------------------
 void CHUDManager::OnFrame()
 {
@@ -45,10 +45,31 @@ void CHUDManager::OnFrame()
 	if(!b_online)						
 		return;
 
+	PROF_EVENT("CHUDManager::OnFrame");
+	m_pHUDTarget->CursorOnFrame();
+
+	if (Device.IsEditorMode())
+	{
+		OnFrameMT();
+	}
+}
+
+xrCriticalSection ui_lock;
+void CHUDManager::OnFrameMT()
+{
+	if (!psHUD_Flags.is(HUD_DRAW_RT2))	
+		return;
+
+	if(!b_online)						
+		return;
+	PROF_EVENT("CHUDManager::OnFrameMT");
+
+	if (Device.dwPrecacheFrame == 0)
+		Level().GameTaskManager().UpdateTasks();
+
+	xrCriticalSectionGuard guard(&ui_lock);
 	if (pUIGame) 
 		pUIGame->OnFrame();
-
-	m_pHUDTarget->CursorOnFrame();
 }
 //--------------------------------------------------------------------
 
@@ -131,12 +152,15 @@ void  CHUDManager::RenderUI()
 		return;
 
 	if(!b_online)					return;
-
+	PROF_EVENT("CHUDManager::RenderUI");
 	if (true /*|| psHUD_Flags.is(HUD_DRAW | HUD_DRAW_RT)*/)
 	{
 		HitMarker.Render			();
 		if(pUIGame)
-			pUIGame->Render			();
+		{
+			xrCriticalSectionGuard guard(&ui_lock);
+			pUIGame->Render();
+		}
 
 		UI().RenderFont				();
 	}
@@ -147,7 +171,7 @@ void  CHUDManager::RenderUI()
 	if( Device.Paused() && bShowPauseString){
 		CGameFont* pFont	= UI().Font().GetFont(GRAFFITI50_FONT_NAME);
 		pFont->SetColor		(0x80FF0000	);
-		LPCSTR _str			= CStringTable().translate("st_game_paused").c_str();
+		LPCSTR _str			= g_pStringTable->translate("st_game_paused").c_str();
 		
 		Fvector2			_pos;
 		_pos.set			(UI_BASE_WIDTH/2.0f, UI_BASE_HEIGHT/2.0f);
@@ -214,7 +238,7 @@ void CHUDManager::SetGrenadeMarkType( LPCSTR tex_name )
 
 // ------------------------------------------------------------------------------------
 
-#include "ui/UIMainInGameWnd.h"
+#include "ui/UIMainIngameWnd.h"
 extern CUIXml*			pWpnScopeXml;
 
 void CHUDManager::Load()
@@ -246,16 +270,12 @@ void CHUDManager::OnScreenResolutionChanged()
 void CHUDManager::OnDisconnected()
 {
 	b_online				= false;
-	if(pUIGame)
-		Device.seqFrame.Remove	(pUIGame);
 }
 
 void CHUDManager::OnConnected()
 {
 	if(b_online)			return;
 	b_online				= true;
-	if(pUIGame)
-		Device.seqFrame.Add	(pUIGame,REG_PRIORITY_LOW-1000);
 }
 
 void CHUDManager::net_Relcase( CObject* obj )
@@ -267,12 +287,4 @@ void CHUDManager::net_Relcase( CObject* obj )
 #ifdef	DEBUG
 	DBG_PH_NetRelcase( obj );
 #endif
-}
-
-CDialogHolder* CurrentDialogHolder()
-{
-	if(MainMenu()->IsActive())
-		return MainMenu();
-	else
-		return HUD().GetGameUI();
 }

@@ -1,7 +1,7 @@
-#include "stdafx.h"
+#include "Stdafx.h"
 #pragma hdrstop
 
-#include "..\material\GameMaterial.h"
+#include "../material/GameMaterial.h"
 
 extern ClassDesc2*	GetXRayMtlDesc		();
 extern TCHAR*		GetString			(int id);
@@ -24,7 +24,7 @@ BOOL WINAPI DllMain(HINSTANCE   hinstDLL,
 		fs.initialize("xray_path.ltx");
 		xr_log::instance().init("max_object");
 
-		//FPU::m64r	(); // нужно чтобы макс не сбрасывал контрольки в 0
+		//FPU::m64r	(); // РЅСѓР¶РЅРѕ С‡С‚РѕР±С‹ РјР°РєСЃ РЅРµ СЃР±СЂР°СЃС‹РІР°Р» РєРѕРЅС‚СЂРѕР»СЊРєРё РІ 0
 
 		//InitCustomControls(hInstance);	// Initialize MAX's custom controls
 		InitCommonControls();			// Initialize Win95 controls

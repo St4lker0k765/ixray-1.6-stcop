@@ -1,8 +1,8 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 
-#include "build.h"
+#include "Build.h"
 #include "../xrLC_Light/xrLC_GlobalData.h"
-#include "../xrLC_Light/xrface.h"
+#include "../xrLC_Light/xrFace.h"
 
 const int	 HDIM_X = 56;
 const int	 HDIM_Y = 24;
@@ -51,7 +51,7 @@ void CBuild::PreOptimize()
 			for (int iy=0; iy<HDIM_Y+1; iy++)
 				for (int iz=0; iz<HDIM_Z+1; iz++)
 				{
-					HASH[ix][iy][iz] = xr_new<vecVertex> ();
+					HASH[ix][iy][iz] = new vecVertex ();
 					HASH[ix][iy][iz]->reserve	(_average);
 				}
 	}

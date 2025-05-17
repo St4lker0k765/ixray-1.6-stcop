@@ -10,58 +10,59 @@
 #include "pch_script.h"
 #include "ai_stalker.h"
 #include "../ai_monsters_misc.h"
-#include "../../weapon.h"
-#include "../../hit.h"
-#include "../../phdestroyable.h"
+#include "../../Weapon.h"
+#include "../../Hit.h"
+#include "../../PHDestroyable.h"
 #include "../../CharacterPhysicsSupport.h"
 #include "../../script_entity_action.h"
 #include "../../game_level_cross_table.h"
 #include "../../game_graph.h"
-#include "../../inventory.h"
-#include "../../artefact.h"
-#include "../../phmovementcontrol.h"
-#include "../../../xrServerEntities/xrserver_objects_alife_monsters.h"
+#include "../../Inventory.h"
+#include "../../Artefact.h"
+#include "../../PHMovementControl.h"
+#include "../../../xrServerEntities/xrServer_Objects_ALife_Monsters.h"
 #include "../../cover_evaluators.h"
-#include "../../xrserver.h"
+#include "../../xrServer.h"
 #include "../../../xrEngine/xr_level_controller.h"
 #include "../../../Include/xrRender/Kinematics.h"
 #include "../../../xrServerEntities/character_info.h"
-#include "../../actor.h"
+#include "../../Actor.h"
 #include "../xrEngine/CameraBase.h"
 #include "../../relation_registry.h"
 #include "../../stalker_animation_manager.h"
-#include "../../stalker_planner.h"
 #include "../../script_game_object.h"
 #include "../../detail_path_manager.h"
 #include "../../agent_manager.h"
 #include "../../agent_corpse_manager.h"
-#include "../../object_handler_planner.h"
-#include "../../object_handler_space.h"
+#include "../../ObjectHandlerSpace.h"
 #include "../../memory_manager.h"
 #include "../../sight_manager.h"
 #include "../../ai_object_location.h"
 #include "../../stalker_movement_manager_smart_cover.h"
-#include "../../entitycondition.h"
-#include "../../../xrScripts//script_engine.h"
+#include "../../EntityCondition.h"
+#include "../../../xrScripts/script_engine.h"
 #include "ai_stalker_impl.h"
 #include "../../sound_player.h"
 #include "../../stalker_sound_data.h"
 #include "../../stalker_sound_data_visitor.h"
 #include "ai_stalker_space.h"
+#include "RbmkObjectHandlerPlanner.h"
 #include "../../mt_config.h"
-#include "../../effectorshot.h"
+#include "../../EffectorShot.h"
 #include "../../visual_memory_manager.h"
 #include "../../enemy_manager.h"
 #include "../../../xrServerEntities/alife_human_brain.h"
-#include "../../profiler.h"
 #include "../../BoneProtections.h"
 #include "../../stalker_animation_names.h"
-#include "../../stalker_decision_space.h"
 #include "../../agent_member_manager.h"
 #include "../../location_manager.h"
 #include "smart_cover_animation_selector.h"
 #include "smart_cover_animation_planner.h"
 #include "smart_cover_planner_target_selector.h"
+#include "Legacy/StalkerPlanner/stalker_planner.h"
+#if USE_OLD_OBJECT_PLANNER
+#include "Legacy/object_handler_planner.h"
+#endif
 
 #ifdef DEBUG
 #	include "../../alife_simulator.h"
@@ -75,7 +76,10 @@ using namespace StalkerSpace;
 
 extern int g_AI_inactive_time;
 
-CAI_Stalker::CAI_Stalker			() :
+CAI_Stalker::CAI_Stalker			():
+#if !USE_OLD_OBJECT_PLANNER
+CObjectHandler(this),
+#endif
 	m_sniper_update_rate			(false),
 	m_sniper_fire_mode				(false),
 	m_take_items_enabled			(true),
@@ -116,7 +120,7 @@ void CAI_Stalker::reinit			()
 	animation().reinit				();
 //	movement().reinit				();
 
-	//загрузка спецевической звуковой схемы для сталкера согласно m_SpecificCharacter
+	//Р·Р°РіСЂСѓР·РєР° СЃРїРµС†РµРІРёС‡РµСЃРєРѕР№ Р·РІСѓРєРѕРІРѕР№ СЃС…РµРјС‹ РґР»СЏ СЃС‚Р°Р»РєРµСЂР° СЃРѕРіР»Р°СЃРЅРѕ m_SpecificCharacter
 	sound().sound_prefix			(SpecificCharacter().sound_voice_prefix());
 
 	LoadSounds						(*cNameSect());
@@ -462,12 +466,14 @@ void CAI_Stalker::Die				(CObject* who)
 		else
 			sound().play			(eStalkerSoundDie);
 	}
-	
+#if USE_OLD_OBJECT_PLANNER
 	m_hammer_is_clutched			= m_clutched_hammer_enabled && !CObjectHandler::planner().m_storage.property(ObjectHandlerSpace::eWorldPropertyStrapped) && !::Random.randI(0,2);
-
+#else
+	m_hammer_is_clutched			= m_clutched_hammer_enabled && m_planner->bStrapped && !::Random.randI(0,2);
+#endif
 	inherited::Die					(who);
 	
-	//запретить использование слотов в инвенторе
+	//Р·Р°РїСЂРµС‚РёС‚СЊ РёСЃРїРѕР»СЊР·РѕРІР°РЅРёРµ СЃР»РѕС‚РѕРІ РІ РёРЅРІРµРЅС‚РѕСЂРµ
 	inventory().SetSlotsUseful		(false);
 
 	if (inventory().GetActiveSlot() == NO_ACTIVE_SLOT)
@@ -633,7 +639,7 @@ BOOL CAI_Stalker::net_Spawn			(CSE_Abstract* DC)
 	if (!g_Alive())
 		sound().set_sound_mask(u32(eStalkerSoundMaskDie));
 
-	//загрузить иммунитеты из модельки сталкера
+	//Р·Р°РіСЂСѓР·РёС‚СЊ РёРјРјСѓРЅРёС‚РµС‚С‹ РёР· РјРѕРґРµР»СЊРєРё СЃС‚Р°Р»РєРµСЂР°
 	IKinematics* pKinematics = smart_cast<IKinematics*>(Visual()); VERIFY(pKinematics);
 	CInifile* ini = pKinematics->LL_UserData();
 	if(ini)
@@ -650,7 +656,7 @@ BOOL CAI_Stalker::net_Spawn			(CSE_Abstract* DC)
 		}
 	}
 
-	//вычислить иммунета в зависимости от ранга
+	//РІС‹С‡РёСЃР»РёС‚СЊ РёРјРјСѓРЅРµС‚Р° РІ Р·Р°РІРёСЃРёРјРѕСЃС‚Рё РѕС‚ СЂР°РЅРіР°
 	static float novice_rank_immunity			= pSettings->r_float("ranks_properties", "immunities_novice_k");
 	static float expirienced_rank_immunity		= pSettings->r_float("ranks_properties", "immunities_experienced_k");
 
@@ -693,7 +699,9 @@ BOOL CAI_Stalker::net_Spawn			(CSE_Abstract* DC)
 	sight().update					();
 	Exec_Look						(.001f);
 
-	if (EngineExternal()[EEngineExternalGame::EnableNPCLookAtActor]) {
+	const static bool isNPCLookAtActor = EngineExternal()[EEngineExternalGame::EnableNPCLookAtActor];
+	if (isNPCLookAtActor)
+	{
 		CBoneInstance* bone_head = &smart_cast<IKinematics*>(Visual())->LL_GetBoneInstance(
 			smart_cast<IKinematics*>(Visual())->LL_BoneID("bip01_head"));
 		bone_head->set_callback(bctCustom, BoneCallback, this);
@@ -706,31 +714,33 @@ BOOL CAI_Stalker::net_Spawn			(CSE_Abstract* DC)
 
 void CAI_Stalker::net_Destroy()
 {
-	inherited::net_Destroy				();
-	CInventoryOwner::net_Destroy		();
-	m_pPhysics_support->in_NetDestroy	();
+	inherited::net_Destroy();
+	CInventoryOwner::net_Destroy();
+	m_pPhysics_support->in_NetDestroy();
 
-	Device.remove_from_seq_parallel	(
-		fastdelegate::FastDelegate0<>(
+	Device.remove_from_seq_parallel
+	(
+		xr_make_delegate
+		(
 			this,
 			&CAI_Stalker::update_object_handler
 		)
 	);
 
 #ifdef DEBUG
-	fastdelegate::FastDelegate0<>	f = fastdelegate::FastDelegate0<>(this,&CAI_Stalker::update_object_handler);
-	xr_vector<fastdelegate::FastDelegate0<> >::const_iterator	I;
-	I	= std::find(Device.seqParallel.begin(),Device.seqParallel.end(),f);
-	VERIFY							(I == Device.seqParallel.end());
+	auto f = xr_make_delegate(this, &CAI_Stalker::update_object_handler);
+	xr_vector<xr_delegate<void()> >::const_iterator	I;
+	I = std::find(Device.seqParallel.begin(), Device.seqParallel.end(), f);
+	VERIFY(I == Device.seqParallel.end());
 #endif // DEBUG
 
-	xr_delete						(m_ce_close);
-	xr_delete						(m_ce_far);
-	xr_delete						(m_ce_best);
-	xr_delete						(m_ce_angle);
-	xr_delete						(m_ce_safe);
-	xr_delete						(m_ce_ambush);
-	xr_delete						(m_boneHitProtection);
+	xr_delete(m_ce_close);
+	xr_delete(m_ce_far);
+	xr_delete(m_ce_best);
+	xr_delete(m_ce_angle);
+	xr_delete(m_ce_safe);
+	xr_delete(m_ce_ambush);
+	xr_delete(m_boneHitProtection);
 }
 
 void CAI_Stalker::net_Save			(NET_Packet& P)
@@ -839,6 +849,8 @@ void CAI_Stalker::update_object_handler	()
 	if (!g_Alive())
 		return;
 
+	PROF_EVENT("AI: [Stalker] Update Handler");
+
 	try {
 		try {
 			CObjectHandler::update	();
@@ -889,22 +901,29 @@ void CAI_Stalker::destroy_anim_mov_ctrl	()
 
 void CAI_Stalker::UpdateCL()
 {
-	START_PROFILE("stalker")
-	START_PROFILE("stalker/client_update")
+	START_PROFILE("client_update")
 	VERIFY2						(PPhysicsShell()||getEnabled(), *cName());
 
-	if (g_Alive()) {
-		if (g_mt_config.test(mtObjectHandler) && CObjectHandler::planner().initialized()) {
-			fastdelegate::FastDelegate0<>								f = fastdelegate::FastDelegate0<>(this,&CAI_Stalker::update_object_handler);
+	if (g_Alive())
+	{
+
+#if USE_OLD_OBJECT_PLANNER
+		if (g_mt_config.test(mtObjectHandler) && CObjectHandler::planner().initialized()) 
+#else
+		if (g_mt_config.test(mtObjectHandler) &&m_planner->GoapPlanner.GetCurrentAction())
+#endif
+		{
+			auto f = xr_make_delegate(this,&CAI_Stalker::update_object_handler);
+
 #ifdef DEBUG
-			xr_vector<fastdelegate::FastDelegate0<> >::const_iterator	I;
-			I	= std::find(Device.seqParallel.begin(),Device.seqParallel.end(),f);
+			xr_vector<xr_delegate<void()> >::const_iterator I = std::find(Device.seqParallel.begin(),Device.seqParallel.end(),f);
 			VERIFY							(I == Device.seqParallel.end());
 #endif
-			Device.seqParallel.push_back	(fastdelegate::FastDelegate0<>(this,&CAI_Stalker::update_object_handler));
+			Device.seqParallel.push_back	(xr_make_delegate(this,&CAI_Stalker::update_object_handler));
 		}
-		else {
-			START_PROFILE("stalker/client_update/object_handler")
+		else 
+		{
+			START_PROFILE("object_handler")
 			update_object_handler			();
 			STOP_PROFILE
 		}
@@ -929,16 +948,16 @@ void CAI_Stalker::UpdateCL()
 		}
 	}
 
-	START_PROFILE("stalker/client_update/inherited")
+	START_PROFILE("inherited")
 	inherited::UpdateCL				();
 	STOP_PROFILE
 	
-	START_PROFILE("stalker/client_update/physics")
+	START_PROFILE("physics")
 	m_pPhysics_support->in_UpdateCL	();
 	STOP_PROFILE
 
 	if (g_Alive()) {
-		START_PROFILE("stalker/client_update/sight_manager")
+		START_PROFILE("sight_manager")
 		VERIFY						(!m_pPhysicsShell);
 		try {
 			sight().update			();
@@ -951,11 +970,11 @@ void CAI_Stalker::UpdateCL()
 		Exec_Look					(client_update_fdelta());
 		STOP_PROFILE
 
-		START_PROFILE("stalker/client_update/step_manager")
+		START_PROFILE("step_manager")
 		CStepManager::update		(false);
 		STOP_PROFILE
 
-		START_PROFILE("stalker/client_update/weapon_shot_effector")
+		START_PROFILE("weapon_shot_effector")
 		if (weapon_shot_effector().IsActive())
 			weapon_shot_effector().Update	();
 		STOP_PROFILE
@@ -963,7 +982,6 @@ void CAI_Stalker::UpdateCL()
 #ifdef DEBUG
 	debug_text	();
 #endif
-	STOP_PROFILE
 	STOP_PROFILE
 }
 
@@ -981,11 +999,15 @@ CPHDestroyable*		CAI_Stalker::		ph_destroyable	()
 
 void CAI_Stalker::shedule_Update		( u32 DT )
 {
-	START_PROFILE("stalker")
-	START_PROFILE("stalker/schedule_update")
+	PROF_EVENT("CAI_Stalker::shedule_Update")
 	VERIFY2				(getEnabled()||PPhysicsShell(), *cName());
 
-	if (!CObjectHandler::planner().initialized()) {
+#if USE_OLD_OBJECT_PLANNER
+	if (!CObjectHandler::planner().initialized()) 
+#else
+	if (!m_planner->GoapPlanner.GetCurrentAction())
+#endif
+	{
 		START_PROFILE("stalker/client_update/object_handler")
 		update_object_handler			();
 		STOP_PROFILE
@@ -1010,32 +1032,28 @@ void CAI_Stalker::shedule_Update		( u32 DT )
 		agent_manager().update			();
 #endif // USE_SCHEDULER_IN_AGENT_MANAGER
 
-//		bool			check = !!memory().enemy().selected();
-#if 0//def DEBUG
-		memory().visual().check_visibles();
-#endif
-		if ( false && g_mt_config.test(mtAiVision) )
-			Device.seqParallel.push_back(fastdelegate::FastDelegate0<>(this,&CCustomMonster::Exec_Visibility));
+		if (g_mt_config.test(mtAiVision) )
+			Device.seqParallel.push_back(xr_make_delegate(this,&CCustomMonster::Exec_Visibility));
 		else {
-			START_PROFILE("stalker/schedule_update/vision")
+			START_PROFILE("vision")
 			Exec_Visibility				();
 			STOP_PROFILE
 		}
 
-		START_PROFILE("stalker/schedule_update/memory")
+		START_PROFILE("memory")
 
-		START_PROFILE("stalker/schedule_update/memory/process")
+		START_PROFILE("process")
 		process_enemies					();
 		STOP_PROFILE
 		
-		START_PROFILE("stalker/schedule_update/memory/update")
+		START_PROFILE("update")
 		memory().update					(dt);
 		STOP_PROFILE
 
 		STOP_PROFILE
 	}
 
-	START_PROFILE("stalker/schedule_update/inherited")
+	START_PROFILE("inherited")
 	inherited::inherited::shedule_Update(DT);
 	STOP_PROFILE
 	
@@ -1059,14 +1077,14 @@ void CAI_Stalker::shedule_Update		( u32 DT )
 		// Look and action streams
 		float							temp = conditions().health();
 		if (temp > 0) {
-			START_PROFILE("stalker/schedule_update/feel_touch")
+			START_PROFILE("feel_touch")
 			Fvector C; float R;
 			Center(C);
 			R = Radius();
 			feel_touch_update		(C,R);
 			STOP_PROFILE
 
-			START_PROFILE("stalker/schedule_update/net_update")
+			START_PROFILE("net_update")
 			net_update				uNext;
 			uNext.dwTimeStamp		= Level().timeServer();
 			uNext.o_model			= movement().m_body.current.yaw;
@@ -1078,7 +1096,7 @@ void CAI_Stalker::shedule_Update		( u32 DT )
 		}
 		else 
 		{
-			START_PROFILE("stalker/schedule_update/net_update")
+			START_PROFILE("net_update")
 			net_update			uNext;
 			uNext.dwTimeStamp	= Level().timeServer();
 			uNext.o_model		= movement().m_body.current.yaw;
@@ -1091,7 +1109,7 @@ void CAI_Stalker::shedule_Update		( u32 DT )
 	}
 	VERIFY				(_valid(Position()));
 
-	START_PROFILE("stalker/schedule_update/inventory_owner")
+	START_PROFILE("inventory_owner")
 	UpdateInventoryOwner(DT);
 	STOP_PROFILE
 
@@ -1101,12 +1119,10 @@ void CAI_Stalker::shedule_Update		( u32 DT )
 //	}
 //#endif
 	
-	START_PROFILE("stalker/schedule_update/physics")
+	START_PROFILE("physics")
 	VERIFY				(_valid(Position()));
 	m_pPhysics_support->in_shedule_Update(DT);
 	VERIFY				(_valid(Position()));
-	STOP_PROFILE
-	STOP_PROFILE
 	STOP_PROFILE
 }
 
@@ -1132,7 +1148,7 @@ void CAI_Stalker::Think			()
 	START_PROFILE("stalker/schedule_update/think/brain")
 //	try {
 //		try {
-			brain().update			(update_delta);
+			try{brain().update(update_delta);}catch(...){}
 //		}
 #ifdef DEBUG
 //		catch (luabind::cast_failed &message) {
@@ -1416,5 +1432,5 @@ bool CAI_Stalker::can_fire_right_now							( )
 
 bool CAI_Stalker::unlimited_ammo()
 {
-	return infinite_ammo() && CObjectHandler::planner().object().g_Alive();
+	return infinite_ammo() && g_Alive();
 }

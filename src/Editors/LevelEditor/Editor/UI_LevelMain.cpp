@@ -1,18 +1,20 @@
 #include "stdafx.h"
-#include "Utils\Cursor3D.h"
+#include "Utils/Cursor3D.h"
 #include "..\xrengine\GameFont.h"
 #include "UI\UIEditLibrary.h"
+#include "Editor/Utils/ContentView.h"
 
 #ifdef _LEVEL_EDITOR
 //.    if (m_Cursor->GetVisible()) RedrawScene();
 #endif
 
+ECORE_API extern bool bIsLevelEditor;
 CLevelMain*	LUI=(CLevelMain*)UI;
 
 CLevelMain::CLevelMain()
 {
-	m_Cursor        = xr_new<C3DCursor>();
-	EPrefs			= xr_new<CLevelPreferences>();
+	m_Cursor        = new C3DCursor();
+	EPrefs			= new CLevelPreferences();
 }
 
 CLevelMain::~CLevelMain()
@@ -45,14 +47,14 @@ CCommandVar CLevelTool::CommandShowObjectList(CCommandVar p1, CCommandVar p2)
 // Main commands
 CCommandVar CommandLibraryEditor(CCommandVar p1, CCommandVar p2)
 {
-	if (Scene->ObjCount() || (LUI->GetEState() != esEditScene))
-	{
-		if (LUI->GetEState() == esEditLibrary)
-			UIEditLibrary::Show();
-		else
-			ELog.DlgMsg(mtError, "! Scene must be empty before editing library!");
-	}
-	else
+	//if (Scene->ObjCount() || (LUI->GetEState() != esEditScene))
+	//{
+	//	if (LUI->GetEState() == esEditLibrary)
+	//		UIEditLibrary::Show();
+	//	else
+	//		ELog.DlgMsg(mtError, "! Scene must be empty before editing library!");
+	//}
+	//else
 		UIEditLibrary::Show();
 
 	return TRUE;
@@ -65,6 +67,16 @@ CCommandVar CommandLAnimEditor(CCommandVar p1, CCommandVar p2)
 CCommandVar CommandFileMenu(CCommandVar p1, CCommandVar p2)
 {
 	//FHelper.ShowPPMenu(fraLeftBar->pmSceneFile,0);
+	return TRUE;
+}
+CCommandVar CommandLoadCustomIcons(CCommandVar p1, CCommandVar p2)
+{
+	GContentView->LoadCustomIcons();
+	return TRUE;
+}
+CCommandVar CommandRemoveCustomIcon(CCommandVar p1, CCommandVar p2)
+{
+	GContentView->RemoveCustomIcon(p1);
 	return TRUE;
 }
 CCommandVar CLevelTool::CommandEnableTarget(CCommandVar p1, CCommandVar p2)
@@ -132,6 +144,12 @@ CCommandVar CLevelTool::CommandReadonlyTarget(CCommandVar p1, CCommandVar p2)
 	return res;
 }
 
+CCommandVar CLevelTool::CommandMultiReplaceObjects(CCommandVar p1, CCommandVar p2)
+{
+
+	return false;
+}
+
 CCommandVar CLevelTool::CommandMultiRenameObjects(CCommandVar p1, CCommandVar p2)
 {
 	if( !Scene->locked() )
@@ -166,74 +184,90 @@ CCommandVar CommandUnloadLevelPart(CCommandVar p1, CCommandVar p2)
 		return			Scene->UnloadLevelPart(temp_fn.c_str(),p1);
 	return				TRUE;
 }
+
+static xr_task_group LoaderEvent;
+
 CCommandVar CommandLoad(CCommandVar p1, CCommandVar p2)
 {
-	if( !Scene->locked() )
+	LoaderEvent.wait();
+
+	if (!Scene->locked())
 	{
 		if (!p1.IsString())
 		{
-			xr_string temp_fn	= LTools->m_LastFileName.c_str();
-			if (EFS.GetOpenName	(_maps_, temp_fn ))
-				return 			ExecCommand(COMMAND_LOAD,temp_fn);
-		}else
+			xr_string temp_fn = LTools->m_LastFileName.c_str();
+			if (EFS.GetOpenName(_maps_, temp_fn, false, 0, -1, "*.level;*.tmp"))
+				return 			ExecCommand(COMMAND_LOAD, temp_fn);
+		}
+		else
 		{
-			xr_string temp_fn		= p1;
-			xr_strlwr				(temp_fn);
+			xr_string temp_fn = p1;
+			xr_strlwr(temp_fn);
 
 			if (!Scene->IfModified())
 				return FALSE;
-			
-			UI->SetStatus			("Level loading...");
-			ExecCommand				(COMMAND_CLEAR);
+
+			UI->SetStatus("Level loading...");
+			ExecCommand(COMMAND_CLEAR);
 			FS.TryLoad(temp_fn.c_str());
-			IReader* R = FS.r_open	(temp_fn.c_str());
+			IReader* R = FS.r_open(temp_fn.c_str());
 			if (!R)return false;
 			char ch;
 			R->r(&ch, sizeof(ch));
-			bool is_ltx = (ch=='[');
+			bool is_ltx = (ch == '[');
 			FS.r_close(R);
-			bool res;
-			LTools->m_LastFileName	= temp_fn.c_str();
+			LTools->m_LastFileName = temp_fn.c_str();
 
-			if(is_ltx)
-				res = Scene->LoadLTX(temp_fn.c_str(), false);
-			else
-				res = Scene->Load(temp_fn.c_str(), false);
+			LoaderEvent.run
+			(
+				[temp_fn, is_ltx]
+				{
+					bool Result = (is_ltx) ? Scene->LoadLTX(temp_fn.c_str(), false) : Scene->Load(temp_fn.c_str(), false);
 
-			if (res)
-			{
-				UI->ResetStatus		();
-				Scene->UndoClear	();
-				
-				BOOL bk1 			= Scene->m_RTFlags.test(EScene::flRT_Unsaved);
-				BOOL bk2 			= Scene->m_RTFlags.test(EScene::flRT_Modified);
+					if (Result)
+					{
+						UI->ResetStatus();
+						Scene->UndoClear();
 
-				Scene->UndoSave		();
+						BOOL bk1 = Scene->m_RTFlags.test(EScene::flRT_Unsaved);
+						BOOL bk2 = Scene->m_RTFlags.test(EScene::flRT_Modified);
 
-				 Scene->m_RTFlags.set(EScene::flRT_Unsaved,bk1);
-				 Scene->m_RTFlags.set(EScene::flRT_Modified,bk2);
+						Scene->UndoSave();
 
-				ExecCommand			(COMMAND_CLEAN_LIBRARY);
-				ExecCommand			(COMMAND_UPDATE_CAPTION);
-				ExecCommand			(COMMAND_CHANGE_ACTION,etaSelect);
-				EPrefs->AppendRecentFile(temp_fn.c_str());
-			}else
-			{
-				ELog.DlgMsg	( mtError, "Can't load map '%s'", temp_fn.c_str() );
-				LTools->m_LastFileName = "";
-			}
-			// update props
-			ExecCommand			(COMMAND_UPDATE_PROPERTIES);
-			UI->RedrawScene		();             
+						Scene->m_RTFlags.set(EScene::flRT_Unsaved, bk1);
+						Scene->m_RTFlags.set(EScene::flRT_Modified, bk2);
+
+						ExecCommand(COMMAND_CLEAN_LIBRARY);
+						ExecCommand(COMMAND_UPDATE_CAPTION);
+						ExecCommand(COMMAND_CHANGE_ACTION, etaSelect);
+						EPrefs->AppendRecentFile(temp_fn.c_str());
+					}
+					else
+					{
+						ELog.DlgMsg(mtError, "Can't load map '%s'", temp_fn.c_str());
+						LTools->m_LastFileName = "";
+					}
+					// update props
+					ExecCommand(COMMAND_UPDATE_PROPERTIES);
+					UI->RedrawScene();
+				}
+			);
 		}
-	} else {
-		ELog.DlgMsg( mtError, "Scene sharing violation" );
+
+		return TRUE;
+	}
+	else
+	{
+		ELog.DlgMsg(mtError, "Scene sharing violation");
 		return FALSE;
 	}
 	return TRUE;
 }
+
 CCommandVar CommandSaveBackup(CCommandVar p1, CCommandVar p2)
 {
+	LoaderEvent.wait();
+
 	string_path 	fn;
 	xr_strconcat(fn,Core.CompName,"_",Core.UserName,"_backup.level");
 	FS.update_path	(fn,_maps_,fn);
@@ -241,6 +275,8 @@ CCommandVar CommandSaveBackup(CCommandVar p1, CCommandVar p2)
 }
 CCommandVar CommandSave(CCommandVar p1, CCommandVar p2)
 {
+	LoaderEvent.wait();
+
 	if( !Scene->locked() )
 	{
 		if (p2==1)
@@ -285,9 +321,11 @@ CCommandVar CommandSave(CCommandVar p1, CCommandVar p2)
 
 CCommandVar CommandClear(CCommandVar p1, CCommandVar p2)
 {
+	LoaderEvent.wait();
+
 	if( !Scene->locked() ){
 		if (!Scene->IfModified()) return TRUE;
-		EDevice->m_Camera.Reset	();
+		UI->CurrentView().m_Camera.Reset	();
 		Scene->Reset			();
 		Scene->m_LevelOp.Reset	();
 		Tools->m_LastFileName 		= "";
@@ -342,7 +380,7 @@ CCommandVar CommandShowClipEditor(CCommandVar p1, CCommandVar p2)
 		if(!CO)
 			return TRUE;
 			
-		CSpawnPoint* sp = dynamic_cast<CSpawnPoint*>(CO);
+		CSpawnPoint* sp = smart_cast<CSpawnPoint*>(CO);
 
 		
 		CKinematicsAnimated* KA 	= PKinematicsAnimated(sp->m_SpawnData.m_Visual->visual);
@@ -446,6 +484,20 @@ CCommandVar CommandPaste(CCommandVar p1, CCommandVar p2)
 	return FALSE;
 }
 
+CCommandVar CommandDuplicate(CCommandVar p1, CCommandVar p2)
+{
+    if (!Scene->locked()) {
+		Scene->DuplicateSelection(LTools->CurrentClassID());
+        Scene->UndoSave();
+        return 			TRUE;
+    }
+    else {
+        ELog.DlgMsg(mtError, "Scene sharing violation");
+        return 			FALSE;
+    }
+    return FALSE;
+}
+
 CCommandVar CommandLoadSelection(CCommandVar p1, CCommandVar p2)
 {
 	if( !Scene->locked() )
@@ -493,32 +545,46 @@ CCommandVar CommandSaveSelection(CCommandVar p1, CCommandVar p2)
 
 CCommandVar CommandUndo(CCommandVar p1, CCommandVar p2)
 {
-	if( !Scene->locked() ){
-		if( !Scene->Undo() ) 	ELog.DlgMsg( mtInformation, "Undo buffer empty" );
-		else{
-			LTools->Reset		();
-			ExecCommand			(COMMAND_CHANGE_ACTION, etaSelect);
-			return 				TRUE;
+	LTools->GetProperties()->ClearProperties();
+
+	if (!Scene->locked())
+	{
+		if (!Scene->Undo())
+			ELog.DlgMsg(mtInformation, "Undo buffer empty");
+		else
+		{
+			LTools->Reset();
+			ExecCommand(COMMAND_CHANGE_ACTION, etaSelect);
+			return TRUE;
 		}
-	} else {
-		ELog.DlgMsg				( mtError, "Scene sharing violation" );
 	}
-	return 						FALSE;
+	else
+	{
+		ELog.DlgMsg(mtError, "Scene sharing violation");
+	}
+	return FALSE;
 }
 
 CCommandVar CommandRedo(CCommandVar p1, CCommandVar p2)
 {
-	if( !Scene->locked() ){
-		if( !Scene->Redo() ) 	ELog.DlgMsg( mtInformation, "Redo buffer empty" );
-		else{
-			LTools->Reset		();
-			ExecCommand			(COMMAND_CHANGE_ACTION, etaSelect);
-			return 				TRUE;
+	LTools->GetProperties()->ClearProperties();
+
+	if (!Scene->locked()) 
+	{
+		if (!Scene->Redo()) 
+			ELog.DlgMsg(mtInformation, "Redo buffer empty");
+		else 
+		{
+			LTools->Reset();
+			ExecCommand(COMMAND_CHANGE_ACTION, etaSelect);
+			return TRUE;
 		}
-	} else {
-		ELog.DlgMsg				( mtError, "Scene sharing violation" );
 	}
-	return 						FALSE;
+	else
+	{
+		ELog.DlgMsg(mtError, "Scene sharing violation");
+	}
+	return FALSE;
 }
 
 CCommandVar CommandClearSceneSummary(CCommandVar p1, CCommandVar p2)
@@ -590,23 +656,40 @@ CCommandVar CommandOptions(CCommandVar p1, CCommandVar p2)
 
 CCommandVar CommandBuild(CCommandVar p1, CCommandVar p2)
 {
-	if( !Scene->locked() ){
-		if (mrYes==ELog.DlgMsg(mtConfirmation, mbYes |mbNo, "Are you sure to build level?"))
-			return				Builder.Compile(false);
-	}else{
-		ELog.DlgMsg( mtError, "Scene sharing violation" );
+	if (!Scene->locked())
+	{
+		if (mrYes == ELog.DlgMsg(mtConfirmation, mbYes | mbNo, "Are you sure to build level?"))
+		{
+			LoaderEvent.wait();
+
+			LoaderEvent.run
+			(
+				[]()
+				{
+					Builder.Compile(false);
+
+				}
+			);
+
+			return true;
+		}
 	}
-	return 						FALSE;
+	else
+	{
+		ELog.DlgMsg(mtError, "Scene sharing violation");
+	}
+	return FALSE;
 }
+
 CCommandVar CommandUpdateGizmo(CCommandVar p1, CCommandVar p2)
 {
-	LTools->GetGimzo()->bApplyUpdatePos = true;
+	// LTools->GetGimzo()->bApplyUpdatePos = true;
 	return FALSE;
 }
 CCommandVar CommandMakeGizmo(CCommandVar p1, CCommandVar p2)
 {
-	auto GizmoPtr = LTools->GetGimzo();
-	GizmoPtr->bApplyChangePos = !GizmoPtr->bApplyChangePos;
+	// auto GizmoPtr = LTools->GetGimzo();
+	// GizmoPtr->bApplyChangePos = !GizmoPtr->bApplyChangePos;
 	return FALSE;
 }
 CCommandVar CommandMakeAIMap(CCommandVar p1, CCommandVar p2)
@@ -619,46 +702,134 @@ CCommandVar CommandMakeAIMap(CCommandVar p1, CCommandVar p2)
 	}
 	return 						FALSE;
 }
+
 CCommandVar CommandMakeGame(CCommandVar p1, CCommandVar p2)
 {
-	if( !Scene->locked() ){
-		if (mrYes==ELog.DlgMsg(mtConfirmation, mbYes |mbNo, "Are you sure to export game?"))
-			return				Builder.MakeGame( );
-	}else{
-		ELog.DlgMsg( mtError, "Scene sharing violation" );
+	if (!Scene->locked())
+	{
+		if (mrYes == ELog.DlgMsg(mtConfirmation, mbYes | mbNo, "Are you sure to export game?"))
+		{
+			LoaderEvent.wait();
+
+			LoaderEvent.run
+			(
+				[]()
+				{
+					Builder.MakeGame();
+				}
+			);
+
+			return true;
+		}
+	}
+	else {
+		ELog.DlgMsg(mtError, "Scene sharing violation");
 	}
 	return 						FALSE;
 }
+
+CCommandVar CommandMakePuddles(CCommandVar p1, CCommandVar p2)
+{
+	if (!Scene->locked()) 
+	{
+		if (mrYes == ELog.DlgMsg(mtConfirmation, mbYes | mbNo, "Are you sure to export puddles?"))
+		{
+			LoaderEvent.wait();
+
+			LoaderEvent.run
+			(
+				[]()
+				{
+					Builder.MakePuddles();
+				}
+			);
+
+			return true;
+		}
+	}
+	else {
+		ELog.DlgMsg( mtError, "Scene sharing violation" );
+	}
+	return FALSE;
+}
+
 CCommandVar CommandMakeDetails(CCommandVar p1, CCommandVar p2)
 {
-	if( !Scene->locked() ){
-		if (mrYes==ELog.DlgMsg(mtConfirmation, mbYes |mbNo, "Are you sure to export details?"))
-			return 				Builder.MakeDetails();
-	}else{
-		ELog.DlgMsg( mtError, "Scene sharing violation" );
+	if (!Scene->locked())
+	{
+		if (mrYes == ELog.DlgMsg(mtConfirmation, mbYes | mbNo, "Are you sure to export details?"))
+		{
+			LoaderEvent.wait();
+
+			LoaderEvent.run
+			(
+				[]()
+				{
+					Builder.MakeDetails();
+				}
+			);
+
+			return true;
+		}
+	}
+	else
+	{
+		ELog.DlgMsg(mtError, "Scene sharing violation");
 	}
 	return 						FALSE;
 }
+
 CCommandVar CommandMakeHOM(CCommandVar p1, CCommandVar p2)
 {
-	if( !Scene->locked() ){
-		if (mrYes==ELog.DlgMsg(mtConfirmation, mbYes |mbNo, "Are you sure to export HOM?"))
-			return				Builder.MakeHOM();
-	}else{
-		ELog.DlgMsg( mtError, "Scene sharing violation" );
+	if (!Scene->locked()) 
+	{
+		if (mrYes == ELog.DlgMsg(mtConfirmation, mbYes | mbNo, "Are you sure to export HOM?"))
+		{
+			LoaderEvent.wait();
+
+			LoaderEvent.run
+			(
+				[]()
+				{
+					Builder.MakeHOM();
+				}
+			);
+
+			return true;
+		}
+	}
+	else 
+	{
+		ELog.DlgMsg(mtError, "Scene sharing violation");
 	}
 	return 						FALSE;
 }
+
 CCommandVar CommandMakeSOM(CCommandVar p1, CCommandVar p2)
 {
-	if( !Scene->locked() ){
-		if (mrYes==ELog.DlgMsg(mtConfirmation, mbYes |mbNo, "Are you sure to export Sound Occlusion Model?"))
-			return				Builder.MakeSOM();
-	}else{
-		ELog.DlgMsg( mtError, "Scene sharing violation" );
+	if (!Scene->locked()) 
+	{
+		if (mrYes == ELog.DlgMsg(mtConfirmation, mbYes | mbNo, "Are you sure to export Sound Occlusion Model?"))
+		{
+			LoaderEvent.wait();
+
+			LoaderEvent.run
+			(
+				[]()
+				{
+					Builder.MakeSOM();
+				}
+			);
+
+			return true;
+		}
+	}
+	else {
+		ELog.DlgMsg(mtError, "Scene sharing violation");
 	}
 	return 						FALSE;
 }
+
 CCommandVar CommandInvertSelectionAll(CCommandVar p1, CCommandVar p2)
 {
 	if( !Scene->locked() ){
@@ -740,6 +911,39 @@ CCommandVar CommandHideAll(CCommandVar p1, CCommandVar p2)
 		return 					FALSE;
 	}
 }
+CCommandVar CommandLockAll(CCommandVar p1, CCommandVar p2)
+{
+    if( !Scene->locked() ){
+        Scene->LockObjects		(bool(p1),LTools->CurrentClassID(),false);
+        Scene->UndoSave			();
+	    return 					TRUE;
+    }else{
+        ELog.DlgMsg				( mtError, "Scene sharing violation" );
+	    return 					FALSE;
+    }
+}
+CCommandVar CommandLockSel(CCommandVar p1, CCommandVar p2)
+{
+    if( !Scene->locked() ){
+        Scene->LockObjects		(bool(p1),LTools->CurrentClassID(),true,true);
+        Scene->UndoSave			();
+	    return 					TRUE;
+    }else{
+        ELog.DlgMsg				( mtError, "Scene sharing violation" );
+	    return 					FALSE;
+    }
+}
+CCommandVar CommandLockUnsel(CCommandVar p1, CCommandVar p2)
+{
+    if( !Scene->locked() ){
+        Scene->LockObjects		(bool(p1),LTools->CurrentClassID(),true,false);
+        Scene->UndoSave			();
+        return					TRUE;
+   }else{
+        ELog.DlgMsg				( mtError, "Scene sharing violation" );                   
+	    return 					FALSE;
+    }
+}
 CCommandVar CommandSetSnapObjects(CCommandVar p1, CCommandVar p2)
 {
 	if( !Scene->locked() ){
@@ -817,10 +1021,10 @@ CCommandVar CommandShowContextMenu(CCommandVar p1, CCommandVar p2)
 //------        
 CCommandVar CommandRefreshUIBar(CCommandVar p1, CCommandVar p2)
 {
-	if(MainForm)
+	/*if(MainForm)
 		if(MainForm->GetTopBarForm())
 			MainForm->GetTopBarForm()->RefreshBar();
-	/*fraTopBar->RefreshBar		();
+	fraTopBar->RefreshBar		();
 	fraLeftBar->RefreshBar		();
 	fraBottomBar->RefreshBar	();*/
 	return 						TRUE;
@@ -852,7 +1056,7 @@ CCommandVar CommandUpdateCaption(CCommandVar p1, CCommandVar p2)
 //------
 CCommandVar CommandCreateSoundLib(CCommandVar p1, CCommandVar p2)
 {
-	SndLib						= xr_new<CLevelSoundManager>();
+	SndLib						= new CLevelSoundManager();
 	LSndLib = (CLevelSoundManager*)SndLib;
 	return 						TRUE;
 }
@@ -891,6 +1095,7 @@ void CLevelMain::RegisterCommands()
 	REGISTER_CMD_C	    (COMMAND_SHOW_TARGET,           	LTools,CLevelTool::CommandShowTarget);
 	REGISTER_CMD_C	    (COMMAND_READONLY_TARGET,          	LTools,CLevelTool::CommandReadonlyTarget);
 	REGISTER_CMD_C	    (COMMAND_MULTI_RENAME_OBJECTS,     	LTools,CLevelTool::CommandMultiRenameObjects);
+	REGISTER_CMD_C	    (COMMAND_MULTI_REPLACE_OBJECTS,     LTools,CLevelTool::CommandMultiReplaceObjects);
 
 	REGISTER_CMD_CE	    (COMMAND_SHOW_OBJECTLIST,           "Scene\\Show Object List",		LTools,CLevelTool::CommandShowObjectList, false);
 	// common
@@ -917,6 +1122,7 @@ void CLevelMain::RegisterCommands()
 	REGISTER_CMD_SE	    (COMMAND_CUT,              			"Edit\\Cut",					CommandCut,false);
 	REGISTER_CMD_SE	    (COMMAND_COPY,              		"Edit\\Copy",					CommandCopy,false);
 	REGISTER_CMD_SE	    (COMMAND_PASTE,              		"Edit\\Paste",					CommandPaste,false);
+	REGISTER_CMD_SE     (COMMAND_DUPLICATE,					"Edit\\Duplicate",				CommandDuplicate, false);
 	REGISTER_CMD_S	    (COMMAND_LOAD_SELECTION,            CommandLoadSelection);
 	REGISTER_CMD_S	    (COMMAND_SAVE_SELECTION,            CommandSaveSelection);
 	REGISTER_CMD_SE	    (COMMAND_UNDO,              		"Edit\\Undo",					CommandUndo,false);
@@ -929,6 +1135,7 @@ void CLevelMain::RegisterCommands()
 	REGISTER_CMD_SE	    (COMMAND_OPTIONS,              		"Scene\\Options",		        CommandOptions,false);
 	REGISTER_CMD_SE	    (COMMAND_BUILD,              		"Compile\\Build",		        CommandBuild,false);
 	REGISTER_CMD_SE	    (COMMAND_MAKE_GAME,              	"Compile\\Make Game",	        CommandMakeGame,false);
+	REGISTER_CMD_SE	    (COMMAND_MAKE_PUDDLES,             	"Compile\\Make Puddles",	    CommandMakePuddles,false);
 	REGISTER_CMD_SE	    (COMMAND_MAKE_AIMAP,              	"Compile\\Make AI Map",	        CommandMakeAIMap,false);
 	REGISTER_CMD_SE	    (COMMAND_MOVE_GIZMO,              	"Gizmo\\Set at camera",	        CommandMakeGizmo,false);
 	REGISTER_CMD_SE	    (COMMAND_UPDATE_GIZMO,             	"Gizmo\\Update at camera",	    CommandUpdateGizmo,false);
@@ -942,6 +1149,9 @@ void CLevelMain::RegisterCommands()
 	REGISTER_CMD_SE	    (COMMAND_HIDE_UNSEL,              	"Visibility\\Hide Unselected",	CommandHideUnsel,false);
 	REGISTER_CMD_SE	    (COMMAND_HIDE_SEL,              	"Visibility\\Hide Selected", 	CommandHideSel,false);
 	REGISTER_CMD_SE	    (COMMAND_HIDE_ALL,              	"Visibility\\Hide All", 		CommandHideAll,false);
+	REGISTER_CMD_S	    (COMMAND_LOCK_ALL,              	CommandLockAll);
+	REGISTER_CMD_S	    (COMMAND_LOCK_SEL,					CommandLockSel);
+	REGISTER_CMD_S	    (COMMAND_LOCK_UNSEL,              	CommandLockUnsel);
 	REGISTER_CMD_S		(COMMAND_SET_SNAP_OBJECTS,          CommandSetSnapObjects);
 	REGISTER_CMD_S	    (COMMAND_ADD_SEL_SNAP_OBJECTS,      CommandAddSelSnapObjects);
 	REGISTER_CMD_S	    (COMMAND_DEL_SEL_SNAP_OBJECTS,      CommandDelSelSnapObjects);
@@ -949,6 +1159,8 @@ void CLevelMain::RegisterCommands()
 	REGISTER_CMD_S	    (COMMAND_SELECT_SNAP_OBJECTS,       CommandSelectSnapObjects);
 	REGISTER_CMD_S	    (COMMAND_REFRESH_SNAP_OBJECTS,      CommandRefreshSnapObjects);
 //	REGISTER_CMD_S	    (COMMAND_REFRESH_SOUND_ENVS,        CommandRefreshSoundEnvs);
+	REGISTER_CMD_S	    (COMMAND_ICON_LOAD, CommandLoadCustomIcons);
+	REGISTER_CMD_S	    (COMMAND_ICON_REMOVE, CommandRemoveCustomIcon);
 	REGISTER_CMD_S	    (COMMAND_REFRESH_SOUND_ENV_GEOMETRY,CommandRefreshSoundEnvGeometry);
 	REGISTER_CMD_S	    (COMMAND_SHOWCONTEXTMENU,           CommandShowContextMenu);
 	REGISTER_CMD_S	    (COMMAND_REFRESH_UI_BAR,            CommandRefreshUIBar);
@@ -1004,8 +1216,10 @@ void RetrieveSceneObjPointAndNormal( Fvector& hitpoint, Fvector* hitnormal, cons
 		else
 			pn.set(verts[2]);
 
-		hitpoint.set(pinf.pt);
-
+		if (pn.distance_to(pinf.pt) < LTools->m_MoveSnap)
+			hitpoint.set(pn);
+		else
+			hitpoint.set(pinf.pt);
 	}
 	else
 	{
@@ -1108,10 +1322,10 @@ bool PickGrid(  Fvector& hitpoint,  const Fvector& start, const Fvector& directi
 	hitpoint.y = start.y + direction.y * alpha;
 	hitpoint.z = start.z + direction.z * alpha;
 
-	if (LTools->GetGimzo()->IsStepEnable(Gizmo::EType::Move) && bSnap)
+	if (Tools->GetSettings(etfGSnap) && bSnap)
 	{
-		hitpoint.x = snapto( hitpoint.x, LTools->GetGimzo()->GetStep(Gizmo::EType::Move));
-		hitpoint.z = snapto( hitpoint.z, LTools->GetGimzo()->GetStep(Gizmo::EType::Move));
+		hitpoint.x = snapto(hitpoint.x, LTools->m_MoveSnap);
+		hitpoint.z = snapto(hitpoint.z, LTools->m_MoveSnap);
 		hitpoint.y = 0.f;
 	}
 	
@@ -1160,22 +1374,22 @@ bool CLevelMain::SelectionFrustum(CFrustum& frustum)
 
 	SRayPickInfo pinf;
 	for (int i=0; i<4; i++){
-		EDevice->m_Camera.MouseRayFromPoint(st, d, pt[i]);
+		UI->CurrentView().m_Camera.MouseRayFromPoint(st, d, pt[i]);
 		if (EPrefs->bp_lim_depth){
-			pinf.inf.range = EDevice->m_Camera._Zfar(); // max pick range
+			pinf.inf.range = UI->CurrentView().m_Camera._Zfar(); // max pick range
 			if (Scene->RayPickObject(pinf.inf.range, st, d, OBJCLASS_SCENEOBJECT, &pinf, 0))
 				if (pinf.inf.range > depth) depth = pinf.inf.range;
 		}
 	}
-	if (depth<EDevice->m_Camera._Znear()) depth = EDevice->m_Camera._Zfar();
+	if (depth<UI->CurrentView().m_Camera._Znear()) depth = UI->CurrentView().m_Camera._Zfar();
 	else depth += EPrefs->bp_depth_tolerance;
 
 	for (int i=0; i<4; i++){
-		EDevice->m_Camera.MouseRayFromPoint(st, d, pt[i]);
+		UI->CurrentView().m_Camera.MouseRayFromPoint(st, d, pt[i]);
 		p[i].mad(st,d,depth);
 	}
 
-	Fvector pos = EDevice->m_Camera.GetPosition();
+	Fvector pos = UI->CurrentView().m_Camera.GetPosition();
 	frustum.CreateFromPoints(p,4,pos);
 
 	Fplane P; P.build(p[0],p[1],p[2]);
@@ -1227,53 +1441,16 @@ void CLevelMain::ResetStatus()
 void CLevelMain::SetStatus(LPCSTR s, bool bOutLog)
 {
 	VERIFY(m_bReady);
-  /*  if (fraBottomBar->paStatus->Caption!=s){
-		fraBottomBar->paStatus->Caption=s; fraBottomBar->paStatus->Repaint();
-		if (bOutLog&&s&&s[0]) ELog.Msg(mtInformation,s);
-	}*/
+
+	if (bOutLog && s && s[0])
+		ELog.Msg(mtInformation, s);
+
+	UI->ProgressStatusName = s;
 }
 void CLevelMain::ProgressDraw()
 {
 	inherited::ProgressDraw();
 	//fraBottomBar->RedrawBar();
-}
-
-void CLevelMain::OutCameraPos()
-{
-	if (m_bReady)
-	{
-		TUI::DrawDebugString Str;
-		Str.Pos = { 15, 50 };
-		Str.Text.resize(64);
-		Str.Color = ImColor(0, 0, 0);
-
-		const Fvector& c = EDevice->m_Camera.GetPosition();
-		sprintf(Str.Text.data(), "C: %3.1f, %3.1f, %3.1f", c.x, c.y, c.z);
-
-		UI->ViewportFrameLines.push_back(Str);
-	}
-}
-
-void CLevelMain::OutUICursorPos()
-{
-	/*VERIFY(fraBottomBar);
-	xr_string s; POINT pt;
-	GetCursorPos(&pt);
-	s.sprintf("Cur: %d, %d",pt.x,pt.y);
-	fraBottomBar->paUICursor->Caption=s; fraBottomBar->paUICursor->Repaint();*/
-}
-
-void CLevelMain::OutGridSize()
-{
-	/*VERIFY(fraBottomBar);
-	xr_string s;
-	s.sprintf("Grid: %1.1f",EPrefs->grid_cell_size);
-	fraBottomBar->paGridSquareSize->Caption=s; fraBottomBar->paGridSquareSize->Repaint();*/
-}
-
-void CLevelMain::OutInfo()
-{
-	//fraBottomBar->paSel->Caption = Tools->GetInfo();
 }
 
 void CLevelMain::RealQuit()

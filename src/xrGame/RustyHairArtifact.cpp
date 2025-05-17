@@ -1,9 +1,9 @@
 ///////////////////////////////////////////////////////////////
 // RustyHairArtifact.cpp
-// RustyHairArtefact - артефакт ржавые волосы
+// RustyHairArtefact - Р°СЂС‚РµС„Р°РєС‚ СЂР¶Р°РІС‹Рµ РІРѕР»РѕСЃС‹
 ///////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "RustyHairArtifact.h"
 
 

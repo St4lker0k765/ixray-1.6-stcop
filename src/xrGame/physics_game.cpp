@@ -1,19 +1,19 @@
-#include "stdafx.h"
-#include "../xrEngine/gamemtllib.h"
+#include "StdAfx.h"
+#include "../xrEngine/GameMtlLib.h"
 #include "Level.h"
-#include "gamepersistent.h"
-#include "../xrPhysics/Extendedgeom.h"
+#include "GamePersistent.h"
+#include "../xrPhysics/ExtendedGeom.h"
 #include "PhysicsGamePars.h"
 //#include "PhysicsCommon.h"
 #include "../xrPhysics/PhysicsExternalCommon.h"
-#include "PhSoundPlayer.h"
+#include "PHSoundPlayer.h"
 #include "PhysicsShellHolder.h"
 #include "PHCommander.h"
 #include "../xrPhysics/MathUtils.h"
-#include "../xrPhysics/iPHWorld.h"
+#include "../xrPhysics/IPHWorld.h"
 //#include "../xrPhysics/physicsshell.h"
 
-#include "phreqcomparer.h"
+#include "PHReqComparer.h"
 
 #include "../Include/xrRender/FactoryPtr.h"
 #include "../Include/xrRender/WallMarkArray.h"
@@ -46,7 +46,7 @@ public:
 	}
 	virtual void 			run								()
 	{
-		CParticlesObject* ps = CParticlesObject::Create(ps_name,TRUE);
+		xr_shared_ptr<CParticlesObject> ps = Particles::Details::Create(ps_name,TRUE);
 
 		Fmatrix pos; 
 		Fvector zero_vel_ = {0.f,0.f,0.f};
@@ -153,30 +153,28 @@ public:
 	virtual bool 			obsolete						()const{return false;}
 };
 
-static void play_object( dxGeomUserData* data, SGameMtlPair* mtl_pair, const dContactGeom* c )
+static void play_object(dxGeomUserData* data, SGameMtlPair* mtl_pair, const dContactGeom* c)
 {
-						VERIFY( data );
-						VERIFY( mtl_pair );
-						VERIFY( c );
-						
-						CPHSoundPlayer* sp=nullptr;
-#ifdef	DEBUG
-						__try{
-							sp=data->ph_ref_object->ObjectPhSoundPlayer();
-						}
-						__except(EXCEPTION_EXECUTE_HANDLER){
-							Msg( "data->ph_ref_object: %p ", data->ph_ref_object );
-							Msg( "data: %p ", data );
-							Msg( "materials: %s ", mtl_pair->dbg_Name() );
-							xrLogger::FlushLog();
-							FATAL( "bad data->ph_ref_object" );
-						}
-#else
-						sp=data->ph_ref_object->ObjectPhSoundPlayer();
-#endif
-						if(sp)
-							sp->Play(mtl_pair,*(Fvector*)c->pos);
+	VERIFY(data);
+	VERIFY(mtl_pair);
+	VERIFY(c);
 
+	CPHSoundPlayer* sp = nullptr;
+
+	try
+	{
+		sp = data->ph_ref_object->ObjectPhSoundPlayer();
+	}
+	catch (...)
+	{
+		Msg("! Physics callbacks sound player play_object error");
+		sp = nullptr;
+	}
+
+	if (sp)
+	{
+		sp->Play(mtl_pair, *(Fvector*)c->pos);
+	}
 }
 template<class Pars>
 IC bool play_liquid_particle_criteria(dxGeomUserData &data, float vel_cret )

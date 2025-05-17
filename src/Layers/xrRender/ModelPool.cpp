@@ -3,25 +3,25 @@
 
 #include "ModelPool.h"
 
-#include "../../xrEngine/fmesh.h"
+#include "../../xrEngine/Fmesh.h"
 #include "../../xrEngine/IGame_Persistent.h"
 #ifndef _EDITOR
-    #include "fhierrarhyvisual.h"
+#include "FHierrarhyVisual.h"
     #include "SkeletonAnimated.h"
-	#include "fvisual.h"
-	#include "fprogressive.h"
-	#include "fskinned.h"
-	#include "flod.h"
-    #include "ftreevisual.h"
+#include "FVisual.h"
+#include "FProgressive.h"
+#include "FSkinned.h"
+#include "FLOD.h"
+#include "FTreeVisual.h"
     #include "ParticleGroup.h"
     #include "ParticleEffect.h"
 #else
-    #include "fvisual.h"
-    #include "fprogressive.h"
+#include "FVisual.h"
+#include "FProgressive.h"
     #include "ParticleEffect.h"
     #include "ParticleGroup.h"
-	#include "fskinned.h"
-    #include "fhierrarhyvisual.h"
+#include "FSkinned.h"
+#include "FHierrarhyVisual.h"
     #include "SkeletonAnimated.h"
 #endif
 
@@ -53,10 +53,10 @@ dxRender_Visual*	CModelPool::Instance_Create(u32 type)
 		V	= new CSkeletonX_ST			();
 		break;
 	case MT_PARTICLE_EFFECT:
-		V	= xr_new<PS::CParticleEffect>	();
+		V	= new PS::CParticleEffect	();
 		break;
 	case MT_PARTICLE_GROUP:
-		V	= xr_new<PS::CParticleGroup>	();
+		V	= new PS::CParticleGroup	();
 		break;
 #ifndef _EDITOR
 	case MT_LOD:
@@ -170,6 +170,9 @@ void CModelPool::Destroy()
 	// Registry
 	while(!Registry.empty()){
 		REGISTRY_IT it	= Registry.begin();
+		if (it == Registry.end())
+			break;
+
 		dxRender_Visual* V=(dxRender_Visual*)it->first;
 #ifdef _DEBUG
 		Msg				("ModelPool: Destroy object: '%s'",*V->dbg_name);
@@ -279,7 +282,7 @@ dxRender_Visual* CModelPool::CreateChild(LPCSTR name, IReader* data)
     return					Model;
 }
 
-extern  BOOL ENGINE_API g_bRendering; 
+extern  xr_atomic_bool ENGINE_API g_bRendering; 
 void	CModelPool::DeleteInternal	(dxRender_Visual* &V, BOOL bDiscard)
 {
 	VERIFY					(!g_bRendering);
@@ -302,26 +305,54 @@ void	CModelPool::DeleteInternal	(dxRender_Visual* &V, BOOL bDiscard)
 	V	=	nullptr;
 }
 
-void	CModelPool::Delete		(dxRender_Visual* &V, BOOL bDiscard)
+void CModelPool::DeleteDeffered(dxRender_Visual* &V)
 {
-	if (nullptr==V)				return;
-	if (g_bRendering){
-		VERIFY					(!bDiscard);
+	if (nullptr==V)
+		return;
+
+	xrCriticalSectionGuard guard(&deffered_del_lock);
+	auto Iter = std::find(ModelsToDeleteDeffer.begin(), ModelsToDeleteDeffer.end(), V);
+
+	ModelsToDeleteDeffer.insert(V);
+	V = nullptr;
+}
+
+void CModelPool::Delete(dxRender_Visual* &V, BOOL bDiscard)
+{
+	if (nullptr==V)
+		return;
+
+	if (g_bRendering)
+	{
+		VERIFY(!bDiscard);
 		ModelsToDelete.push_back(V);
-	} else {
-		DeleteInternal			(V,bDiscard);
-	}	
-	V							=	nullptr;
+	} 
+	else
+	{
+		DeleteInternal(V,bDiscard);
+	}
+
+	V =	nullptr;
 }
 
-void	CModelPool::DeleteQueue		()
+void CModelPool::DeleteQueue()
 {
-	for (u32 it=0; it<ModelsToDelete.size(); it++)
+	for (u32 it = 0; it < ModelsToDelete.size(); it++)
 		DeleteInternal(ModelsToDelete[it]);
-	ModelsToDelete.clear			();
+	ModelsToDelete.clear();
 }
 
-void	CModelPool::Discard	(dxRender_Visual* &V, BOOL b_complete)
+void CModelPool::DeleteQueuedDeffer()
+{
+	xrCriticalSectionGuard guard(&deffered_del_lock);
+
+	for (dxRender_Visual* Vis : ModelsToDeleteDeffer)
+		DeleteInternal(Vis);
+
+	ModelsToDeleteDeffer.clear();
+}
+
+void CModelPool::Discard(dxRender_Visual* &V, BOOL b_complete)
 {
 	//
 	REGISTRY_IT	it		= Registry.find	(V);

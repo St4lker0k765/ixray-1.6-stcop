@@ -1,12 +1,12 @@
 #include "stdafx.h"
 #pragma hdrstop
 
-#include "../../xrEngine/igame_persistent.h"
-#include "../../xrEngine/igame_level.h"
-#include "../../xrEngine/environment.h"
-#include "../../xrEngine/fmesh.h"
+#include "../../xrEngine/IGame_Persistent.h"
+#include "../../xrEngine/IGame_Level.h"
+#include "../../xrEngine/Environment.h"
+#include "../../xrEngine/Fmesh.h"
 
-#include "ftreevisual.h"
+#include "FTreeVisual.h"
 
 shared_str					m_xform		;
 shared_str					m_xform_v	;
@@ -120,6 +120,7 @@ struct	FTreeVisual_setup
 
 void FTreeVisual::Render	(float LOD)
 {
+	//PROF_EVENT("FTreeVisual::Render");
 	static FTreeVisual_setup tvs, tvs_old;
 	if (tvs.dwFrame != Device.dwFrame) {
 		tvs_old = tvs;

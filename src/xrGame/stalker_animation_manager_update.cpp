@@ -6,12 +6,11 @@
 //	Description : Stalker animation manager update cycle
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 #include "stalker_animation_manager.h"
 #include "ai/stalker/ai_stalker.h"
 #include "game_object_space.h"
-#include "profiler.h"
 #include "stalker_movement_manager_smart_cover.h"
 
 void CStalkerAnimationManager::play_delayed_callbacks	()
@@ -237,7 +236,7 @@ void CStalkerAnimationManager::update						()
 		update_impl			();
 	}
 	catch(...) {
-		Msg					("! error in stalker with visual %s",*object().cNameVisual());
+		Msg("! error in stalker [%s] with visual [%s]", object().cNameSect().c_str(), object().cNameVisual().c_str());
 		// Prevent game from crashing
 		global().reset();
 		head().reset();

@@ -1,7 +1,7 @@
 #include "stdafx.h"
 
 
-// !!! использовать prefix если нужно имя !!! (Связано с группами)
+// !!! РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊ prefix РµСЃР»Рё РЅСѓР¶РЅРѕ РёРјСЏ !!! (РЎРІСЏР·Р°РЅРѕ СЃ РіСЂСѓРїРїР°РјРё)
 
 
 #define LEVEL_LODS_TEX_NAME "level_lods"
@@ -69,7 +69,7 @@ public:
         }
 #if 0
         xr_string image_name = xr_string(fn)+".tga";
-        CImage* I 	= xr_new<CImage>();
+        CImage* I 	= new CImage();
         I->Create	(sx,sz,data.data());
         I->Vflip	();
         I->SaveTGA	(image_name.c_str());
@@ -437,7 +437,7 @@ int SceneBuilder::CalculateSector(const Fvector& P, float R)
         	if (_S->m_sector_num!=m_iDefaultSectorNum) 
             	return _S->m_sector_num;
 	}
-    return m_iDefaultSectorNum; // по умолчанию
+    return m_iDefaultSectorNum; // РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ
 }
 
 void SceneBuilder::Clear ()
@@ -1403,10 +1403,10 @@ BOOL SceneBuilder::CompileStatic(bool b_selected_only)
     l_smgroups  = xr_alloc<u32>		(l_face_cnt);
 	l_verts		= xr_alloc<b_vertex>(l_vert_cnt);
 
-    l_scene_stat= xr_new<CSceneStat>(m_LevelBox);
+    l_scene_stat= new CSceneStat(m_LevelBox);
 
 // make hemisphere
-	ESceneLightTool* lt = dynamic_cast<ESceneLightTool*>(Scene->GetOTool(OBJCLASS_LIGHT));
+	ESceneLightTool* lt = smart_cast<ESceneLightTool*>(Scene->GetOTool(OBJCLASS_LIGHT));
     LPCSTR h_control	= *lt->FindLightControl(lt->m_HemiControl)->name;
 	BuildHemiLights		(Scene->m_LevelOp.m_LightHemiQuality,h_control);
     if (0!=strcmp(LCONTROL_HEMI,h_control))

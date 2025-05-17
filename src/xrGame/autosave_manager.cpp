@@ -6,9 +6,9 @@
 //	Description : Autosave manager
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "autosave_manager.h"
-#include "date_time.h"
+#include "../xrEngine/date_time.h"
 #include "ai_space.h"
 #include "Level.h"
 #include "xrMessages.h"
@@ -50,6 +50,7 @@ float CAutosaveManager::shedule_Scale		()
 
 void CAutosaveManager::shedule_Update		(u32 dt)
 {
+	PROF_EVENT("CAutosaveManager::shedule_Update");
 	inherited::shedule_Update	(dt);
 
 	if (!psActorFlags.test(AF_IMPORTANT_SAVE))

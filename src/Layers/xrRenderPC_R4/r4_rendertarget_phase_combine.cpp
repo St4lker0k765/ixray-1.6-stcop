@@ -1,6 +1,6 @@
 #include "stdafx.h"
-#include "../../xrEngine/igame_persistent.h"
-#include "../../xrEngine/environment.h"
+#include "../../xrEngine/IGame_Persistent.h"
+#include "../../xrEngine/Environment.h"
 
 #include "../xrRender/dxEnvironmentRender.h"
 
@@ -35,41 +35,45 @@ struct v_aa {
 	Fvector4 uv6;
 };
 
-void	CRenderTarget::phase_combine	()
+void CRenderTarget::phase_combine()
 {
 	PIX_EVENT(phase_combine);
 
 	//	TODO: DX10: Remove half poxel offset
-	bool	_menu_pp	= g_pGamePersistent?g_pGamePersistent->OnRenderPPUI_query():false;
+	bool _menu_pp = g_pGamePersistent ? g_pGamePersistent->OnRenderPPUI_query() : false;
 
-	u32			Offset					= 0;
-	Fvector2	p0,p1;
+	u32 Offset = 0;
+	Fvector2 p0, p1;
 
 	//*** exposure-pipeline
-	u32			gpu_id	= Device.dwFrame % 1;
 	{
-		t_LUM_src->surface_set		(rt_LUM_pool[gpu_id*2+0]->pSurface);
-		t_LUM_dest->surface_set		(rt_LUM_pool[gpu_id*2+1]->pSurface);
+		if (t_LUM_src != rt_LUM_pool[0]->pTexture)
+			t_LUM_src->surface_set(rt_LUM_pool[0]->pSurface);
+		if (t_LUM_dest != rt_LUM_pool[1]->pTexture)
+			t_LUM_dest->surface_set(rt_LUM_pool[1]->pSurface);
 	}
-
-	if (ps_r_ssao > 0)
 	{
-		phase_downsamp();
+		PROF_EVENT("PHASE_AMBIENT_OCCLUSION");
 
-		if (RImplementation.SSAO.test(ESSAO_DATA::SSAO_GTAO))
-		{
-			phase_gtao();
-		}
-		else if (RFeatureLevel >= D3D_FEATURE_LEVEL_11_0 && RImplementation.SSAO.test(ESSAO_DATA::SSAO_HDAO) && RImplementation.SSAO.test(ESSAO_DATA::SSAO_ULTRA_OPT))
-		{
-			phase_hdao();
-		}
-		else
-		{
-			phase_ssao();
+		switch(ps_r_ssao_mode) {
+			case 0:
+			{
+				FLOAT ColorRGBA[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+				RContext->ClearRenderTargetView(rt_ssao_temp->pRT, ColorRGBA);
+				break;
+			}
+			case 1:
+			{
+				phase_ssao();
+				break;
+			}
+			case 2:
+			{
+				phase_gtao();
+				break;
+			}
 		}
 	}
-
 
 	FLOAT ColorRGBA[4] = {0.0f, 0.0f, 0.0f, 0.0f};
 	u_setrt(rt_Generic_0, 0, 0, RDepth);
@@ -169,6 +173,12 @@ void	CRenderTarget::phase_combine	()
 		RCache.Render(D3DPT_TRIANGLELIST, Offset, 0, 4, 0, 2);
 	}
 
+	if(ps_r2_ls_flags_ext.test(R4FLAG_PUDDLES))
+	{
+		PIX_EVENT(Forward_rendering_puddles);
+		phase_puddles();
+	}
+
 	// Forward rendering
 	{
 		PIX_EVENT(Forward_rendering);
@@ -264,14 +274,14 @@ void	CRenderTarget::phase_combine	()
 		case 3:
 		{
 			if(!phase_fsr()) {
-				ps_r_scale_mode = 1;
+				ps_proxy_r_scale_mode = ps_r_scale_mode = 1;
 			}
 			break;
 		}
 		case 2:
 		{
 			if(!phase_dlss()) {
-				ps_r_scale_mode = 3;
+				ps_proxy_r_scale_mode = ps_r_scale_mode = 3;
 			}
 			break;
 		}
@@ -358,16 +368,17 @@ void	CRenderTarget::phase_combine	()
 		PIX_EVENT(PhaseAberration);
 		PhaseAberration();
 	}
-
-	PIX_EVENT(phase_pp);
-	phase_pp();
+	{
+		PIX_EVENT(phase_pp);
+		phase_pp();
+	}
 
 	//	Re-adapt luminance
 	RCache.set_Stencil(FALSE);
 
 	//*** exposure-pipeline-clear
 	{
-		std::swap					(rt_LUM_pool[gpu_id*2+0],rt_LUM_pool[gpu_id*2+1]);
+		std::swap(rt_LUM_pool[0], rt_LUM_pool[1]);
 		t_LUM_src->surface_set		(nullptr);
 		t_LUM_dest->surface_set		(nullptr);
 	}

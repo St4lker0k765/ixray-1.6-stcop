@@ -1,6 +1,6 @@
-#include "stdafx.h"
-#include "weaponmagazinedwgrenade.h"
-#include "entity.h"
+#include "StdAfx.h"
+#include "WeaponMagazinedWGrenade.h"
+#include "Entity.h"
 #include "GrenadeLauncher.h"
 #include "xrServer_Objects_ALife_Items.h"
 #include "ExplosiveRocket.h"
@@ -13,7 +13,7 @@
 #include "player_hud.h"
 #include "Actor_Flags.h"
 #include "Inventory.h"
-#include "inventoryOwner.h"
+#include "InventoryOwner.h"
 
 #ifdef DEBUG
 #	include "phdebug.h"
@@ -879,8 +879,8 @@ bool CWeaponMagazinedWGrenade::GetBriefInfo( II_BriefInfo& info )
 	u32 at_size = m_bGrenadeMode ? (u32)m_ammoTypes2.size() : (u32)m_ammoTypes.size();
 	if(unlimited_ammo() || at_size == 0)
 	{
-		info.fmj_ammo._set("--");
-		info.ap_ammo._set("--");
+		info.fmj_ammo._set("∞");
+		info.ap_ammo._set("∞");
 	}
 	else
 	{
@@ -922,7 +922,7 @@ bool CWeaponMagazinedWGrenade::GetBriefInfo( II_BriefInfo& info )
 
 	int total2 = m_bGrenadeMode ? GetAmmoCount(0) : GetAmmoCount2(0);
 	if(unlimited_ammo())
-		xr_sprintf(int_str, "--");
+		xr_sprintf(int_str, "∞");
 	else
 	{
 		if(total2)

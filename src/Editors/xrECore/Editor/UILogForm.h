@@ -8,10 +8,11 @@ class UILogForm
 public:
 	static void AddMessage( const xr_string& msg);
 	static void Show();
+	static void SetActive();
 	static void Hide();
 	static void Update();
 	static void Destroy();
-	
+
 private:
 	static xr_vector<xr_string>*List;
 	static xr_vector<xr_string>* GetList();

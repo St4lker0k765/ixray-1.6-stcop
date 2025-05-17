@@ -4,14 +4,14 @@
 #include "../states/monster_state_attack_run_attack.h"
 #include "../states/state_hide_from_point.h"
 #include "../states/monster_state_find_enemy.h"
-#include "group_state_squad_move_to_radius.h "
+#include "group_state_squad_move_to_radius.h"
 #include "group_state_home_point_attack.h"
 #include "group_state_custom.h"
 #include "../ai_monster_squad.h"
 #include "../ai_monster_squad_manager.h"
 #include "group_state_attack_run.h"
 #include "../../../entity_alive.h"
-#include "../../../actor.h"
+#include "../../../Actor.h"
 
 #define TEMPLATE_SPECIALIZATION template <\
 	typename _Object\
@@ -22,19 +22,19 @@
 TEMPLATE_SPECIALIZATION
 CStateGroupAttackAbstract::CStateGroupAttack(_Object *obj) : inherited(obj)
 {
-	this->add_state	(eStateAttack_Run,				xr_new<CStateGroupAttackRun<_Object> >				(obj));
-	this->add_state	(eStateAttack_Melee,			xr_new<CStateMonsterAttackMelee<_Object> >			(obj));
-	this->add_state	(eStateAttack_RunAttack,		xr_new<CStateMonsterAttackRunAttack<_Object> >		(obj));
-	this->add_state	(eStateAttack_Attack_On_Run,	xr_new<CStateMonsterAttackOnRun<_Object> >			(obj));
-	this->add_state	(eStateAttack_RunAway,			xr_new<CStateMonsterHideFromPoint<_Object> >		(obj));
-	this->add_state	(eStateAttack_FindEnemy,		xr_new<CStateMonsterFindEnemy<_Object> >			(obj));	
-	this->add_state	(eStateAttack_MoveToHomePoint,	xr_new<CStateMonsterAttackMoveToHomePoint<_Object> >(obj));	
+	this->add_state	(eStateAttack_Run,				new CStateGroupAttackRun<_Object> 				(obj));
+	this->add_state	(eStateAttack_Melee,			new CStateMonsterAttackMelee<_Object> 			(obj));
+	this->add_state	(eStateAttack_RunAttack,		new CStateMonsterAttackRunAttack<_Object> 		(obj));
+	this->add_state	(eStateAttack_Attack_On_Run,	new CStateMonsterAttackOnRun<_Object> 			(obj));
+	this->add_state	(eStateAttack_RunAway,			new CStateMonsterHideFromPoint<_Object> 		(obj));
+	this->add_state	(eStateAttack_FindEnemy,		new CStateMonsterFindEnemy<_Object> 			(obj));	
+	this->add_state	(eStateAttack_MoveToHomePoint,	new CStateMonsterAttackMoveToHomePoint<_Object> (obj));	
 	
-	this->add_state	(eStateCustom,					xr_new<CStateGroupSquadMoveToRadius<_Object> >		(obj));
-	this->add_state	(eStateAttack_AttackHidden,		xr_new<CStateGroupSquadMoveToRadius<_Object> >		(obj));
-	this->add_state	(eStateAttackCamp,				xr_new<CStateGroupSquadMoveToRadius<_Object> >		(obj));
-	this->add_state	(eStateAttack_Steal,			xr_new<CStateGroupSquadMoveToRadiusEx<_Object> >	(obj));
-	this->add_state	(eStateAttack_ControlFire,		xr_new<CStateCustomGroup<_Object> >					(obj));
+	this->add_state	(eStateCustom,					new CStateGroupSquadMoveToRadius<_Object> 		(obj));
+	this->add_state	(eStateAttack_AttackHidden,		new CStateGroupSquadMoveToRadius<_Object> 		(obj));
+	this->add_state	(eStateAttackCamp,				new CStateGroupSquadMoveToRadius<_Object> 		(obj));
+	this->add_state	(eStateAttack_Steal,			new CStateGroupSquadMoveToRadiusEx<_Object> 	(obj));
+	this->add_state	(eStateAttack_ControlFire,		new CStateCustomGroup<_Object> 					(obj));
 }
 
 TEMPLATE_SPECIALIZATION
@@ -196,7 +196,7 @@ void CStateGroupAttackAbstract::execute()
 	else
 	{
 
-		// определить тип атаки
+		// РѕРїСЂРµРґРµР»РёС‚СЊ С‚РёРї Р°С‚Р°РєРё
 		bool b_melee = false; 
 
 		if (this->prev_substate == eStateAttack_Melee )
@@ -211,7 +211,7 @@ void CStateGroupAttackAbstract::execute()
 			b_melee = true;
 		}
 
-		// установить целевое состояние
+		// СѓСЃС‚Р°РЅРѕРІРёС‚СЊ С†РµР»РµРІРѕРµ СЃРѕСЃС‚РѕСЏРЅРёРµ
 		if ( !can_attack_on_move && b_melee )
 		{  
 			// check if enemy is behind me for a long time

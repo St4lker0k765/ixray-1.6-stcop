@@ -79,6 +79,8 @@ file(GLOB_RECURSE XGM_SOURCE_AI_SNORK_FILES "ai/monsters/snork/*.*")
 file(GLOB_RECURSE XGM_SOURCE_AI_TUSH_FILES "ai/monsters/tushkano/*.*")
 file(GLOB_RECURSE XGM_SOURCE_AI_ZOMB_FILES "ai/monsters/zombie/*.*")
 
+file(GLOB_RECURSE XGM_SOURCE_LEGACY_FILES "Legacy/*.*")
+
 # Source groups
 source_group("core" FILES ${XGM_SOURCE_ALL_FILES})
 source_group("ui" FILES ${XGM_SOURCE_UI_FILES})
@@ -112,6 +114,7 @@ source_group("actor" FILES ${XGM_SOURCE_ACTOR_FILES})
 source_group("level" FILES ${XGM_SOURCE_LEVEL_FILES})
 source_group("ikan" FILES ${XGM_SOURCE_IKAN_FILES})
 source_group("inventory" FILES ${XGM_SOURCE_INV_FILES})
+source_group("Legacy" FILES ${XGM_SOURCE_LEGACY_FILES})
 
 # Apply list
 list(APPEND XGM_SRC_FILES ${XGM_SOURCE_ALL_FILES})
@@ -124,7 +127,6 @@ list(FILTER XGM_SRC_FILES EXCLUDE REGEX "ai/monsters/rats/ai_rat_fsm.*")
 list(FILTER XGM_SRC_FILES EXCLUDE REGEX "ui/IUWpnParams.*")
 list(FILTER XGM_SRC_FILES EXCLUDE REGEX "ui/UIRankFaction.*")
 list(FILTER XGM_SRC_FILES EXCLUDE REGEX "ui/UIRankFraction.*")
-list(FILTER XGM_SRC_FILES EXCLUDE REGEX "ui/UITreeViewItem.*")
 list(FILTER XGM_SRC_FILES EXCLUDE REGEX "ui/UIStalkersRankingWnd.*")
 
 # xrGame project
@@ -159,10 +161,16 @@ target_compile_definitions(xrGame PRIVATE "$<$<CONFIG:Debug>:DEBUG>")
 target_link_libraries(xrGame PUBLIC xrAbstractions)
 target_link_libraries(xrGame PUBLIC xrPhysics)
 target_link_libraries(xrGame PUBLIC xrScripts)
-target_link_libraries(xrGame PUBLIC luabind)
+target_link_libraries(xrGame PUBLIC xrUI)
 target_link_libraries(xrGame PUBLIC xrParticles)
+target_link_libraries(xrGame PUBLIC luabind)
 target_link_libraries(xrGame PUBLIC crypto)
-target_link_libraries(xrGame PUBLIC CxImage)
+
+target_link_libraries(xrGame PRIVATE "shlwapi.lib")
+
+if(IXRAY_MP)
+    target_link_libraries(xrGame PUBLIC CxImage)
+endif()
 
 # Move precompiled header
 set_target_properties(xrGame PROPERTIES DISABLE_PRECOMPILE_HEADERS ON)

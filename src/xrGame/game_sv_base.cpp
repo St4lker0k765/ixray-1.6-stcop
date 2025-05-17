@@ -1,11 +1,11 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "LevelGameDef.h"
 #include "../xrScripts/script_process.h"
 #include "xrServer_Objects_ALife_Monsters.h"
 #include "../xrScripts/script_engine.h"
 #include "../xrScripts/script_engine_space.h"
 #include "Level.h"
-#include "xrserver.h"
+#include "xrServer.h"
 #include "ai_space.h"
 #include "game_sv_event_queue.h"
 #include "../xrEngine/XR_IOConsole.h"
@@ -283,9 +283,9 @@ void game_sv_GameState::net_Export_State						(NET_Packet& P, ClientID to)
 	game_PlayerState*	tmp_ps = tmp_client->ps;
 	
 	player_exporter		tmp_functor(to, tmp_ps, &P);
-	fastdelegate::FastDelegate1<IClient*, void> pcounter;
+	xr_delegate<void(IClient*)> pcounter;
 	pcounter.bind(&tmp_functor, &player_exporter::count_players);
-	fastdelegate::FastDelegate1<IClient*, void> exporter;
+	xr_delegate<void(IClient*)> exporter;
 	exporter.bind(&tmp_functor, &player_exporter::export_players);
 	
 	m_server->ForEachClientDo(pcounter);
@@ -1018,15 +1018,15 @@ void game_sv_GameState::MapRotation_ListMaps	()
 		Msg ("- Currently there are no any maps in list.");
 		return;
 	}
-	CStringTable st;
+
 	Msg("- ----------- Maps ---------------");
 	for (u32 i=0; i<m_pMapRotation_List.size(); i++)
 	{
 		SMapRot& R = m_pMapRotation_List[i];
 		if (i==0)
-			Msg("~   %d. %s (%s) (current)", i+1, st.translate(R.map_name).c_str(), R.map_name.c_str());
+			Msg("~   %d. %s (%s) (current)", i+1, g_pStringTable->translate(R.map_name).c_str(), R.map_name.c_str());
 		else
-			Msg("  %d. %s (%s)", i+1, st.translate(R.map_name).c_str(), R.map_name.c_str());
+			Msg("  %d. %s (%s)", i+1, g_pStringTable->translate(R.map_name).c_str(), R.map_name.c_str());
 	}
 	Msg("- --------------------------------");
 };

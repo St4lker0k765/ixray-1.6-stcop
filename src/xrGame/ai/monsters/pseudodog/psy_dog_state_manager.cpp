@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "psy_dog.h"
 #include "psy_dog_state_manager.h"
-#include "../../../actor.h"
+#include "../../../Actor.h"
 #include "../control_direction_base.h"
 #include "../control_movement_base.h"
 #include "../control_path_builder_base.h"
@@ -14,7 +14,7 @@
 
 CStateManagerPsyDog::CStateManagerPsyDog(CAI_PseudoDog *monster) : inherited(monster)
 {
-//	add_state(eStateAttack_Psy,	 xr_new<CStatePsyDogPsyAttack<CAI_PseudoDog> >	 (monster));
+//	add_state(eStateAttack_Psy,	 new CStatePsyDogPsyAttack<CAI_PseudoDog> 	 (monster));
 }
 
 void CStateManagerPsyDog::execute()
@@ -25,7 +25,7 @@ void CStateManagerPsyDog::execute()
 // 		
 // 		select_state(eStateAttack_Psy); 
 // 	
-// 		// выполнить текущее состояние
+// 		// РІС‹РїРѕР»РЅРёС‚СЊ С‚РµРєСѓС‰РµРµ СЃРѕСЃС‚РѕСЏРЅРёРµ
 // 		get_state_current()->execute();
 // 
 // 		prev_substate = current_substate;

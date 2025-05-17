@@ -6,23 +6,14 @@
 
 #include "EditObject.h"
 
-#if 1
-	#include "ui_main.h"
-#endif
+#include "ui_main.h"
 
 #include "../xrEngine/motion.h"
 #include "../xrEngine/bone.h"
 #include "EditMesh.h"
 
-
-#if 1
-	#include "../Layers/xrRender/SkeletonAnimated.h"
-	#include "../Layers/xrRender/AnimationKeyCalculate.h"
-#endif
-
-#if 0
-	bool check_scale( Fmatrix F ){ return true;}
-#endif
+#include "../Layers/xrRender/SkeletonAnimated.h"
+#include "../Layers/xrRender/AnimationKeyCalculate.h"
 
 //----------------------------------------------------
 class fBoneNameEQ {
@@ -295,7 +286,7 @@ bool CEditableObject::LoadSMotions(const char* fname)
     m_SMotions.resize(F->r_u32());
 	SetActiveSMotion(0);
     for (SMotionIt m_it=m_SMotions.begin(); m_it!=m_SMotions.end(); m_it++){
-        *m_it = xr_new<CSMotion>();
+        *m_it = new CSMotion();
         if (!(*m_it)->Load(*F)){
             ELog.DlgMsg(mtError,"Motions has different version. Load failed.");
             xr_delete(*m_it);
@@ -323,7 +314,7 @@ bool CEditableObject::AppendSMotion(LPCSTR fname, SMotionVec* inserted)
     
 	LPCSTR ext	= strext(fname);
     if (0==stricmp(ext,".skl")){
-        CSMotion* M = xr_new<CSMotion>();
+        CSMotion* M = new CSMotion();
         if (!M->LoadMotion(fname)){
             ELog.Msg(mtError,"Motion '%s' can't load. Append failed.",fname);
             xr_delete(M);
@@ -356,7 +347,7 @@ bool CEditableObject::AppendSMotion(LPCSTR fname, SMotionVec* inserted)
             // object motions
             int cnt 	= F->r_u32();
             for (int k=0; k<cnt; k++){
-                CSMotion* M	= xr_new<CSMotion>();
+                CSMotion* M	= new CSMotion();
                 if (!M->Load(*F)){
                     ELog.Msg(mtError,"Motion '%s' has different version. Load failed.",M->Name());
                     xr_delete(M);
@@ -587,16 +578,22 @@ bool CEditableObject::CheckBoneCompliance(CSMotion* M)
 
 void CEditableObject::OptimizeSMotions()
 {
-#if 1
-	SPBItem* pb				= UI->ProgressStart(m_SMotions.size(),"Motions optimizing...");
-#endif
-	for (SMotionIt s_it=m_SMotions.begin(); s_it!=m_SMotions.end(); s_it++){
-        (*s_it)->Optimize	();
-#if 1
-		pb->Inc				();
-#endif
-	}
-#if 1
-    UI->ProgressEnd				(pb);
-#endif
+    SPBItem* pb = UI->ProgressStart(m_SMotions.size(), "Motions optimizing...");
+    for (SMotionIt s_it = m_SMotions.begin(); s_it != m_SMotions.end(); s_it++)
+    {
+        (*s_it)->Optimize();
+        pb->Inc();
+    }
+
+    UI->ProgressEnd(pb);
+}
+
+u16 CEditableObject::BoneIDByName(shared_str name)
+{
+    for (int i = 0; i < m_Bones.size(); i++)
+    {
+        if (m_Bones[i]->Name() == name)
+            return i;
+    }
+    return BI_NONE;
 }

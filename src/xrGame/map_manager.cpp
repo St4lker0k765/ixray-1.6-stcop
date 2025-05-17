@@ -1,14 +1,14 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 #include "map_manager.h"
 #include "alife_registry_wrappers.h"
-#include "inventoryowner.h"
+#include "InventoryOwner.h"
 #include "Level.h"
 #include "Actor.h"
 #include "relation_registry.h"
 #include "GameObject.h"
 #include "map_location.h"
-#include "GameTaskManager.h"
+#include "GametaskManager.h"
 #include "xrServer.h"
 #include "game_object_space.h"
 
@@ -57,11 +57,11 @@ void SLocationKey::load(IReader &stream)
 	if (bUserDefined)
 	{
 		Level().Server->PerformIDgen(object_id);
-		location = xr_new<CMapLocation>(*spot_type, object_id, true);
+		location = new CMapLocation(*spot_type, object_id, true);
 	}
 	else
 	{
-		location = xr_new<CMapLocation>(*spot_type, object_id);
+		location = new CMapLocation(*spot_type, object_id);
 	}
 
 	location  = new CMapLocation(*spot_type, object_id);
@@ -145,11 +145,21 @@ CMapLocation* CMapManager::AddRelationLocation(CInventoryOwner* pInvOwner)
 	return l;
 }
 
+void CMapManager::RemoveRelationLocation(CInventoryOwner* pInvOwner)
+{
+	for (int t = ALife::eRelationTypeFriend; t < ALife::eRelationTypeLast; ++t)
+	{
+		ALife::ERelationType tt = (ALife::ERelationType)t;
+		Level().MapManager().RemoveMapLocation(RELATION_REGISTRY().GetSpotName(tt), pInvOwner->object_id());
+	}
+	Level().MapManager().RemoveMapLocation("deadbody_location", pInvOwner->object_id());
+}
+
 CMapLocation* CMapManager::AddUserLocation(const shared_str& spot_type, const shared_str& level_name, Fvector position)
 {
 	u16 _id = Level().Server->PerformIDgen(0xffff);
 
-	CMapLocation* l = xr_new<CMapLocation>(spot_type.c_str(), _id, true);
+	CMapLocation* l = new CMapLocation(spot_type.c_str(), _id, true);
 	l->InitUserSpot(level_name, position);
 
 	Locations().push_back(SLocationKey(spot_type, _id));
@@ -250,6 +260,11 @@ void CMapManager::GetMapLocations(const shared_str& spot_type, u16 id, xr_vector
 
 void CMapManager::Update()
 {
+	PROF_EVENT("Map: Update");
+	if (Device.IsEditorMode())
+	{
+		return;
+	}
 	delete_data(m_deffered_destroy_queue); //from prev frame
 
 	Locations_it it			= Locations().begin();

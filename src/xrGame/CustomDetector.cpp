@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "CustomDetector.h"
 #include "ui/ArtefactDetectorUI.h"
 #include "HUDManager.h"
@@ -7,7 +7,7 @@
 #include "map_manager.h"
 #include "ActorEffector.h"
 #include "Actor.h"
-#include "ui/UIWindow.h"
+#include "../../xrUI/Widgets/UIWindow.h"
 #include "player_hud.h"
 #include "Weapon.h"
 
@@ -20,7 +20,7 @@ ITEM_INFO::ITEM_INFO()
 ITEM_INFO::~ITEM_INFO()
 {
 	if(pParticle)
-		CParticlesObject::Destroy(pParticle);
+		Particles::Details::Destroy(pParticle);
 }
 #include "WeaponBinoculars.h"
 bool CCustomDetector::CheckCompatibilityInt(CHudItem* itm, u16* slot_to_activate)
@@ -264,6 +264,7 @@ void CCustomDetector::Load(LPCSTR section)
 
 void CCustomDetector::shedule_Update(u32 dt) 
 {
+	PROF_EVENT("CCustomDetector::shedule_Update")
 	inherited::shedule_Update(dt);
 	
 	if( !IsWorking() )			return;
@@ -345,6 +346,7 @@ extern u32 hud_adj_mode;
 
 void CCustomDetector::UpdateCL() 
 {
+	PROF_EVENT("CCustomDetector::UpdateCL")
 	inherited::UpdateCL();
 
 	if(H_Parent()!=Level().CurrentEntity() )			return;
@@ -353,7 +355,8 @@ void CCustomDetector::UpdateCL()
 
 	if(m_bDetectorActive)
 	{
-		if (AllowBore())
+		/* TODO: Drombeys to Rawlik: Let's redo it in the gunslinger branch
+		if (HudAnimationExist("anm_bore") && AllowBore())
 		{
 			CActor* pActor = smart_cast<CActor*>(H_Parent());
 			if (pActor && !pActor->AnyMove())
@@ -365,6 +368,7 @@ void CCustomDetector::UpdateCL()
 				}
 			}
 		}
+		*/
 
 		UpdateVisibility		();
 	}

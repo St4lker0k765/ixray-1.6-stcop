@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 #include "HangingLamp.h"
 #include "../xrEngine/LightAnimLibrary.h"
@@ -218,8 +218,10 @@ void CHangingLamp::UpdateCL	()
 	if(m_pPhysicsShell)
 		m_pPhysicsShell->InterpolateGlobalTransform(&XFORM());
 
-	if (Alive() && light_render->get_active()){
-		if(Visual()&&Render->ViewBase.testSphere_dirty(spatial.sphere.P,spatial.sphere.R+light_render->get_homdata().sphere.R))	PKinematics(Visual())->CalculateBones	();
+	if (Alive() && light_render->get_active())
+	{
+		if(Visual()&&Render->ViewBase.testSphere_dirty(SpatialComponent->spatial.sphere.P, SpatialComponent->spatial.sphere.R+light_render->get_homdata().sphere.R))
+			PKinematics(Visual())->CalculateBones	();
 
 		// update T&R from light (main) bone
 		Fmatrix xf;
@@ -355,7 +357,8 @@ void CHangingLamp::CreateBody(CSE_ALifeObjectHangingLamp	*lamp)
 			string64					fixed_bone							;
 			_GetItem					(fixed_bones,i,fixed_bone)			;
 			u16 fixed_bone_id=pKinematics->LL_BoneID(fixed_bone)			;
-			R_ASSERT2(BI_NONE!=fixed_bone_id,"wrong fixed bone")			;
+			R_ASSERT2(BI_NONE != fixed_bone_id, make_string<const char*>("wrong fixed bone [%s] for object with visual [%s]", 
+				fixed_bone, pKinematics->getDebugName().c_str()));
 			bone_map.insert(std::make_pair(fixed_bone_id,physicsBone()))			;
 		}
 	}else{

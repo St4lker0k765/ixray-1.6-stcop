@@ -149,7 +149,7 @@ static const int idx[5][4] = {
 int ConvertV2L(int side)
 {
 	if (side < 4) {
-		const Fvector& HPB = EDevice->m_Camera.GetHPB();
+		const Fvector& HPB = UI->CurrentView().m_Camera.GetHPB();
 		float h = angle_normalize(HPB.x) / PI; R_ASSERT((h >= 0.f) && (h <= 2.f));
 		if (h > 0.25f && h <= 0.75f)		return idx[3][side];
 		else if (h > 0.75f && h <= 1.25f)	return idx[2][side];
@@ -183,6 +183,15 @@ void UIAIMapTool::SideClick(int tag)
 	tool->MakeLinks(fl[ConvertV2L(tag)], mode, m_IgnoreConstraints);
 	Scene->UndoSave();
 	UI->RedrawScene();
+}
+
+void UIAIMapTool::UpdateIgnoreMaterial()
+{
+	for (u16 MaterialID : tool->m_ignored_materials)
+	{
+		SGameMtl* mtl = GameMaterialLibraryEditors->GetMaterialByID(MaterialID);
+		m_IgnoreMaterialsList.push_back(*mtl->m_Name);
+	}
 }
 
 void UIAIMapTool::OnDrawUI()

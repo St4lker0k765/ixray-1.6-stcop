@@ -4,19 +4,19 @@
 #include "tri-colliderknoopc/dTriList.h"
 #include "PhysicsCommon.h"
 #include "ExtendedGeom.h"
-#include "draymotions.h"
+#include "dRayMotions.h"
 #include "PHCollideValidator.h"
-#include "../xrEngine/gamemtllib.h"
+#include "../xrEngine/GameMtlLib.h"
 
 #include "params.h"
-#include "../xrserverentities/PHSynchronize.h"
-#include "../xrserverentities/phnetstate.h"
-#include "geometrybits.h"
+#include "../xrServerEntities/PHSynchronize.h"
+#include "../xrServerEntities/PHNetState.h"
+#include "GeometryBits.h"
 #include "console_vars.h"
-#include "../xrengine/device.h"
-#include "../xrengine/defines.h"
-#include "../xrcdb/xr_area.h"
-#include "../xrcore/fs_internal.h"
+#include "../xrEngine/device.h"
+#include "../xrEngine/defines.h"
+#include "../xrCDB/xr_area.h"
+#include "../xrCore/FS_internal.h"
 
 #ifdef DEBUG_DRAW
 #	include "debug_output.h"
@@ -63,11 +63,6 @@ CObjectSpace*  mesh_create_object_space(Fvector* verts, CDB::TRI* tris, const hd
 	return os;
 }
 
-void  set_mtl_lib(CGameMtlLibrary * l)
-{
-	PGMLib = l;
-}
-
 void  destroy_object_space(CObjectSpace* &os)
 {
 	xr_delete(os);
@@ -76,7 +71,7 @@ void  destroy_object_space(CObjectSpace* &os)
 void CPHMesh ::Create(dSpaceID space, dWorldID world)
 {
 	Geom = dCreateTriList(space, 0, 0);
-	CPHGeometryBits::init_geom( *this );
+	CPHGeometryBits::init_geom(*this);
 }
 
 void CPHMesh::Destroy()
@@ -219,6 +214,7 @@ void CPHWorld::SetGravity(float g)
 
 void CPHWorld::OnFrame()
 {
+	PROF_EVENT("CPHWorld::OnFrame");
 	FrameStep(Device.fTimeDelta);
 }
 
@@ -227,6 +223,7 @@ static u32 start_time=0;
 
 void CPHWorld::Step()
 {
+	PROF_EVENT("CPHWorld::Step");
 #ifdef DEBUG
 	debug_output().dbg_reused_queries_per_step()	=0			;
 	debug_output().dbg_new_queries_per_step()		=0			;
@@ -389,6 +386,7 @@ void CPHWorld::Step()
 
 void CPHWorld::StepTouch()
 {
+	PROF_EVENT("CPHWorld::StepTouch");
 	PH_OBJECT_I i_object;
 	for (i_object = m_objects.begin(); m_objects.end() != i_object;)
 	{

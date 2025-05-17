@@ -1,28 +1,28 @@
 #include "stdafx.h"
 #include "UIPdaWnd.h"
-#include "../Pda.h"
+#include "../PDA.h"
 
-#include "xrUIXmlParser.h"
-#include "UIXmlInit.h"
+#include "../../xrUI/xrUIXmlParser.h"
+#include "../../xrUI/UIXmlInit.h"
 #include "UIInventoryUtilities.h"
 
-#include "../level.h"
+#include "../Level.h"
 #include "UIGameCustom.h"
 
-#include "UIStatic.h"
-#include "UIFrameWindow.h"
-#include "UITabControl.h"
+#include "../../xrUI/Widgets/UIStatic.h"
+#include "../../xrUI/Widgets/UIFrameWindow.h"
+#include "../../xrUI/Widgets/UITabControl.h"
 #include "UIMapWnd.h"
-#include "UIFrameLineWnd.h"
+#include "../../xrUI/Widgets/UIFrameLineWnd.h"
 #include "object_broker.h"
 #include "UIMessagesWindow.h"
 #include "UIMainIngameWnd.h"
-#include "UITabButton.h"
-#include "UIAnimatedStatic.h"
+#include "../../xrUI/Widgets/UITabButton.h"
+#include "../../xrUI/Widgets/UIAnimatedStatic.h"
 
-#include "UIHelper.h"
-#include "UIHint.h"
-#include "UIBtnHint.h"
+#include "../../xrUI/UIHelper.h"
+#include "../../xrUI/Widgets/UIHint.h"
+#include "../../xrUI/Widgets/UIBtnHint.h"
 #include "UITaskWnd.h"
 #include "UIRankingWnd.h"
 #include "UILogsWnd.h"
@@ -76,24 +76,20 @@ void CUIPdaWnd::Init()
 	m_btn_close				= UIHelper::Create3tButton( uiXml, "close_button", this );
 	m_hint_wnd				= UIHelper::CreateHint( uiXml, "hint_wnd" );
 
-
-	if ( IsGameTypeSingle() )
-	{
-		pUITaskWnd					= new CUITaskWnd();
-		pUITaskWnd->hint_wnd		= m_hint_wnd;
-		pUITaskWnd->Init			();
+	pUITaskWnd					= new CUITaskWnd();
+	pUITaskWnd->hint_wnd		= m_hint_wnd;
+	pUITaskWnd->Init			();
 
 //-		pUIFactionWarWnd				= new CUIFactionWarWnd();
 //-		pUIFactionWarWnd->hint_wnd		= m_hint_wnd;
 //-		pUIFactionWarWnd->Init			();
 
-		pUIRankingWnd					= new CUIRankingWnd();
-		pUIRankingWnd->Init				();
+	pUIRankingWnd					= new CUIRankingWnd();
+	pUIRankingWnd->Init				();
 
-		pUILogsWnd						= new CUILogsWnd();
-		pUILogsWnd->Init				();
+	pUILogsWnd						= new CUILogsWnd();
+	pUILogsWnd->Init				();
 
-	}
 
 	UITabControl					= new CUITabControl();
 	UITabControl->SetAutoDelete		(true);
@@ -164,7 +160,7 @@ void CUIPdaWnd::Update()
 	m_pActiveDialog->Update();
 	m_clock->TextItemControl().SetText(InventoryUtilities::GetGameTimeAsString(InventoryUtilities::etpTimeToMinutes).c_str());
 
-	Device.seqParallel.push_back	(fastdelegate::FastDelegate0<>(pUILogsWnd,&CUILogsWnd::PerformWork));
+	Device.seqParallel.push_back(xr_make_delegate(pUILogsWnd, &CUILogsWnd::PerformWork));
 }
 
 void CUIPdaWnd::SetActiveSubdialog(const shared_str& section)
@@ -185,16 +181,27 @@ void CUIPdaWnd::SetActiveSubdialog(const shared_str& section)
 //-	{
 //-		m_pActiveDialog = pUIFactionWarWnd;
 //-	}
-	else if ( section == "eptRanking" )
+	/*
+	if (IsGameTypeSingle())
 	{
-		m_pActiveDialog = pUIRankingWnd;
+	    if (section == "eptRanking")
+	{
+		    m_pActiveDialog = pUIRankingWnd;
+	    }
+	}
+	*/
+	else if (section == "eptRanking")
+	{
+		if (IsGameTypeSingle()) {
+			m_pActiveDialog = pUIRankingWnd;
+		}
 	}
 	else if ( section == "eptLogs" )
 	{
 		m_pActiveDialog = pUILogsWnd;
 	}
 
-	R_ASSERT						(m_pActiveDialog);
+	R_ASSERT2                       (m_pActiveDialog, "active dialog is not initialized");
 	UIMainPdaFrame->AttachChild		(m_pActiveDialog);
 	m_pActiveDialog->Show			(true);
 

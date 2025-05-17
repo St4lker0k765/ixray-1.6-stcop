@@ -1,10 +1,10 @@
 #include "stdafx.h"
 #include "r4.h"
-#include "../xrRender/fbasicvisual.h"
+#include "../xrRender/FBasicVisual.h"
 #include "../../xrEngine/xr_object.h"
 #include "../../xrEngine/CustomHUD.h"
-#include "../../xrEngine/igame_persistent.h"
-#include "../../xrEngine/environment.h"
+#include "../../xrEngine/IGame_Persistent.h"
+#include "../../xrEngine/Environment.h"
 #include "../xrRender/SkeletonCustom.h"
 #include "../xrRender/LightTrack.h"
 #include "../xrRender/dxRenderDeviceRender.h"
@@ -14,6 +14,8 @@
 
 #include "../xrRenderDX10/3DFluid/dx103DFluidManager.h"
 #include "../xrRender/ShaderResourceTraits.h"
+
+#include "../../xrParticles/ParticlesAsyncManager.h"
 
 CRender										RImplementation;
 
@@ -133,11 +135,11 @@ static class cl_alpha_ref	: public R_constant_setup
 
 //////////////////////////////////////////////////////////////////////////
 // Just two static storage
-void					CRender::create					()
+void CRender::create()
 {
 	Device.seqFrame.Add	(this,REG_PRIORITY_HIGH+0x12345678);
 
-	m_skinning			= -1;
+	Engine.External.SetSkinningMode();
 
 	// hardware
 	o.smapsize			= ps_r2_smapsize;
@@ -189,14 +191,6 @@ void					CRender::create					()
 	o.distortion = o.distortion_enabled;
 	o.disasm = Core.ParamsData.test(ECoreParams::disasm);
 
-	if(ps_r_ssao) {
-		SSAO = ps_r2_ls_flags_ssao;
-
-		if(SSAO.test(ESSAO_DATA::SSAO_HDAO) || SSAO.test(ESSAO_DATA::SSAO_GTAO)) {
-			SSAO.set(ESSAO_DATA::SSAO_OPT_DATA, false);
-		}
-	}
-
 	o.dx11_enable_tessellation = RFeatureLevel >= D3D_FEATURE_LEVEL_11_0 && ps_r2_ls_flags_ext.test(R2FLAGEXT_ENABLE_TESSELLATION);
 
 	// constants
@@ -224,33 +218,20 @@ void					CRender::create					()
 	rmNormal();
 	marker = 0;
 
-	D3D_QUERY_DESC qdesc{};
-	qdesc.MiscFlags = 0;
-	qdesc.Query = D3D_QUERY_EVENT;
-
-	ZeroMemory(q_sync_point, sizeof(q_sync_point));
-
-	for(u32 i = 0; i < 2; ++i) {
-		R_CHK(RDevice->CreateQuery(&qdesc, &q_sync_point[i]));
-	}
-
-	RContext->End(q_sync_point[0]);
-
 	xrRender_apply_tf();
 	::PortalTraverser.initialize();
 
 	FluidManager.Initialize(70, 70, 70);
 	FluidManager.SetScreenSize((u32)RCache.get_width(), (u32)RCache.get_height());
+
+	Device.ModelDefferClear = xr_make_delegate(Models, &CModelPool::DeleteQueuedDeffer);
 }
 
-void CRender::destroy() {
+void CRender::destroy() 
+{
 	m_bMakeAsyncSS = false;
 	FluidManager.Destroy();
 	::PortalTraverser.destroy();
-
-	for(u32 i = 0; i < 2; ++i) {
-		_RELEASE(q_sync_point[i]);
-	}
 
 	HWOCC.occq_destroy();
 	xr_delete(Models);
@@ -258,6 +239,7 @@ void CRender::destroy() {
 	PSLibrary.OnDestroy();
 	Device.seqFrame.Remove(this);
 	r_dsgraph_destroy();
+	Device.ModelDefferClear = nullptr;
 }
 
 void CRender::reset_begin() {
@@ -279,28 +261,15 @@ void CRender::reset_begin() {
 
 	if (b_loaded)
 	{
-		Device.remove_from_seq_parallel(fastdelegate::FastDelegate0<>(Details, &CDetailManager::MT_CALC));
 		Details->Unload();
 		xr_delete(Details);
 	}
 	xr_delete(Target);
 	HWOCC.occq_destroy();
-
-	for(u32 i = 0; i < 2; ++i) {
-		_RELEASE(q_sync_point[i]);
-	}
 }
 
 void CRender::reset_end() {
-	D3D_QUERY_DESC			qdesc{};
-	qdesc.MiscFlags = 0;
-	qdesc.Query = D3D_QUERY_EVENT;
-
-	for(u32 i = 0; i < 2; ++i) {
-		R_CHK(RDevice->CreateQuery(&qdesc, &q_sync_point[i]));
-	}
 	//	Prevent error on first get data
-	RContext->End(q_sync_point[0]);
 
 	HWOCC.occq_create(occq_size);
 
@@ -319,17 +288,14 @@ void CRender::reset_end() {
 	m_bFirstFrameAfterReset = true;
 }
 
-void CRender::OnFrame() {
+void CRender::OnFrame()
+{
 	Models->DeleteQueue();
-	if(ps_r2_ls_flags.test(R2FLAG_EXP_MT_CALC)) {
-		// MT-details (@front)
-		Device.seqParallel.insert(Device.seqParallel.begin(),
-			fastdelegate::FastDelegate0<>(Details, &CDetailManager::MT_CALC));
 
-		// MT-HOM (@front)
-		Device.seqParallel.insert(Device.seqParallel.begin(),
-			fastdelegate::FastDelegate0<>(&HOM, &CHOM::MT_RENDER));
-	}
+	//Lights Delete queue
+	for (light* L : v_all_lights_dque)
+		xr_delete(L);
+	v_all_lights_dque.clear();
 }
 
 // Implementation
@@ -356,6 +322,12 @@ IRenderVisual* CRender::model_Duplicate(IRenderVisual* V) {
 void CRender::model_Delete(IRenderVisual*& V, BOOL bDiscard) {
 	dxRender_Visual* pVisual = (dxRender_Visual*)V;
 	Models->Delete(pVisual, bDiscard);
+	V = 0;
+}
+
+void CRender::model_Delete_Deffered(IRenderVisual*& V) {
+	dxRender_Visual* pVisual = (dxRender_Visual*)V;
+	Models->DeleteDeffered(pVisual);
 	V = 0;
 }
 
@@ -408,8 +380,12 @@ IRender_Portal* CRender::getPortal(int id) {
 	VERIFY(id<int(Portals.size()));	return Portals[id];
 }
 
-IRender_Sector* CRender::getSector(int id) {
-	VERIFY(id<int(Sectors.size()));	return Sectors[id];
+IRender_Sector* CRender::getSector(int id)
+{
+	if(id>=0 && id<int(Sectors.size()))
+		return Sectors[id];
+
+	return NULL;
 }
 
 IRender_Sector* CRender::getSectorActive() {
@@ -451,6 +427,7 @@ FSlideWindowItem* CRender::getSWI(int id) {
 	VERIFY(id<int(SWIs.size()));
 	return &SWIs[id];
 }
+
 IRender_Target* CRender::getTarget() {
 	return Target;
 }
@@ -458,6 +435,7 @@ IRender_Target* CRender::getTarget() {
 IRender_Light* CRender::light_create() {
 	return Lights.Create();
 }
+
 IRender_Glow* CRender::glow_create() {
 	return new CGlow();
 }
@@ -478,8 +456,8 @@ BOOL CRender::occ_visible(Fbox& P) {
 	return HOM.visible(P);
 }
 
-void CRender::add_Visual(IRenderVisual* V, bool ignore_opt) {
-	add_leafs_Dynamic((dxRender_Visual*)V, ignore_opt);
+void CRender::add_Visual(IRenderVisual* V) {
+	add_leafs_Dynamic((dxRender_Visual*)V);
 }
 void CRender::add_Geometry(IRenderVisual* V) {
 	add_Static((dxRender_Visual*)V, View->getMask());
@@ -555,6 +533,17 @@ void CRender::rmNormal() {
 	RContext->RSSetViewports(1, &VP);
 }
 
+CRender::SurfaceParams CRender::getSurface(const char* nameTexture)
+{
+	auto texture = DEV->_CreateTexture(nameTexture);
+	SurfaceParams surface = {};
+	surface.Surface = texture->get_SRView();
+	surface.w = (float)texture->get_Width();
+	surface.h = (float)texture->get_Height();
+
+	return surface;
+}
+
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
@@ -597,22 +586,21 @@ void CRender::Statistics(CGameFont* _F) {
 }
 
 xr_string CRender::getShaderParams() {
-	xr_string params = "";
 	if(!m_ShaderOptions.empty()) {
-		params.append("(").append(m_ShaderOptions[0].Name);
+		xr_string params = "(";
 
-		for(size_t i = 1u; i < m_ShaderOptions.size(); ++i) {
-			params.append(",").append(m_ShaderOptions[i].Name);
+		for(auto& [Name, Value] : m_ShaderOptions) {
+			params += Name + (Value[0] ? "_" + Value : "") + ",";
 		}
 
-		params.append(")");
+		params[params.size() - 1] = ')';
+		return params;
 	}
-	return params;
+	return "";
 }
 
 void CRender::addShaderOption(const char* name, const char* value) {
-	D3D_SHADER_MACRO macro = {name, value};
-	m_ShaderOptions.push_back(macro);
+	m_ShaderOptions[name] = value;
 }
 
 template <typename T>
@@ -814,18 +802,21 @@ HRESULT	CRender::shader_compile(
 
 	char c_smapsize[32];
 	char c_sun_shafts[32];
-	char c_ssao[32];
 	char c_sun_quality[32];
 
 	char sh_name[MAX_PATH] = "";
 
-	for(u32 i = 0; i < m_ShaderOptions.size(); ++i) {
-		defines[def_it++] = m_ShaderOptions[i];
+	for(auto& [Name, Value] : m_ShaderOptions) {
+		defines[def_it++] = {
+			Name.c_str(),
+			Value.c_str()
+		};
 	}
 
 	u32 len = xr_strlen(sh_name);
 
 	// options
+	const int m_skinning = Engine.External.GetSkinningMode();
 	{
 		xr_sprintf(c_smapsize, "%04d", u32(o.smapsize));
 
@@ -851,23 +842,6 @@ HRESULT	CRender::shader_compile(
 		def_it++;
 	}
 	sh_name[len] = '0' + char(o.sunstatic); ++len;
-
-	bool HasBlur = SSAO.test(ESSAO_DATA::SSAO_BLUR);
-	bool HasHDAO = SSAO.test(ESSAO_DATA::SSAO_HDAO);
-
-	if(HasBlur) {
-		defines[def_it].Name = "USE_SSAO_BLUR";
-		defines[def_it].Definition = "1";
-		def_it++;
-	}
-	sh_name[len] = '0' + char(HasBlur); ++len;
-
-	if(HasHDAO) {
-		defines[def_it].Name = "HDAO";
-		defines[def_it].Definition = "1";
-		def_it++;
-	}
-	sh_name[len] = '0' + char(HasHDAO); ++len;
 
 	// skinning
 	if(m_skinning < 0) {
@@ -990,18 +964,6 @@ HRESULT	CRender::shader_compile(
 
 		def_it++;
 		sh_name[len] = '0' + static_cast<char>(ps_r_sun_shafts); ++len;
-	}
-	else {
-		sh_name[len] = '0';	++len;
-	}
-
-	if(ps_r_ssao > 0) {
-		xr_sprintf(c_ssao, "%d", ps_r_ssao);
-		defines[def_it].Name = "SSAO_QUALITY";
-		defines[def_it].Definition = c_ssao;
-
-		def_it++;
-		sh_name[len] = '0' + static_cast<char>(ps_r_ssao); ++len;
 	}
 	else {
 		sh_name[len] = '0';	++len;
@@ -1161,7 +1123,7 @@ HRESULT	CRender::shader_compile(
 		);
 
 		if(SUCCEEDED(_result)) {
-			if(ps_r__common_flags.test(RFLAG_USE_CACHE)) {
+			if(/*ps_r__common_flags.test(RFLAG_USE_CACHE)*/1) {
 				IWriter* file = FS.w_open(file_name);
 				u32 const crc = crc32(pShaderBuf->GetBufferPointer(), pShaderBuf->GetBufferSize());
 				file->w_u32(crc);

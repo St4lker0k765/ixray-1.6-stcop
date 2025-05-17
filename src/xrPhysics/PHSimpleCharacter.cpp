@@ -4,23 +4,23 @@
 #include "ExtendedGeom.h"
 #include "../xrEngine/cl_intersect.h"
 #include "../xrEngine/xr_object_list.h"
-#include "tri-colliderKNoOPC\__aabb_tri.h"
+#include "tri-colliderknoopc/__aabb_tri.h"
 #include "PHSimpleCharacter.h"
 #include "PHContactBodyEffector.h"
 #include "SpaceUtils.h"
 #include "params.h"
 #include "MathUtils.h"
-#include "../xrEngine/gamemtllib.h"
-#include "iphysicsshellholder.h"
+#include "../xrEngine/GameMtlLib.h"
+#include "IPhysicsShellHolder.h"
 #include "../Include/xrRender/Kinematics.h"
 #include "PHSimpleCharacterInline.h"
 #include "DamageSource.h"
 #include "PHCollideValidator.h"
 #include "CalculateTriangle.h"
-#include "geometry.h"
+#include "Geometry.h"
 
-#include "../xrengine/bone.h"
-#include "../xrengine/xr_object.h"
+#include "../xrEngine/bone.h"
+#include "../xrEngine/xr_object.h"
 #include "ph_valid_ode.h"
 
 IC bool PhOutOfBoundaries(const Fvector& v)
@@ -552,7 +552,10 @@ void CPHSimpleCharacter::PhDataUpdate(dReal /**step/**/)
 	m_last_move.sub(cast_fv(dBodyGetPosition(m_body)), m_last_move);
 	m_last_move.mul(1.f / fixed_step);
 
-	VERIFY2(dBodyStateValide(m_body), "WRONG BODYSTATE IN PhDataUpdate");
+#ifdef DEBUG
+	if (!Device.IsEditorMode())
+		VERIFY2(dV_valid(dBodyGetPosition(m_body)), "WRONG BODYSTATE IN PhDataUpdate");
+#endif
 
 	if (PhOutOfBoundaries(cast_fv(dBodyGetPosition(m_body))))
 		Disable();
@@ -572,10 +575,10 @@ void CPHSimpleCharacter::PhTune(dReal step)
 	{
 		if (b_air_contact_state)
 			debug_output().DBG_DrawPoint(cast_fv(dBodyGetPosition(m_body)), m_radius, color_xrgb(255, 0, 0));
-		
 	}
 #endif
-	bool b_good_graund=b_valide_ground_contact&&m_ground_contact_normal[1]>M_SQRT1_2;
+
+	const bool b_good_graund = b_valide_ground_contact && m_ground_contact_normal[1] > M_SQRT1_2;
 
 	dxGeomUserData	*ud=dGeomGetUserData(m_wheel);
 	if ((ud->pushing_neg || ud->pushing_b_neg) && !b_death_pos)
@@ -1208,6 +1211,19 @@ void CPHSimpleCharacter::SafeAndLimitVelocity()
 	dVectorSet(m_safe_position,dBodyGetPosition(m_body));
 	dVectorSet(m_safe_velocity,linear_velocity);
 
+	// FX: ÐÐ°Ñ…ÐµÑ€ Ð²ÑÑÐºÐ¸Ðµ e-37
+	if (fis_zero(m_safe_velocity[0]))
+	{
+		m_safe_velocity[0] = 0;
+	}
+	if (fis_zero(m_safe_velocity[1]))
+	{
+		m_safe_velocity[1] = 0;
+	}
+	if (fis_zero(m_safe_velocity[2]))
+	{
+		m_safe_velocity[2] = 0;
+	}
 }
 
 void CPHSimpleCharacter::SetObjectContactCallback(ObjectContactCallbackFun* callback)
@@ -1399,7 +1415,7 @@ void CPHSimpleCharacter::InitContact(dContact* c, bool& do_collide, u16 material
 	bool object = (dGeomGetBody(g1) && dGeomGetBody(g2));
 	b_on_object = b_on_object || object;
 
-	////////////////////////íóæíî ñìåñòèòü êîëèæåí!!
+	////////////////////////Ð½ÑƒÐ¶Ð½Ð¾ ÑÐ¼ÐµÑÑ‚Ð¸Ñ‚ÑŒ ÐºÐ¾Ð»Ð¸Ð¶ÐµÐ½!!
 	FootProcess(c, do_collide, bo1);
 	if (!do_collide) return;
 	if (g1 == m_hat_transform || g2 == m_hat_transform)
@@ -1569,7 +1585,7 @@ void CPHSimpleCharacter::set_State(const SPHNetState& state)
 
 void CPHSimpleCharacter::get_spatial_params()
 {
-	spatialParsFromDGeom((dGeomID)m_space,spatial.sphere.P,AABB,spatial.sphere.R);
+	spatialParsFromDGeom((dGeomID)m_space, SpatialComponent->spatial.sphere.P,AABB, SpatialComponent->spatial.sphere.R);
 }
 
 float CPHSimpleCharacter::FootRadius()

@@ -45,6 +45,9 @@ BOOL ai_map_shown = TRUE;
 static const u32 block_size = 0x2000;
 void ESceneAIMapTool::OnRender(int priority, bool strictB2F)
 {
+    if (!IsLoaded)
+        return;
+
 	if (m_Flags.is(flHideNodes) || !ai_map_shown) return;
     if (1==priority){
         if (false==strictB2F){
@@ -59,7 +62,7 @@ void ESceneAIMapTool::OnRender(int priority, bool strictB2F)
                 EDevice->SetShader	(m_Shader);
                 EDevice->SetRS		(D3DRS_CULLMODE,		D3DCULL_NONE);
                 Irect rect;
-                HashRect			(EDevice->m_Camera.GetPosition(),m_VisRadius,rect);
+                HashRect			(UI->CurrentView().m_Camera.GetPosition(),m_VisRadius,rect);
 
                 u32 vBase;
                 _VertexStream* Stream= &RCache.Vertex;
@@ -73,7 +76,9 @@ void ESceneAIMapTool::OnRender(int priority, bool strictB2F)
                         if (nodes){
                             const Fvector	DUP={0,1,0};
                             const float st 	= (m_Params.fPatchSize*0.9f)*0.5f;
-                            for (AINodeIt it=nodes->begin(); it!=nodes->end(); it++){
+                            
+                            for (AINodeIt it=nodes->begin(); it!=nodes->end(); it++)
+                            {
                                 SAINode& N 	= **it;
 
 								Fvector v;	v.set(N.Pos.x-st,N.Pos.y,N.Pos.z-st);

@@ -1,11 +1,11 @@
 
 #include "stdafx.h"
 #include "UICDkey.h"
-#include "UILines.h"
+#include "../../xrUI/Widgets/UILines.h"
 #include "../../xrEngine/line_edit_control.h"
 #include "../MainMenu.h"
 
-#include "../../xrEngine/xr_IOConsole.h"
+#include "../../xrEngine/XR_IOConsole.h"
 #include "../RegistryFuncs.h"
 #include "../../xrGameSpy/xrGameSpy_MainDefs.h"
 #include "player_name_modifyer.h"

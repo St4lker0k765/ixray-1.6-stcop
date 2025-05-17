@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "control_critical_wound.h"
-#include "BaseMonster/base_monster.h"
+#include "basemonster/base_monster.h"
 #include "control_animation_base.h"
 #include "control_direction_base.h"
 #include "control_movement_base.h"
@@ -18,6 +18,10 @@ void CControlCriticalWound::activate()
 
 	SControlAnimationData		*ctrl_anim = (SControlAnimationData*)m_man->data(this, ControlCom::eControlAnimation); 
 	VERIFY						(ctrl_anim);
+	if (ctrl_anim == nullptr)
+	{
+		return;
+	}
 	ctrl_anim->global.set_motion ( skel->ID_Cycle_Safe(m_data.animation) );
 	ctrl_anim->global.actual	= false;
 }

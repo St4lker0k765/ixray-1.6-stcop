@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 #include "Actor.h"
 #include "UIGameSP.h"
@@ -22,9 +22,9 @@
 #include "ui/UITalkWnd.h"
 #include "game_object_space.h"
 #include "encyclopedia_article.h"
-#include "GameTaskManager.h"
-#include "GameTaskdefs.h"
-#include "infoportion.h"
+#include "GametaskManager.h"
+#include "GameTaskDefs.h"
+#include "InfoPortion.h"
 #include "Inventory.h"
 #include "CustomDetector.h"
 #include "ai/monsters/basemonster/base_monster.h"
@@ -56,7 +56,7 @@ bool CActor::OnReceiveInfo(shared_str info_id) const
 
 	if(!CurrentGameUI())
 		return false;
-	//только если находимся в режиме single
+	//С‚РѕР»СЊРєРѕ РµСЃР»Рё РЅР°С…РѕРґРёРјСЃСЏ РІ СЂРµР¶РёРјРµ single
 	CUIGameSP* pGameSP = smart_cast<CUIGameSP*>(CurrentGameUI());
 	if(!pGameSP) return false;
 
@@ -77,7 +77,7 @@ void CActor::OnDisableInfo(shared_str info_id) const
 	if(!CurrentGameUI())
 		return;
 
-	//только если находимся в режиме single
+	//С‚РѕР»СЊРєРѕ РµСЃР»Рё РЅР°С…РѕРґРёРјСЃСЏ РІ СЂРµР¶РёРјРµ single
 	CUIGameSP* pGameSP = smart_cast<CUIGameSP*>(CurrentGameUI());
 	if(!pGameSP) return;
 
@@ -87,7 +87,7 @@ void CActor::OnDisableInfo(shared_str info_id) const
 
 void  CActor::ReceivePhrase		(DIALOG_SHARED_PTR& phrase_dialog)
 {
-	//только если находимся в режиме single
+	//С‚РѕР»СЊРєРѕ РµСЃР»Рё РЅР°С…РѕРґРёРјСЃСЏ РІ СЂРµР¶РёРјРµ single
 	CUIGameSP* pGameSP = smart_cast<CUIGameSP*>(CurrentGameUI());
 	if(!pGameSP) return;
 
@@ -102,7 +102,7 @@ void   CActor::UpdateAvailableDialogs	(CPhraseDialogManager* partner)
 	m_AvailableDialogs.clear();
 	m_CheckedDialogs.clear();
 
-	//добавить актерский диалог собеседника
+	//РґРѕР±Р°РІРёС‚СЊ Р°РєС‚РµСЂСЃРєРёР№ РґРёР°Р»РѕРі СЃРѕР±РµСЃРµРґРЅРёРєР°
 	CInventoryOwner* pInvOwnerPartner = smart_cast<CInventoryOwner*>(partner); VERIFY(pInvOwnerPartner);
 	
 	for(u32 i = 0; i<pInvOwnerPartner->CharacterInfo().ActorDialogs().size(); i++)
@@ -121,7 +121,7 @@ void CActor::TryToTalk()
 
 void CActor::RunTalkDialog(CInventoryOwner* talk_partner, bool disable_break)
 {
-	//предложить поговорить с нами
+	//РїСЂРµРґР»РѕР¶РёС‚СЊ РїРѕРіРѕРІРѕСЂРёС‚СЊ СЃ РЅР°РјРё
 	if(talk_partner->OfferTalk(this))
 	{	
 		StartTalk(talk_partner);
@@ -136,7 +136,7 @@ void CActor::RunTalkDialog(CInventoryOwner* talk_partner, bool disable_break)
 
 void CActor::StartTalk (CInventoryOwner* talk_partner)
 {
-	CGameObject* GO = smart_cast<CGameObject*>(talk_partner); VERIFY(GO);
+	VERIFY(talk_partner->cast_game_object());
 	CInventoryOwner::StartTalk(talk_partner);
 }
 
@@ -144,7 +144,7 @@ void CActor::NewPdaContact		(CInventoryOwner* pInvOwner)
 {	
 	if(!IsGameTypeSingle()) return;
 
-	bool b_alive = !!(smart_cast<CEntityAlive*>(pInvOwner))->g_Alive();
+	bool b_alive = !!pInvOwner->cast_game_object()->cast_entity_alive()->g_Alive();
 	CurrentGameUI()->UIMainIngameWnd->AnimateContacts(b_alive);
 
 	Level().MapManager().AddRelationLocation		( pInvOwner );
@@ -152,16 +152,7 @@ void CActor::NewPdaContact		(CInventoryOwner* pInvOwner)
 
 void CActor::LostPdaContact		(CInventoryOwner* pInvOwner)
 {
-	CGameObject* GO = smart_cast<CGameObject*>(pInvOwner);
-	if (GO){
-
-		for(int t = ALife::eRelationTypeFriend; t<ALife::eRelationTypeLast; ++t){
-			ALife::ERelationType tt = (ALife::ERelationType)t;
-			Level().MapManager().RemoveMapLocation(RELATION_REGISTRY().GetSpotName(tt),	GO->ID());
-		}
-		Level().MapManager().RemoveMapLocation("deadbody_location",	GO->ID());
-	};
-
+	Level().MapManager().RemoveRelationLocation(pInvOwner);
 }
 
 void CActor::AddGameNews_deffered	 (GAME_NEWS_DATA& news_data, u32 delay)

@@ -4,17 +4,13 @@
 
 #include "UI_ActorMain.h"
 
-// FIXME
-#include "../xrEProps/UIFileLoad.h"
-extern CUFileOpen* FileOpen;
-
 //---------------------------------------------------------------------------
 CActorMain*	AUI=(CActorMain*)UI;
 //---------------------------------------------------------------------------
 /*
 CActorMain::CActorMain()
 {
-	EPrefs			= xr_new<CAEPreferences>();
+	EPrefs			= new CAEPreferences();
 }
 //---------------------------------------------------------------------------
 
@@ -68,34 +64,32 @@ CCommandVar CActorTools::CommandSave(CCommandVar p1, CCommandVar p2)
 		}
 	}
 	return 					FALSE;
-}     
+}
+
 CCommandVar CActorTools::CommandImport(CCommandVar p1, CCommandVar p2)
 {
-   // xr_string temp_fn = p1.IsString() ? xr_string(p1) : "";
-	
-	auto ImportCallback = [](xr_string temp_fn)
+	xr_string temp_fn = p1.IsString() ? xr_string(p1) : xr_string("");
+	if (p1.IsString() || EFS.GetOpenName(_import_, temp_fn))
 	{
-		FS.rescan_path(_import_, true);
 		FS_Path* pp = FS.get_path(_import_);
-	
-		size_t InitialPos = temp_fn.find(pp->m_Path);
-		if (temp_fn.npos != InitialPos)
+
+		if (temp_fn.npos != temp_fn.find(pp->m_Path))
 		{
 			xr_strlwr(temp_fn);
 			temp_fn = FS.fix_path(temp_fn);
 			FS.TryLoad(temp_fn);
 
 			if (!Tools->IfModified())
-				return;
-	
+				return	FALSE;
+
 			ExecCommand(COMMAND_CLEAR);
 			CTimer T;
 			T.Start();
 			if (!ATools->Import(NULL, temp_fn.c_str()))
-				return;
-	
-			Tools->m_LastFileName = temp_fn;
-			ELog.Msg(mtInformation, "Object '%s' successfully imported. Loading time - %3.2f(s).", Tools->m_LastFileName.c_str(), T.GetElapsed_sec());
+				return	FALSE;
+
+			m_LastFileName = temp_fn.c_str();
+			ELog.Msg(mtInformation, "Object '%s' successfully imported. Loading time - %3.2f(s).", m_LastFileName.c_str(), T.GetElapsed_sec());
 			if (ExecCommand(COMMAND_SAVE, temp_fn, 1))
 			{
 				xr_string mfn;
@@ -106,23 +100,12 @@ CCommandVar CActorTools::CommandImport(CCommandVar p1, CCommandVar p2)
 			{
 				ExecCommand(COMMAND_CLEAR);
 			}
-			return;
+			return TRUE;
 		}
 		else {
 			ELog.Msg(mtError, "Invalid file path. ");
 		}
-	};
-
-	if (p1.IsString())
-	{
-		ImportCallback(xr_string(p1));
 	}
-	else
-	{
-		FileOpen->AfterLoadCallback = ImportCallback;
-		FileOpen->ShowDialog(_import_, ".*");
-	}
-
 	return FALSE;
 }
 
@@ -221,17 +204,16 @@ CCommandVar CActorTools::CommandMakeThumbnail(CCommandVar p1, CCommandVar p2)
 
 CCommandVar CActorTools::CommandBatchConvert(CCommandVar p1, CCommandVar p2)
 {
-	FileOpen->AfterLoadCallback = [](xr_string fn)
+	CCommandVar res = FALSE;
+	xr_string fn;
+	if (EFS.GetOpenName("$import$", fn, false, 0, 6))
 	{
-		if (0!= ATools->BatchConvert(fn.c_str()))
-			ELog.Msg(mtInformation,"Convert complete.");
-		else		        		    		
-			ELog.Msg(mtError,"Convert failed.");
-	};
-
-	FileOpen->ShowDialog(_import_, ".*");
-
-	return TRUE;
+		if (0 != (res = BatchConvert(fn.c_str())))
+			ELog.Msg(mtInformation, "Convert complete.");
+		else
+			ELog.Msg(mtError, "Convert failed.");
+	}
+	return res;
 }
 
 char* CActorMain::GetCaption()
@@ -280,47 +262,6 @@ void CActorMain::ProgressDraw()
 {
 	inherited::ProgressDraw();
 	/*fraBottomBar->RedrawBar();*/
-}
-//---------------------------------------------------------------------------
-void CActorMain::OutCameraPos()
-{
-	if (m_bReady)
-	{
-		TUI::DrawDebugString Str;
-		Str.Pos = { 15, 50 };
-		Str.Text.resize(64);
-		Str.Color = ImColor(0, 0, 0);
-
-		const Fvector& c = EDevice->m_Camera.GetPosition();
-		sprintf(Str.Text.data(), "C: %3.1f, %3.1f, %3.1f", c.x, c.y, c.z);
-
-		UI->ViewportFrameLines.push_back(Str);
-	}
-}
-//---------------------------------------------------------------------------
-void CActorMain::OutUICursorPos()
-{
-	
-/*	VERIFY(fraBottomBar);
-	AnsiString s; POINT pt;
-	GetCursorPos(&pt);
-	s.sprintf("Cur: %d, %d",pt.x,pt.y);
-	fraBottomBar->paUICursor->Caption=s; fraBottomBar->paUICursor->Repaint();*/
-}
-//---------------------------------------------------------------------------
-void CActorMain::OutGridSize()
-{
-	
-	/*VERIFY(fraBottomBar);
-	AnsiString s;
-	s.sprintf("Grid: %1.1f",EPrefs->grid_cell_size);
-	fraBottomBar->paGridSquareSize->Caption=s; fraBottomBar->paGridSquareSize->Repaint();*/
-}
-//---------------------------------------------------------------------------
-void CActorMain::OutInfo()
-{
-	
-	//fraBottomBar->paSel->Caption = Tools->GetInfo();
 }
 
 //---------------------------------------------------------------------------
@@ -378,7 +319,7 @@ void CAEPreferences::FillProp(PropItemVec& props)
 
 CActorMain::CActorMain()
 {
-	EPrefs = xr_new<CAEPreferences>();
+	EPrefs = new CAEPreferences();
 }
 
 CActorMain::~CActorMain()
@@ -481,7 +422,7 @@ CCommandVar CActorTools::CommandClear(CCommandVar p1, CCommandVar p2)
 		return FALSE;
 
 	m_LastFileName = "";
-	EDevice->m_Camera.Reset();
+	UI->CurrentView().m_Camera.Reset();
 	Clear();
 	ExecCommand(COMMAND_UPDATE_CAPTION);
 	ExecCommand(COMMAND_UPDATE_PROPERTIES);
@@ -491,54 +432,50 @@ CCommandVar CActorTools::CommandClear(CCommandVar p1, CCommandVar p2)
 
 CCommandVar CActorTools::CommandLoad(CCommandVar p1, CCommandVar p2)
 {
-	auto LoadCallback = [](xr_string temp_fn)
+	xr_string temp_fn = p1.IsString() ? xr_string(p1) : xr_string("");
+	if (!p1.IsString()) 
 	{
-		if (!temp_fn.empty())
+		temp_fn = ChangeFileExt(m_LastFileName, "").c_str();
+		if (!EFS.GetOpenName(_objects_, temp_fn))
+			return FALSE;
+	}
+
+	if (!temp_fn.empty()) 
+	{
+		xr_strlwr(temp_fn);
+		temp_fn = FS.fix_path(temp_fn);
+
+		if (!IfModified())
+			return FALSE;
+
+		if (!FS.TryLoad(temp_fn))
 		{
-			xr_strlwr(temp_fn);
-			temp_fn = FS.fix_path(temp_fn);
-
-			if (!ATools->IfModified())
-				return;
-
-			if (!FS.TryLoad(temp_fn))
-			{
-				Msg("#!Can't load file: %s", temp_fn.c_str());
-				return;
-			}
-
-			ExecCommand(COMMAND_CLEAR);
-
-			BOOL bReadOnly = !FS.can_modify_file(temp_fn.c_str());
-			ATools->m_Flags.set(flReadOnlyMode, bReadOnly);
-
-			CTimer T;
-			T.Start();
-
-			if (!ATools->Load(temp_fn.c_str()))
-				return;
-
-			ATools->m_LastFileName = temp_fn.c_str();
-			ELog.Msg(mtInformation, "Object '%s' successfully loaded. Loading time - %3.2f(s).", ATools->m_LastFileName.c_str(), T.GetElapsed_sec());
-			EPrefs->AppendRecentFile(ATools->m_LastFileName.c_str());
-			ExecCommand(COMMAND_UPDATE_CAPTION);
-			ExecCommand(COMMAND_UPDATE_PROPERTIES);
-
-			ATools->UndoClear();
-			ATools->UndoSave();
+			Msg("#!Can't load file: %s", temp_fn.c_str());
+			return false;
 		}
-	};
 
-	if (!p1.IsString())
-	{
-		FileOpen->AfterLoadCallback = LoadCallback;
-		FileOpen->ShowDialog(_objects_, ".object");
-	}
-	else
-	{
-		LoadCallback(xr_string(p1));
-	}
+		ExecCommand(COMMAND_CLEAR);
 
+		BOOL bReadOnly = !FS.can_modify_file(temp_fn.c_str());
+		m_Flags.set(flReadOnlyMode, bReadOnly);
+
+		CTimer T;
+		T.Start();
+
+		if (!Load(temp_fn.c_str()))
+		{
+			return FALSE;
+		}
+
+		m_LastFileName = temp_fn.c_str();
+		ELog.Msg(mtInformation, "Object '%s' successfully loaded. Loading time - %3.2f(s).", m_LastFileName.c_str(), T.GetElapsed_sec());
+		EPrefs->AppendRecentFile(m_LastFileName.c_str());
+		ExecCommand(COMMAND_UPDATE_CAPTION);
+		ExecCommand(COMMAND_UPDATE_PROPERTIES);
+
+		UndoClear();
+		UndoSave();
+	}
 	return TRUE;
 }
 

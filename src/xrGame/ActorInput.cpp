@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "Actor.h"
 #include "Torch.h"
 #include "trade.h"
@@ -17,12 +17,12 @@
 #include "game_cl_base.h"
 #include "../xrEngine/xr_level_controller.h"
 #include "UsableScriptObject.h"
-#include "actorcondition.h"
+#include "ActorCondition.h"
 #include "actor_input_handler.h"
 #include "../xrEngine/string_table.h"
-#include "UI/UIStatic.h"
-#include "UI/UIActorMenu.h"
-#include "UI/UIDragDropReferenceList.h"
+#include "../../xrUI/Widgets/UIStatic.h"
+#include "ui/UIActorMenu.h"
+#include "ui/UIDragDropReferenceList.h"
 #include "CharacterPhysicsSupport.h"
 #include "InventoryBox.h"
 #include "player_hud.h"
@@ -33,6 +33,7 @@
 #include "HUDManager.h"
 #include "Weapon.h"
 #include "ai/monsters/basemonster/base_monster.h"
+#include "HUDAnimItem.h"
 
 extern u32 hud_adj_mode;
 
@@ -168,30 +169,39 @@ void CActor::IR_OnKeyboardPress(int cmd)
 	case kQUICK_USE_3:
 	case kQUICK_USE_4:
 		{
+			if (smart_cast<CHUDAnimItem*>(inventory().ActiveItem()) != nullptr || inventory().GetNextActiveSlot() == ANIM_SLOT)
+			{
+				break;
+			}
+
 			const shared_str& item_name		= g_quick_use_slots[cmd-kQUICK_USE_1];
 			if(item_name.size())
 			{
-				PIItem itm = inventory().GetAny(item_name.c_str());
+				PIItem best_itm = nullptr;
 
-				if(itm)
+				for (auto& it : inventory().m_ruck)
 				{
-					if (IsGameTypeSingle())
+					if (it->m_section_id == item_name && (best_itm == nullptr || it->GetCondition() < best_itm->GetCondition()))
 					{
-						inventory().Eat				(itm);
-					} else
-					{
-						inventory().ClientEat		(itm);
+						best_itm = it;
 					}
+				}
+
+				if (best_itm != nullptr)
+				{
+					IsGameTypeSingle() ? inventory().Eat(best_itm) : inventory().ClientEat(best_itm);
 					
-					SDrawStaticStruct* _s		= CurrentGameUI()->AddCustomStatic("item_used", true);
-					string1024					str;
-					xr_strconcat(str,*g_pStringTable->translate("st_item_used"),": ", itm->NameItem());
+					SDrawStaticStruct* _s = CurrentGameUI()->AddCustomStatic("item_used", true);
+					string1024 str = {};
+
+					xr_strconcat(str,*g_pStringTable->translate("st_item_used"),": ", best_itm->NameItem());
 					_s->wnd()->TextItemControl()->SetText(str);
 					
 					CurrentGameUI()->ActorMenu().m_pQuickSlot->ReloadReferences(this);
 				}
 			}
-		}break;
+		}
+		break;
 	}
 }
 
@@ -535,8 +545,9 @@ void CActor::ActorUse()
 			if (IsGameTypeSingle())
 			{			
 				CBaseMonster* pMonster = smart_cast<CBaseMonster*>(pEntityAliveWeLookingAt);
+				const static bool isMonstersInventory = EngineExternal()[EEngineExternalGame::EnableMonstersInventory];
 				bool TestMonster =	(pMonster == nullptr) ||
-									(pMonster != nullptr && EngineExternal()[EEngineExternalGame::EnableMonstersInventory]);
+									(pMonster != nullptr && isMonstersInventory);
 
 				if(pEntityAliveWeLookingAt->g_Alive())
 				{
@@ -739,6 +750,9 @@ void CActor::SwitchNightVision()
 
 void CActor::SwitchTorch()
 { 
+	if (CurrentGameUI() && CurrentGameUI()->TopInputReceiver())
+		return;
+
 	xr_vector<CAttachableItem*> const& all = CAttachmentOwner::attached_objects();
 	xr_vector<CAttachableItem*>::const_iterator it = all.begin();
 	xr_vector<CAttachableItem*>::const_iterator it_e = all.end();

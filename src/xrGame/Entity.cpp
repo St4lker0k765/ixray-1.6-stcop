@@ -2,11 +2,11 @@
 
 //////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "Entity.h"
 #include "Actor.h"
 #include "xrServer_Objects_ALife_Monsters.h"
-#include "entity.h"
+#include "Entity.h"
 #include "Level.h"
 #include "seniority_hierarchy_holder.h"
 #include "team_hierarchy_holder.h"
@@ -243,10 +243,26 @@ void CEntity::net_Destroy()
 	set_ready_to_save		();
 }
 
+extern bool isGodMode();
+
 void CEntity::KillEntity(u16 whoID)
 {
 	if (ID() == Actor()->ID())
 	{
+#ifndef MASTER_GOLD
+		if (isGodMode())
+		{
+			luabind::functor<void> functor;
+			if (ai().script_engine().functor("xr_effects.enable_ui", functor))
+			{
+				functor(Actor(), NULL);
+				return;
+			}
+		}
+#endif // MASTER_GOLD
+
+		Actor()->detach_Vehicle();
+		Actor()->use_MountedWeapon(nullptr);
 		Actor()->callback(GameObject::eActorBeforeDeath)(whoID);
 	}
 

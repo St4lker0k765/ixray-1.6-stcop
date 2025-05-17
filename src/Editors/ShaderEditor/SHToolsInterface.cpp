@@ -4,7 +4,7 @@
 
 #include "SHToolsInterface.h"
 #include "../xrEProps/FolderLib.h"
-#include "../XrECore/Editor/ui_main.h"
+#include "../xrECore/Editor/ui_main.h"
 
 ISHTools::ISHTools(const ISHInit& init)
 {
@@ -37,7 +37,7 @@ void ISHTools::Modified()
 bool ISHTools::IfModified()
 {
     if (m_bModified){
-        int mr = ELog.DlgMsg(mtConfirmation, "The '%s' has been modified.\nDo you want to save your changes?",ToolsName());
+        int mr = ELog.DlgMsg(mtConfirmation, mbYes | mbNo | mbCancel, "The '%s' has been modified.\nDo you want to save your changes?",ToolsName());
         switch(mr){
         case mrYes: Save(); m_bModified = FALSE; break;
         case mrNo: m_bModified = FALSE; break;
@@ -52,7 +52,7 @@ void ISHTools::ZoomObject(bool bOnlySel)
 {
     Fbox BB;
     BB.set(-5,-5,-5,5,5,5);
-    EDevice->m_Camera.ZoomExtents(BB);
+    UI->CurrentView().m_Camera.ZoomExtents(BB);
 }
 //---------------------------------------------------------------------------
 

@@ -3,7 +3,7 @@
 
 bool EScene::BuildSpawn()
 {
-	if (m_cfrom_builder.empty())
+	if (m_cform_builder.empty())
 	{
 		if (!BuildCForm())
 		{
@@ -27,16 +27,15 @@ bool EScene::BuildSpawn()
 			return false;
 		}
 	}
-	UI->ShowConsole();
+
 	m_spawn_data.clear();
 	CGameSpawnConstructor SpawnConstructor;
 	if (!SpawnConstructor.build(Scene->m_LevelOp.m_FNLevelPath.c_str(), m_spawn_data, Scene->m_LevelOp.m_FNLevelPath.c_str(), true))
 	{
 		ELog.DlgMsg(mtError, mbOK, "! Failed build spawn! \nSee log.");
-		UI->CloseConsole();
 		return false;
 	}
-	UI->CloseConsole();
+
 	return true;
 }
 
@@ -62,7 +61,7 @@ bool EScene::BuildForPCPlay()
 		return false;
 	}
 
-	if (m_cfrom_builder.empty())
+	if (m_cform_builder.empty())
 	{
 		if (!BuildCForm())
 		{
@@ -86,7 +85,7 @@ bool EScene::BuildForPCPlay()
 			return false;
 		}
 	}
-	UI->ShowConsole();
+
 	if (!m_level_graph.save_temp())
 	{
 		ELog.DlgMsg(mtError, mbOK, "level.ai.temp can't save!\nSee log.");
@@ -97,10 +96,8 @@ bool EScene::BuildForPCPlay()
 	if (!SpawnConstructor.build(Scene->m_LevelOp.m_FNLevelPath.c_str(),"editor", Scene->m_LevelOp.m_FNLevelPath.c_str(), true))
 	{
 		ELog.DlgMsg(mtError, mbOK, "! Failed build spawn! \nSee log.");
-		UI->CloseConsole();
 		return false;
 	}
-	UI->CloseConsole();
 	
 	return true;
 }

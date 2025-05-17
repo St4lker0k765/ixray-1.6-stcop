@@ -6,7 +6,7 @@
 //	Description : saved game wrapper class
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "saved_game_wrapper.h"
 #include "alife_time_manager.h"
 #include "alife_object_registry.h"
@@ -159,7 +159,7 @@ CSavedGameWrapper::CSavedGameWrapper			(LPCSTR saved_game_name)
 			if (graph.header().level_exist(m_level_id))
 				m_level_name = graph.header().level(m_level_id).name();
 			else
-				m_level_name = CStringTable().translate("ui_st_error");
+				m_level_name = g_pStringTable->translate("ui_st_error");
 		}
 
 		chunk->close			();

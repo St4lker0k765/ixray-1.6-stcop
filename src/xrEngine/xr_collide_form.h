@@ -140,7 +140,7 @@ private:
 
 	u32					dwFrame;		// The model itself
 	u32					dwFrameTL;		// Top level
-
+	xrSRWLock			build_lock;
 	void				BuildState		();
 	void				BuildTopLevel	();
 public:
@@ -172,16 +172,21 @@ class ENGINE_API	CCF_Shape	: public ICollisionForm
 public:
 	union shape_data
 	{
-		Fsphere		sphere;
-		struct{
+		Fsphere sphere = {};
+		struct
+		{
 			Fmatrix	box;
 			Fmatrix	ibox;
 		};
+		
+		shape_data() : box() {};
 	};
 	struct shape_def
 	{
 		int			type;
 		shape_data	data;
+
+		shape_def() : type(0), data() {};
 	};
 	xr_vector<shape_def>	shapes;
 public:

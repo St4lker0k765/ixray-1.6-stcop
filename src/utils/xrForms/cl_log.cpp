@@ -1,5 +1,5 @@
 #include "resource.h"
-#include "../../xrcore/xrCore.h"
+#include "../../xrCore/xrCore.h"
 #include <time.h>
 #include <mmsystem.h>
 #include <CommCtrl.h>
@@ -116,6 +116,7 @@ void Phase(const char* phase_name) {
 	csLog.Leave();
 }
 
+// TODO: windows specific stuff, dunno about Linux
 HWND logWindow=0;
 void logThread(void* dummy) {
 	SetProcessPriorityBoost(GetCurrentProcess(), TRUE);

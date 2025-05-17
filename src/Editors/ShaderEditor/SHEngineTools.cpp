@@ -3,9 +3,9 @@
 #pragma hdrstop
                                                                
 #include "SHEngineTools.h"
-#include "UI_ShaderTools.h"
+#include "UI_shadertools.h"
 #include "ui_shadermain.h"
-#include "..\XrECore\Editor\EditMesh.h"
+#include "../xrECore/Editor/EditMesh.h"
 //------------------------------------------------------------------------------
 class CCollapseBlender: public CParseBlender{
 public:
@@ -255,7 +255,7 @@ void CSHEngineTools::ZoomObject(bool bOnlySel)
 {
 	if (m_PreviewObject){
     	Fbox bb = m_PreviewObject->GetBox();
-        EDevice->m_Camera.ZoomExtents(bb);
+        UI->CurrentView().m_Camera.ZoomExtents(bb);
     }else{
     	ISHTools::ZoomObject(bOnlySel);
     }
@@ -323,7 +323,7 @@ void CSHEngineTools::Load()
             IReader*	fs		= F->open_chunk(0);
             while (fs&&!fs->eof())	{
                 fs->r_stringZ	(name,sizeof(name));
-                CConstant*		C = xr_new<CConstant>();
+                CConstant*		C = new CConstant();
                 C->Load			(fs);
                 m_Constants.insert(std::make_pair(xr_strdup(name),C));
             }
@@ -335,7 +335,7 @@ void CSHEngineTools::Load()
             IReader*	fs		= F->open_chunk(1);
             while (fs&&!fs->eof())	{
                 fs->r_stringZ	(name,sizeof(name));
-                CMatrix*		M = xr_new<CMatrix>();
+                CMatrix*		M = new CMatrix();
                 M->Load			(fs);
                 m_Matrices.insert(std::make_pair(xr_strdup(name),M));
             }
@@ -575,7 +575,7 @@ void CSHEngineTools::AddConstantRef(LPSTR name)
 
 LPCSTR CSHEngineTools::AppendConstant(CConstant* src, CConstant** dest)
 {
-    CConstant* C = xr_new<CConstant>();
+    CConstant* C = new CConstant();
     if (src)
     {
         C->Copy(src);
@@ -590,7 +590,7 @@ LPCSTR CSHEngineTools::AppendConstant(CConstant* src, CConstant** dest)
 
 LPCSTR CSHEngineTools::AppendMatrix(CMatrix* src, CMatrix** dest)
 {
-    CMatrix* M = xr_new<CMatrix>();
+    CMatrix* M = new CMatrix();
     if (src)
     {
         M->Copy(src);
@@ -719,7 +719,7 @@ void CSHEngineTools::CollapseMatrix(LPSTR name)
         }
     }
     // append new optimized matrix
-    CMatrix* N = xr_new<CMatrix>();
+    CMatrix* N = new CMatrix();
     N->Copy(M);
     N->dwReference=1;
 	m_OptMatrices.insert(std::make_pair(xr_strdup(name),N));

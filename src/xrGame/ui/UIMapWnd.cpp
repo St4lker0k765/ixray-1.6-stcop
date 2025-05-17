@@ -1,7 +1,7 @@
-﻿#include "stdafx.h"
+#include "stdafx.h"
 #include "UIMapWnd.h"
 #include "UIMap.h"
-#include "UIXmlInit.h"
+#include "../../xrUI/UIXmlInit.h"
 
 #include "../Actor.h"
 #include "../map_manager.h"
@@ -12,20 +12,20 @@
 #include "../xrEngine/string_table.h"
 #include "../xrEngine/xr_input.h"
 
-#include "UIFixedScrollBar.h"
-#include "UIFrameWindow.h"
-#include "UIFrameLineWnd.h"
-#include "UITabControl.h"
-#include "UI3tButton.h"
+#include "../../xrUI/Widgets/UIFixedScrollBar.h"
+#include "../../xrUI/Widgets/UIFrameWindow.h"
+#include "../../xrUI/Widgets/UIFrameLineWnd.h"
+#include "../../xrUI/Widgets/UITabControl.h"
+#include "../../xrUI/Widgets/UI3tButton.h"
 #include "UIMapWndActions.h"
 #include "UIMapWndActionsSpace.h"
-#include "UIHint.h"
+#include "../../xrUI/Widgets/UIHint.h"
 #include "map_hint.h"
-#include "uicursor.h"
+#include "../../xrUI/UICursor.h"
 #include "UIPdaSpot.h"
 
-#include "UIPropertiesBox.h"
-#include "UIListBoxItem.h"
+#include "../../xrUI/Widgets/UIPropertiesBox.h"
+#include "../../xrUI/Widgets/UIListBoxItem.h"
 
 CUIMapWnd* g_map_wnd = nullptr; // quick temporary solution -(
 CUIMapWnd* GetMapWnd()
@@ -150,6 +150,10 @@ void CUIMapWnd::Init(LPCSTR xml_name, LPCSTR start_from)
 		for (;it!=end; it++)
 		{
 			shared_str map_name		= it->first;
+
+			if (!pGameIni->line_exist(map_name, "global_rect"))
+				continue;
+
 			xr_strlwr				(map_name);
 			R_ASSERT2				(m_GameMaps.end() == m_GameMaps.find(map_name), "Duplicate level name not allowed");
 			
@@ -183,11 +187,10 @@ void CUIMapWnd::Init(LPCSTR xml_name, LPCSTR start_from)
 #endif
 
 	Register				(m_GlobalMap);
-	m_ActionPlanner			= new CMapActionPlanner();
-	m_ActionPlanner->setup	(this);
+	m_ActionPlanner			= new FRbmkMapActionPlanner(this);
 	m_view_actor			= true;
 
-	m_UIPropertiesBox = xr_new<CUIPropertiesBox>();
+	m_UIPropertiesBox = new CUIPropertiesBox();
 	m_UIPropertiesBox->SetAutoDelete(true);
 	m_UIPropertiesBox->InitPropertiesBox(Fvector2().set(0, 0), Fvector2().set(300, 300));
 
@@ -623,7 +626,7 @@ void CUIMapWnd::Update()
 	if(m_GlobalMap)
 		m_GlobalMap->WorkingArea().set(ActiveMapRect());
 	inherited::Update			();
-	m_ActionPlanner->update		();
+	m_ActionPlanner->Update		();
 	UpdateNav					();
 }
 
@@ -641,9 +644,7 @@ void CUIMapWnd::ViewGlobalMap()
 
 void CUIMapWnd::ResetActionPlanner()
 {
-	m_ActionPlanner->m_storage.set_property(1,false);
-	m_ActionPlanner->m_storage.set_property(2,false);
-	m_ActionPlanner->m_storage.set_property(3,false);
+	m_ActionPlanner->Reset();
 }
 
 void CUIMapWnd::ViewZoomIn()
@@ -768,10 +769,10 @@ void CUIMapWnd::Reset()
 	ResetActionPlanner			();
 }
 
-#include "../gametaskmanager.h"
-#include "../actor.h"
+#include "../GametaskManager.h"
+#include "../Actor.h"
 #include "../map_spot.h"
-#include "../gametask.h"
+#include "../GameTask.h"
 
 void CUIMapWnd::SpotSelected( CUIWindow* w )
 {

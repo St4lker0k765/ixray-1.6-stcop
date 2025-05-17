@@ -34,7 +34,7 @@ static float		m_fSoftAngle;
 //----------------------------------------------------
 
 //----------------------------------------------------
-// íîìåð face äîëæåí ñîîòâåòñòâîâàòü ñïèñêó
+// Ð½Ð¾Ð¼ÐµÑ€ face Ð´Ð¾Ð»Ð¶ÐµÐ½ ÑÐ¾Ð¾Ñ‚Ð²ÐµÑ‚ÑÑ‚Ð²Ð¾Ð²Ð°Ñ‚ÑŒ ÑÐ¿Ð¸ÑÐºÑƒ
 //----------------------------------------------------
 void CEditableMesh::GenerateCFModel()
 {
@@ -97,7 +97,7 @@ bool CEditableMesh::RayPick(float& distance, const Fvector& start, const Fvector
 	if (!m_Flags.is(flVisible)) return false;
 
     if (!m_CFModel) GenerateCFModel();
-//.	float m_r 		= pinf?pinf->inf.range+EPS_L:UI->ZFar();// (bugs: íå âñåãäà âûáèðàåò) //S ????
+//.	float m_r 		= pinf?pinf->inf.range+EPS_L:UI->ZFar();// (bugs: Ð½Ðµ Ð²ÑÐµÐ³Ð´Ð° Ð²Ñ‹Ð±Ð¸Ñ€Ð°ÐµÑ‚) //S ????
 
 	ETOOLS::ray_options	(CDB::OPT_ONLYNEAREST | CDB::OPT_CULL);
 	ETOOLS::ray_query_m	(inv_parent, m_CFModel, start, direction, _sqrt_flt_max);
@@ -223,7 +223,7 @@ void CEditableMesh::FrustumPickFaces(const CFrustum& frustum, const Fmatrix& par
 
         if (bCulling){
 	        Fplane P; P.build(p[0],p[1],p[2]);
-    	    if (P.classify(EDevice->m_Camera.GetPosition())<0) continue;
+    	    if (P.classify(UI->CurrentView().m_Camera.GetPosition())<0) continue;
         }
         if (frustum.testPolyInside(p,3))
             fl.push_back(p_id);

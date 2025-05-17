@@ -1,9 +1,9 @@
 ///////////////////////////////////////////////////////////////
 // GalantineArtifact.cpp
-// GalantineArtefact - артефакт ведбмин студень
+// GalantineArtefact - Р°СЂС‚РµС„Р°РєС‚ РІРµРґР±РјРёРЅ СЃС‚СѓРґРµРЅСЊ
 ///////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "GalantineArtifact.h"
 
 

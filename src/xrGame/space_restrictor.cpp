@@ -6,7 +6,7 @@
 //	Description : Space restrictor
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 #include "space_restrictor.h"
 #include "xrServer_Objects_ALife.h"
@@ -15,7 +15,7 @@
 #include "restriction_space.h"
 #include "ai_space.h"
 #include "CustomZone.h"
-#include "../xrengine/xr_collide_form.h"
+#include "../xrEngine/xr_collide_form.h"
 #ifdef DEBUG
 #	include "debug_renderer.h"
 #endif
@@ -70,8 +70,9 @@ BOOL CSpaceRestrictor::net_Spawn	(CSE_Abstract* data)
 		return						(FALSE);
 
 	CCustomZone* zone = smart_cast<CCustomZone*>(this);
-	if (!EngineExternal()[EEngineExternalGame::EnableAiDieInAnomaly] || !zone || smart_cast<CRadioactiveZone*>(zone))
-		spatial.type &= ~STYPE_VISIBLEFORAI;
+	const static bool isAiDieInAnomaly = EngineExternal()[EEngineExternalGame::EnableAiDieInAnomaly];
+	if (!isAiDieInAnomaly || !zone || smart_cast<CRadioactiveZone*>(zone))
+		SpatialComponent->spatial.type &= ~STYPE_VISIBLEFORAI;
 
 	setEnabled						(FALSE);
 	setVisible						(FALSE);
@@ -205,10 +206,16 @@ continue_loop:
 	return							(false);
 }
 
+void CSpaceRestrictor::shedule_Update	(u32 dt)
+{
+	PROF_EVENT("CSpaceRestrictor::shedule_Update");
+	inherited::shedule_Update(dt);
+}
+
 #ifdef DEBUG
 
 #include "CustomZone.h"
-#include "ui_base.h"
+#include "../../xrUI/ui_base.h"
 
 extern	Flags32	dbg_net_Draw_Flags;
 

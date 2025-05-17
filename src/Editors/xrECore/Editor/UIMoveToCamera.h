@@ -1,7 +1,7 @@
-﻿#pragma once
+#pragma once
 
 class UIMoveToCamera : 
-    public XrUI
+    public IEditorWnd
 {
 public:
     UIMoveToCamera();

@@ -1,8 +1,8 @@
 ////////////////////////////////////////////////////////////////////////////
-// script_game_object_trader.сpp :	функции для торговли и торговцев
+// script_game_object_trader.СЃpp :	С„СѓРЅРєС†РёРё РґР»СЏ С‚РѕСЂРіРѕРІР»Рё Рё С‚РѕСЂРіРѕРІС†РµРІ
 //////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 #include "script_game_object.h"
 
@@ -18,9 +18,9 @@
 #include "sight_manager_space.h"
 #include "sight_control_action.h"
 #include "sight_manager.h"
-#include "inventoryBox.h"
+#include "InventoryBox.h"
 #include "ZoneCampfire.h"
-#include "physicobject.h"
+#include "PhysicObject.h"
 #include "Artefact.h"
 #include "stalker_sound_data.h"
 

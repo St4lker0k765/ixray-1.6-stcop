@@ -1,14 +1,14 @@
 #pragma once
 #include "Entity.h"
 #include "../xrPhysics/PhysicsShell.h"
-#include "../xrPhysics/phupdateobject.h"
+#include "../xrPhysics/PHUpdateObject.h"
 #include "script_entity.h"
 #include "CarLights.h"
 #include "InventoryOwner.h"
 #include "holder_custom.h"
 #include "PHSkeleton.h"
 #include "DamagableItem.h"
-#include "phcollisiondamagereceiver.h"
+#include "PHCollisionDamageReceiver.h"
 #include "CarDamageParticles.h"
 #include "xrServer_Objects_ALife.h"
 #include "CarDamageParticles.h"
@@ -130,7 +130,7 @@ public:
 		left
 	};
 
-	// Приборная панель
+	// РџСЂРёР±РѕСЂРЅР°СЏ РїР°РЅРµР»СЊ
 	Fvector4 m_speed_offsets;
 	Fvector4 m_fuel_offsets;
 	Fvector4 m_rpm_offsets;
@@ -254,7 +254,7 @@ virtual void ApplyDamage			(u16 level);
 		u16					bone_id;
 		Fmatrix				transform;
 		//Fvector				velocity;
-		CParticlesObject*	p_pgobject;
+		xr_shared_ptr<CParticlesObject>	p_pgobject;
 		CPhysicsElement*	pelement;
 		CCar*				pcar;
 		void Init();

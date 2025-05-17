@@ -1,9 +1,9 @@
-#include "StdAfx.h"
+#include "stdafx.h"
 #include "PHDynamicData.h"
 #include "Physics.h"
 #include "tri-colliderknoopc/dTriList.h"
 #include "PHContactBodyEffector.h"
-#include "../xrEngine/gamemtllib.h"
+#include "../xrEngine/GameMtlLib.h"
 #include "PHCollideValidator.h"
 #ifdef DEBUG
 #include "debug_output.h"
@@ -49,8 +49,8 @@ const float			default_world_gravity							=	2*9.81f;
 
 /////////////////////////////////////////////////////
 int			phIterations											= 18;
-float		phTimefactor											= 1.f;
-Fbox		phBoundaries											= {1000.f,1000.f,-1000.f,-1000.f};
+float		phTimefactor = 1.f;
+Fbox		phBoundaries = { 1000.f,1000.f,-1000.f,-1000.f,0.f,0.f };
 dWorldID	phWorld;
 
 /////////////////////////////////////

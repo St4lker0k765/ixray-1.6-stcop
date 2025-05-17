@@ -226,16 +226,14 @@ void CGroupObject::RotateLocal(Fvector& axis, float angle )
     }
 }
 
-void CGroupObject::Scale(Fvector& scale )
+void CGroupObject::Scale(Fvector& amount)
 {
-	inherited::Scale(scale);
-    Fvector amount;
-    amount.sub(scale, GetSaveScale());
+    inherited::Scale(amount);
     Fmatrix  m_old;
     m_old.invert(FTransform);
-	UpdateTransform(true);
-	for (ObjectsInGroup::iterator it=m_ObjectsInGroup.begin(); it!=m_ObjectsInGroup.end(); ++it)
-		it->pObject->ScalePivot(m_old,FTransform,amount);
+    UpdateTransform(true);
+    for (ObjectsInGroup::iterator it = m_ObjectsInGroup.begin(); it != m_ObjectsInGroup.end(); ++it)
+        it->pObject->ScalePivot(m_old, FTransform, amount);
 }
 
 void CGroupObject::Render(int priority, bool strictB2F)
@@ -262,7 +260,7 @@ void CGroupObject::Render(int priority, bool strictB2F)
         {
             EDevice->SetShader(EDevice->m_WireShader);
             RCache.set_xform_world(Fidentity);
-            u32 clr = 0xFF7070FF;
+            u32 clr = Locked()?0xFFFF0000:0xFF7070FF;
             DU_impl.DrawSelectionBoxB(bb,&clr);
         }
     }

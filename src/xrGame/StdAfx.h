@@ -16,14 +16,14 @@
 
 #ifndef _PP_EDITOR_
 #pragma warning(disable:4995)
-#include "../xrEngine/stdafx.h"
+#include "../xrUI/stdafx.h"
 #include "../xrScripts/stdafx.h"
 #pragma warning(default:4995)
 
-#include "../xrEngine/gamefont.h"
+#include "../xrEngine/GameFont.h"
 #include "../xrEngine/xr_object.h"
-#include "../xrEngine/igame_level.h"
-#include "../xrPhysics/xrphysics.h"
+#include "../xrEngine/IGame_Level.h"
+#include "../xrPhysics/xrPhysics.h"
 #include "smart_cast.h"
 #else
 #include "../Editors/ActorEditor/stdafx.h"
@@ -39,5 +39,9 @@
 extern CInifile* pGameGlobals;
 #endif
 
+extern void DestroyImGuiInGame();
+
 #undef min
 #undef max
+
+#define USE_OLD_OBJECT_PLANNER 0

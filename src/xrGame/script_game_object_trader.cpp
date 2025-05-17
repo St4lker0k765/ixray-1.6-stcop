@@ -1,8 +1,8 @@
 ////////////////////////////////////////////////////////////////////////////
-// script_game_object_trader.сpp :	функции для торговли и торговцев
+// script_game_object_trader.СЃpp :	С„СѓРЅРєС†РёРё РґР»СЏ С‚РѕСЂРіРѕРІР»Рё Рё С‚РѕСЂРіРѕРІС†РµРІ
 //////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 #include "script_game_object.h"
 #include "ai/trader/ai_trader.h"

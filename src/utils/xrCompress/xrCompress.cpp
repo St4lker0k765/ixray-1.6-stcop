@@ -392,20 +392,22 @@ void xrCompressor::ClosePack()
 	FS.w_close		(fs_pack_writer);
 	Msg				("Pack saved.");
 	size_t dwTimeEnd = CPU::GetTickCount();
-	printf			("\n\nFiles total/skipped/VFS/aliased: %d/%d/%d/%d\nOveral: %dK/%dK, %3.1f%%\nElapsed time: %d:%d\nCompression speed: %3.1f Mb/s",
+	
+	printf("\n\nFiles total/skipped/VFS/aliased: %d/%d/%d/%d\nOveral: %dK/%dK, %3.1f%%\nElapsed time: %d:%d\nCompression speed: %3.1f Mb/s",
 		filesTOTAL,filesSKIP,filesVFS,filesALIAS,
 		bytesDST/1024,bytesSRC/1024,
 		100.f*float(bytesDST)/float(bytesSRC),
-		((dwTimeEnd-dwTimeStart)/1000)/60,
-		((dwTimeEnd-dwTimeStart)/1000)%60,
+		(u32(dwTimeEnd-dwTimeStart)/1000)/60,
+		(u32(dwTimeEnd-dwTimeStart)/1000)%60,
 		float((float(bytesDST)/float(1024*1024))/(t_compress.GetElapsed_sec()))
 		);
-	Msg			("\n\nFiles total/skipped/VFS/aliased: %d/%d/%d/%d\nOveral: %dK/%dK, %3.1f%%\nElapsed time: %d:%d\nCompression speed: %3.1f Mb/s\n\n",
+		
+	Msg("\n\nFiles total/skipped/VFS/aliased: %d/%d/%d/%d\nOveral: %dK/%dK, %3.1f%%\nElapsed time: %d:%d\nCompression speed: %3.1f Mb/s\n\n",
 		filesTOTAL,filesSKIP,filesVFS,filesALIAS,
 		bytesDST/1024,bytesSRC/1024,
 		100.f*float(bytesDST)/float(bytesSRC),
-		((dwTimeEnd-dwTimeStart)/1000)/60,
-		((dwTimeEnd-dwTimeStart)/1000)%60,
+		(u32(dwTimeEnd-dwTimeStart)/1000)/60,
+		(u32(dwTimeEnd-dwTimeStart)/1000)%60,
 		float((float(bytesDST)/float(1024*1024))/(t_compress.GetElapsed_sec()))
 		);
 }
@@ -515,8 +517,8 @@ void xrCompressor::ProcessLTX(CInifile& ltx)
 	if (ltx.line_exist("options","exclude_exts"))
 		_SequenceToList(exclude_exts, ltx.r_string("options","exclude_exts"));
 
-	files_list				= xr_new< xr_vector<char*> >();
-	folders_list			= xr_new< xr_vector<char*> >();
+	files_list				= new xr_vector<char*>();
+	folders_list			= new xr_vector<char*>();
 
 	if(ltx.section_exist("include_folders"))
 	{

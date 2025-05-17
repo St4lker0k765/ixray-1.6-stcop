@@ -6,7 +6,7 @@
 //	Description : Enemy manager
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 #include "enemy_manager.h"
 #include "memory_manager.h"
@@ -20,7 +20,6 @@
 #include "Level.h"
 #include "script_game_object.h"
 #include "ai_space.h"
-#include "profiler.h"
 #include "Actor.h"
 #include "ai/stalker/ai_stalker.h"
 #include "movement_manager.h"
@@ -58,10 +57,11 @@ bool CEnemyManager::is_useful				(const CEntityAlive *entity_alive) const
 
 bool CEnemyManager::useful					(const CEntityAlive *entity_alive) const
 {
+	PROF_EVENT("CEnemyManager::useful");
 	if (!entity_alive->g_Alive())
 		return				(false);
 
-	if ((entity_alive->spatial.type & STYPE_VISIBLEFORAI) != STYPE_VISIBLEFORAI)
+	if ((entity_alive->SpatialComponent->spatial.type & STYPE_VISIBLEFORAI) != STYPE_VISIBLEFORAI)
 		return				(false);
 
 	if ((m_object->ID() == entity_alive->ID()) || !m_object->is_relation_enemy(entity_alive))

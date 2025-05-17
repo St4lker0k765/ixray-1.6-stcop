@@ -1,10 +1,10 @@
 ///////////////////////////////////////////////////////////////
 // GraviArtifact.cpp
-// GraviArtefact - гравитационный артефакт, прыгает на месте
-// и неустойчиво парит над землей
+// GraviArtefact - РіСЂР°РІРёС‚Р°С†РёРѕРЅРЅС‹Р№ Р°СЂС‚РµС„Р°РєС‚, РїСЂС‹РіР°РµС‚ РЅР° РјРµСЃС‚Рµ
+// Рё РЅРµСѓСЃС‚РѕР№С‡РёРІРѕ РїР°СЂРёС‚ РЅР°Рґ Р·РµРјР»РµР№
 ///////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "GraviArtifact.h"
 #include "../xrPhysics/PhysicsShell.h"
 #include "Level.h"
@@ -55,7 +55,7 @@ void CGraviArtefact::UpdateCLChild()
 			dir.set(0, -1.f, 0);
 			collide::rq_result RQ;
 			
-			//проверить высоту артифакта
+			//РїСЂРѕРІРµСЂРёС‚СЊ РІС‹СЃРѕС‚Сѓ Р°СЂС‚РёС„Р°РєС‚Р°
 			if(Level().ObjectSpace.RayPick(Position(), dir, m_fJumpHeight, collide::rqtBoth, RQ, this)) 
 			{
 				dir.y = 1.f; 

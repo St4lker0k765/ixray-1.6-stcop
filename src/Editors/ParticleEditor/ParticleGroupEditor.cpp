@@ -2,9 +2,9 @@
 #include "stdafx.h"
 #pragma hdrstop
 
-#include "..\..\Layers\xrRender\ParticleGroup.h"
+#include "../../Layers/xrRender/ParticleGroup.h"
 #include "../Public/PropertiesListHelper.h"
-#include "ui_particletools.h"
+#include "UI_ParticleTools.h"
 
 BOOL PS::CPGDef::SEffect::Equal(const SEffect& src)
 {
@@ -63,7 +63,7 @@ void  PS::CPGDef::OnEffectsEditClick(ButtonValue* B, bool& bDataModified, bool& 
 {
     switch (B->btn_num){
     case 0:
-        m_Effects.push_back(xr_new<SEffect>());
+        m_Effects.push_back(new SEffect());
         m_Effects.back()->m_Flags.set(CPGDef::SEffect::flEnabled,FALSE);
         ExecCommand		(COMMAND_UPDATE_PROPERTIES);
         OnParamsChange	(B);

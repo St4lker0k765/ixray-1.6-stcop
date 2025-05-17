@@ -2,18 +2,18 @@
 // script_game_object_inventory_owner.сpp :	функции для inventory owner
 //////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 #include "script_game_object.h"
 #include "InventoryOwner.h"
-#include "Pda.h"
+#include "PDA.h"
 #include "xrMessages.h"
 #include "character_info.h"
-#include "gametask.h"
+#include "GameTask.h"
 #include "Actor.h"
 #include "Level.h"
-#include "date_time.h"
-#include "uigamesp.h"
+#include "../xrEngine/date_time.h"
+#include "UIGameSP.h"
 #include "restricted_object.h"
 #include "../xrScripts/script_engine.h"
 #include "attachable_item.h"
@@ -21,15 +21,15 @@
 #include "../xrEngine/string_table.h"
 #include "alife_registry_wrappers.h"
 #include "relation_registry.h"
-#include "custommonster.h"
-#include "actorcondition.h"
+#include "CustomMonster.h"
+#include "ActorCondition.h"
 #include "level_graph.h"
-#include "huditem.h"
-#include "ui/UItalkWnd.h"
+#include "HudItem.h"
+#include "ui/UITalkWnd.h"
 #include "Inventory.h"
-#include "infoportion.h"
-#include "AI/Monsters/BaseMonster/base_monster.h"
-#include "weaponmagazined.h"
+#include "InfoPortion.h"
+#include "ai/monsters/basemonster/base_monster.h"
+#include "WeaponMagazined.h"
 #include "ai/stalker/ai_stalker.h"
 #include "agent_manager.h"
 #include "agent_member_manager.h"
@@ -45,7 +45,7 @@
 #include "doors_manager.h"
 #include "doors_door.h"
 #include "Torch.h"
-#include "physicobject.h"
+#include "PhysicObject.h"
 
 bool CScriptGameObject::GiveInfoPortion(LPCSTR info_id)
 {
@@ -333,6 +333,9 @@ void CScriptGameObject::DropItemAndTeleport	(CScriptGameObject* pItem, Fvector p
 
 void CScriptGameObject::MakeItemActive(CScriptGameObject* pItem)
 {
+	if (pItem == nullptr)
+		return;
+
 	CInventoryOwner* owner			= smart_cast<CInventoryOwner*>(&object());
 	CInventoryItem* item			= smart_cast<CInventoryItem*>(&pItem->object());
 	u16 slot						= item->BaseSlot();
@@ -355,6 +358,44 @@ void CScriptGameObject::MakeItemActive(CScriptGameObject* pItem)
 	P.w_u16							(slot);
 	CGameObject::u_EventSend		(P);
 
+}
+
+float CScriptGameObject::GetActorMaxWeight() const
+{
+	CActor* pActor = smart_cast<CActor*>(&object());
+	if (!pActor) {
+		ai().script_engine().script_log(ScriptStorage::eLuaMessageTypeError, "CActor : cannot access class member GetActorMaxWeight!");
+		return			(false);
+	}
+	return				(pActor->inventory().GetMaxWeight());
+}
+void CScriptGameObject::SetActorMaxWeight(float max_weight)
+{
+	CActor* pActor = smart_cast<CActor*>(&object());
+	if (!pActor) {
+		ai().script_engine().script_log(ScriptStorage::eLuaMessageTypeError, "CActor : cannot access class member SetActorMaxWeight!");
+		return;
+	}
+	pActor->inventory().SetMaxWeight(max_weight);
+}
+// получить и задать максимальный вес при котором можно ходить
+float CScriptGameObject::GetActorMaxWalkWeight() const
+{
+	CActor* pActor = smart_cast<CActor*>(&object());
+	if (!pActor) {
+		ai().script_engine().script_log(ScriptStorage::eLuaMessageTypeError, "CActor : cannot access class member GetActorMaxWalkWeight!");
+		return			(false);
+	}
+	return				(pActor->conditions().m_MaxWalkWeight);
+}
+void CScriptGameObject::SetActorMaxWalkWeight(float max_walk_weight)
+{
+	CActor* pActor = smart_cast<CActor*>(&object());
+	if (!pActor) {
+		ai().script_engine().script_log(ScriptStorage::eLuaMessageTypeError, "CActor : cannot access class member SetActorMaxWalkWeight!");
+		return;
+	}
+	pActor->conditions().m_MaxWalkWeight = max_walk_weight;
 }
 
 //передаче вещи из своего инвентаря в инвентарь партнера
@@ -683,7 +724,7 @@ LPCSTR CScriptGameObject::sound_voice_prefix () const
 	return pInventoryOwner->SpecificCharacter().sound_voice_prefix();
 }
 
-#include "GameTaskManager.h"
+#include "GametaskManager.h"
 ETaskState CScriptGameObject::GetGameTaskState	(LPCSTR task_id)
 {
 	shared_str shared_name				= task_id;
@@ -1157,7 +1198,7 @@ void CScriptGameObject::activate_slot	(u32 slot_id)
 	inventory_owner->inventory().Activate((u16)slot_id);
 }
 
-bool CScriptGameObject::IsBoosterInfluence(const EBoostParams& param)
+bool CScriptGameObject::IsBoosterInfluence(EBoostParams param)
 {
 	CActor* pActor = smart_cast<CActor*>(&object());
 	if (!pActor)
@@ -1176,7 +1217,7 @@ bool CScriptGameObject::IsBoosterInfluence(const EBoostParams& param)
 	return false;
 }
 
-float CScriptGameObject::GetBoosterInfluenceTime(const EBoostParams& param)
+float CScriptGameObject::GetBoosterInfluenceTime(EBoostParams param)
 {
 	CActor* pActor = smart_cast<CActor*>(&object());
 	if (!pActor)
@@ -1216,7 +1257,7 @@ void CScriptGameObject::ApplyBooster(LPCSTR sect)
 	}
 }
 
-void CScriptGameObject::SetBoosterTime(float time, const EBoostParams& param)
+void CScriptGameObject::SetBoosterTime(float time, EBoostParams param)
 {
 	CActor* pActor = smart_cast<CActor*>(&object());
 	if (!pActor)
@@ -1234,7 +1275,7 @@ void CScriptGameObject::SetBoosterTime(float time, const EBoostParams& param)
 	}
 }
 
-bool CScriptGameObject::GetActorMovementState(const ACTOR_DEFS::EMovementStates& state, const ACTOR_DEFS::EMoveCommand& mask) const
+bool CScriptGameObject::GetActorMovementState(ACTOR_DEFS::EMovementStates state, ACTOR_DEFS::EMoveCommand mask)
 {
 	CActor* pActor = smart_cast<CActor*>(&object());
 	if (!pActor)
@@ -1247,7 +1288,7 @@ bool CScriptGameObject::GetActorMovementState(const ACTOR_DEFS::EMovementStates&
 	return !!((pActor->GetMovementState(state) & mask) > 0);
 }
 
-void CScriptGameObject::SetActorMovementState(const ACTOR_DEFS::EMovementStates& state, const ACTOR_DEFS::EMoveCommand& mask, const bool status) const
+void CScriptGameObject::SetActorMovementState(ACTOR_DEFS::EMovementStates state, ACTOR_DEFS::EMoveCommand mask, bool status)
 {
 	CActor* pActor = smart_cast<CActor*>(&object());
 	if (!pActor)
@@ -1641,4 +1682,165 @@ bool CScriptGameObject::is_door_blocked_by_npc					() const
 {
 	VERIFY2								( m_door, make_string<const char*>("object %s hasn't been registered as a door already", m_game_object->cName().c_str()) );
 	return								ai().doors().is_door_blocked( m_door );
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+// получить и задать доп. вес для костюма
+#include "CustomOutfit.h"
+float CScriptGameObject::GetAdditionalMaxWeight() const
+{
+	CCustomOutfit* outfit = smart_cast<CCustomOutfit*>(&object());
+	if (!outfit)
+	{
+		ai().script_engine().script_log(ScriptStorage::eLuaMessageTypeError, "CCustomOutfit : cannot access class member GetAdditionalMaxWeight!");
+		return (false);
+	}
+
+	return (outfit->m_additional_weight2);
+}
+float CScriptGameObject::GetAdditionalMaxWalkWeight() const
+{
+	CCustomOutfit* outfit = smart_cast<CCustomOutfit*>(&object());
+	if (!outfit)
+	{
+		ai().script_engine().script_log(ScriptStorage::eLuaMessageTypeError, "CCustomOutfit : cannot access class member GetAdditionalMaxWalkWeight!");
+		return			(false);
+	}
+
+	return (outfit->m_additional_weight);
+}
+
+void CScriptGameObject::SetAdditionalMaxWeight(float add_max_weight)
+{
+	CCustomOutfit* outfit = smart_cast<CCustomOutfit*>(&object());
+	if (!outfit)
+	{
+		ai().script_engine().script_log(ScriptStorage::eLuaMessageTypeError, "CCustomOutfit : cannot access class member SetAdditionalMaxWeight!");
+		return;
+	}
+
+	outfit->m_additional_weight2 = add_max_weight;
+}
+void CScriptGameObject::SetAdditionalMaxWalkWeight(float add_max_walk_weight)
+{
+	CCustomOutfit* outfit = smart_cast<CCustomOutfit*>(&object());
+	if (!outfit)
+	{
+		ai().script_engine().script_log(ScriptStorage::eLuaMessageTypeError, "CCustomOutfit : cannot access class member SetAdditionalMaxWalkWeight!");
+		return;
+	}
+
+	outfit->m_additional_weight = add_max_walk_weight;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+// получить суммарный вес инвентаря
+float CScriptGameObject::GetTotalWeight() const
+{
+	CInventoryOwner* inventory_owner = smart_cast<CInventoryOwner*>(&object());
+	if (!inventory_owner) {
+		ai().script_engine().script_log(ScriptStorage::eLuaMessageTypeError, "CInventoryOwner : cannot access class member GetTotalWeight!");
+		return			(false);
+	}
+	return				(inventory_owner->inventory().TotalWeight());
+}
+// получить вес предмета
+float CScriptGameObject::Weight() const
+{
+	CInventoryItem* inventory_item = smart_cast<CInventoryItem*>(&object());
+	if (!inventory_item) {
+		ai().script_engine().script_log(ScriptStorage::eLuaMessageTypeError, "CSciptEntity : cannot access class member Weight!");
+		return			(false);
+	}
+	return				(inventory_item->Weight());
+}
+
+float CScriptGameObject::GetActorJumpSpeed() const
+{
+	CActor* pActor = smart_cast<CActor*>(&object());
+	if (!pActor) {
+		ai().script_engine().script_log(ScriptStorage::eLuaMessageTypeError, "CActor : cannot access class member GetActorJumpSpeed!");
+		return			(false);
+	}
+	return				(pActor->m_fJumpSpeed);
+}
+
+void CScriptGameObject::SetActorJumpSpeed(float jump_speed)
+{
+	CActor* pActor = smart_cast<CActor*>(&object());
+	if (!pActor) {
+		ai().script_engine().script_log(ScriptStorage::eLuaMessageTypeError, "CActor : cannot access class member SetActorJumpSpeed!");
+		return;
+	}
+	pActor->m_fJumpSpeed = jump_speed;
+	//character_physics_support()->movement()->SetJumpUpVelocity(m_fJumpSpeed);  
+}
+
+float CScriptGameObject::GetActorSprintKoef() const
+{
+	CActor* pActor = smart_cast<CActor*>(&object());
+	if (!pActor) {
+		ai().script_engine().script_log(ScriptStorage::eLuaMessageTypeError, "CActor : cannot access class member GetActorJumpSpeed!");
+		return			(false);
+	}
+	return				(pActor->m_fSprintFactor);
+}
+void CScriptGameObject::SetActorSprintKoef(float sprint_koef)
+{
+	CActor* pActor = smart_cast<CActor*>(&object());
+	if (!pActor) {
+		ai().script_engine().script_log(ScriptStorage::eLuaMessageTypeError, "CActor : cannot access class member SetActorJumpSpeed!");
+		return;
+	}
+	pActor->m_fSprintFactor = sprint_koef;
+}
+float CScriptGameObject::GetActorRunCoef() const
+{
+	CActor* pActor = smart_cast<CActor*>(&object());
+	if (!pActor) {
+		ai().script_engine().script_log(ScriptStorage::eLuaMessageTypeError, "CActor : cannot access class member GetActorJumpSpeed!");
+		return			(false);
+	}
+	return				(pActor->m_fRunFactor);
+}
+
+void CScriptGameObject::SetActorRunCoef(float run_coef)
+{
+	CActor* pActor = smart_cast<CActor*>(&object());
+	if (!pActor) {
+		ai().script_engine().script_log(ScriptStorage::eLuaMessageTypeError, "CActor : cannot access class member SetActorJumpSpeed!");
+		return;
+	}
+	pActor->m_fRunFactor = run_coef;
+}
+
+float CScriptGameObject::GetActorRunBackCoef() const
+{
+	CActor* pActor = smart_cast<CActor*>(&object());
+	if (!pActor) {
+		ai().script_engine().script_log(ScriptStorage::eLuaMessageTypeError, "CActor : cannot access class member GetActorJumpSpeed!");
+		return			(false);
+	}
+	return				(pActor->m_fRunBackFactor);
+}
+void CScriptGameObject::SetActorRunBackCoef(float run_back_coef)
+{
+	CActor* pActor = smart_cast<CActor*>(&object());
+	if (!pActor) {
+		ai().script_engine().script_log(ScriptStorage::eLuaMessageTypeError, "CActor : cannot access class member SetActorJumpSpeed!");
+		return;
+	}
+	pActor->m_fRunBackFactor = run_back_coef;
+}
+
+void CScriptGameObject::SetCharacterIcon(LPCSTR iconName)
+{
+	CInventoryOwner* pInventoryOwner = smart_cast<CInventoryOwner*>(&object());
+
+	if (!pInventoryOwner)
+	{
+		ai().script_engine().script_log(ScriptStorage::eLuaMessageTypeError, "SetCharacterIcon available only for InventoryOwner");
+		return;
+	}
+	return pInventoryOwner->SetIcon(iconName);
 }

@@ -1,9 +1,9 @@
 ///////////////////////////////////////////////////////////////
 // ElectricBall.cpp
-// ElectricBall - артефакт электрический шар
+// ElectricBall - Р°СЂС‚РµС„Р°РєС‚ СЌР»РµРєС‚СЂРёС‡РµСЃРєРёР№ С€Р°СЂ
 ///////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "ElectricBall.h"
 #include "../xrPhysics/PhysicsShell.h"
 

@@ -1,5 +1,7 @@
 #include "stdafx.h"
 #include "../../Layers/xrRender/dxRenderDeviceRender.h"
+#include "../xrEUI/xrUITheme.h"
+#include "../xrEUI/imgui_EditorEx.h"
 UIMainMenuForm::UIMainMenuForm()
 {
 }
@@ -10,7 +12,7 @@ UIMainMenuForm::~UIMainMenuForm()
 
 void UIMainMenuForm::Draw()
 {
-    if (ImGui::BeginMainMenuBar())
+    if (IXBeginMainMenuBar())
     {
         if (ImGui::BeginMenu("File"))
         {
@@ -56,7 +58,8 @@ void UIMainMenuForm::Draw()
             {
                 if (ImGui::MenuItem("Sound Editor", "")) { ExecCommand(COMMAND_SOUND_EDITOR); }
                 ImGui::Separator();
-                if (ImGui::MenuItem("Synchronize Sounds", "")) { ExecCommand(COMMAND_SYNC_SOUNDS); }
+                if (ImGui::MenuItem("Synchronize Sounds (Soft)", "")) { ExecCommand(COMMAND_SYNC_SOUNDS); }
+                if (ImGui::MenuItem("Synchronize Sounds (Hard)", "")) { ExecCommand(COMMAND_SYNC_SOUNDS_HARD); }
                 ImGui::EndMenu();
             }
             if (ImGui::MenuItem("Light Anim Editor", "")) { ExecCommand(COMMAND_LIGHTANIM_EDITOR); }
@@ -195,14 +198,6 @@ void UIMainMenuForm::Draw()
             }
             ImGui::Separator();
             {
-                bool selected = psDeviceFlags.test(rsLighting);;
-                if (ImGui::MenuItem("Lighting", "", &selected))
-                {
-                    psDeviceFlags.set(rsLighting, selected);
-                    UI->RedrawScene();
-                }
-            }
-            {
                 bool selected = psDeviceFlags.test(rsMuteSounds);
                 if (ImGui::MenuItem("Mute Sounds", "", &selected))
                 {
@@ -233,9 +228,25 @@ void UIMainMenuForm::Draw()
                 bool selected = AllowLogCommands();
 
                 if (ImGui::MenuItem("Log", "", &selected)) { ExecCommand(COMMAND_LOG_COMMANDS); }
+
+                CUIThemeManager& ThemeInstance = CUIThemeManager::Get();
+                bool selected2 = !ThemeInstance.IsClosed();
+                if (ImGui::MenuItem("Theme", "", &selected2))
+                {
+                    if (selected2)
+                    {
+                        if (!UI->HasWindow<CUIThemeManager>())
+                        {
+                            UI->Push(&ThemeInstance);
+                        }
+                        ThemeInstance.Show(true);
+                    }
+                    else
+                        ThemeInstance.Show(false);
+                }
             }
             ImGui::EndMenu();
         }
-        ImGui::EndMainMenuBar();
+        IXEndMainMenuBar();
     }
 }

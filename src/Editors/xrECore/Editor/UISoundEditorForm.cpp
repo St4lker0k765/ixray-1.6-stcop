@@ -3,13 +3,13 @@
 #include "UISoundEditorForm.h"
 #include "SoundManager.h"
 #include "../../../xrSound/stdafx.h"
-#include "../../../xrSound/soundrender_source.h"
+#include "../../../xrSound/SoundRender_Source.h"
 UISoundEditorForm *UISoundEditorForm::Form = nullptr;
 
 UISoundEditorForm::UISoundEditorForm()
 {
-    m_ItemProps = xr_new<UIPropertiesForm>();
-    m_ItemList = xr_new<UIItemListForm>();
+    m_ItemProps = new UIPropertiesForm();
+    m_ItemList = new UIItemListForm();
     m_ItemList->SetOnItemFocusedEvent(TOnILItemFocused(this, &UISoundEditorForm::OnItemsFocused));
     modif_map.clear();
     m_Flags.zero();
@@ -73,10 +73,13 @@ void UISoundEditorForm::Update()
     }
 }
 
-void UISoundEditorForm::Show()
+void UISoundEditorForm::Show(const xr_string fileKey = "")
 {
     VERIFY(!Form);
-	Form = xr_new< UISoundEditorForm>();
+	Form = new UISoundEditorForm();
+
+    if (!fileKey.empty())
+        Form->m_ItemList->SelectItem(fileKey.c_str());
 }
 
 void UISoundEditorForm::HideLib()
@@ -105,11 +108,11 @@ void UISoundEditorForm::UpdateLib()
     RegisterModifiedTHM();
     SaveUsedTHM();
     // save game sounds
-    if (modif_map.size()) {
-        AStringVec 			modif;
+    if (modif_map.size()) 
+    {
+        AStringVec modif;
         SndLib->SynchronizeSounds(true, true, true, &modif_map, 0);
-        //		SndLib->ChangeFileAgeTo		(&modif_map,time(NULL));
-        SndLib->RefreshSounds(false);
+        SndLib->RefreshSounds(false, false);
         modif_map.clear();
     }
 }
@@ -215,7 +218,7 @@ void UISoundEditorForm::OnItemsFocused(ListItem* item)
         if (prop) 
         {
             ESoundThumbnail* thm = FindUsedTHM(prop->Key());
-            if (!thm) m_THM_Used.push_back(thm = xr_new<ESoundThumbnail>(prop->Key()));
+            if (!thm) m_THM_Used.push_back(thm = new ESoundThumbnail(prop->Key()));
             m_THM_Current.push_back(thm);
             thm->FillProp(props);
         }

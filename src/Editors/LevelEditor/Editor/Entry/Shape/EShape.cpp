@@ -329,7 +329,10 @@ bool CEditShape::LoadLTX(CInifile& ini, LPCSTR sect_name)
 
 
 	ComputeBounds();
-	return true;
+	
+    IsLoaded = true;
+
+    return true;
 }
 
 void CEditShape::SaveLTX(CInifile& ini, LPCSTR sect_name)
@@ -413,6 +416,9 @@ void CEditShape::FillProp(LPCSTR pref, PropItemVec& values)
 
 void CEditShape::Render(int priority, bool strictB2F)
 {
+    if (!IsLoaded)
+        return;
+
 	inherited::Render(priority, strictB2F);
     if (1==priority){
         if (strictB2F){
@@ -451,7 +457,7 @@ void CEditShape::Render(int priority, bool strictB2F)
             if( Selected()&&m_Box.is_valid() ){
 		        EDevice->SetShader		(EDevice->m_SelectionShader);
                 RCache.set_xform_world	(_Transform());
-                u32 clr 				= 0xFFFFFFFF;
+                u32 clr 				= Locked()?0xFFFF0000:0xFFFFFFFF;
                 EDevice->SetShader		(EDevice->m_WireShader);
                 DU_impl.DrawSelectionBoxB(m_Box,&clr);
             }

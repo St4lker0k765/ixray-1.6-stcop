@@ -1,6 +1,6 @@
 #include "stdafx.h"
-#include "../../xrEngine/igame_persistent.h"
-#include "../../xrEngine/environment.h"
+#include "../../xrEngine/IGame_Persistent.h"
+#include "../../xrEngine/Environment.h"
 
 #include "../xrRender/dxEnvironmentRender.h"
 
@@ -38,22 +38,23 @@ void	CRenderTarget::phase_combine	()
 	Fvector2	p0,p1;
 
 	//*** exposure-pipeline
-	u32			gpu_id	= Device.dwFrame%Caps.iGPUNum;
 	{
-		t_LUM_src->surface_set		(rt_LUM_pool[gpu_id*2+0]->pSurface);
-		t_LUM_dest->surface_set		(rt_LUM_pool[gpu_id*2+1]->pSurface);
+		if (t_LUM_src != rt_LUM_pool[0]->pTexture)
+			t_LUM_src->surface_set(rt_LUM_pool[0]->pSurface);
+		if (t_LUM_dest != rt_LUM_pool[1]->pTexture)
+			t_LUM_dest->surface_set(rt_LUM_pool[1]->pSurface);
 	}
 
 	RCache.set_CullMode	( CULL_NONE );
 
-	if (RImplementation.SSAO.test(ESSAO_DATA::SSAO_OPT_DATA))
-	{
-		phase_downsamp();
-	}
-	else if (RImplementation.SSAO.test(ESSAO_DATA::SSAO_BLUR))
-	{
-		phase_ssao();
-	}
+	//if (RImplementation.SSAO.test(ESSAO_DATA::SSAO_OPT_DATA))
+	//{
+	//	phase_downsamp();
+	//}
+	//else if (RImplementation.SSAO.test(ESSAO_DATA::SSAO_BLUR))
+	//{
+	//	phase_ssao();
+	//}
 
 	// low/hi RTs
 	u_setrt(rt_Generic_0, 0, 0, RDepth);
@@ -301,7 +302,7 @@ void	CRenderTarget::phase_combine	()
 
 	//*** exposure-pipeline-clear
 	{
-		std::swap					(rt_LUM_pool[gpu_id*2+0],rt_LUM_pool[gpu_id*2+1]);
+		std::swap(rt_LUM_pool[0], rt_LUM_pool[1]);
 		t_LUM_src->surface_set		(nullptr);
 		t_LUM_dest->surface_set		(nullptr);
 	}

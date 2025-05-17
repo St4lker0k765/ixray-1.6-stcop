@@ -11,7 +11,7 @@ bool  TUI_ControlObjectAdd::Start(TShiftState Shift)
 	Fvector p,n;
 	if(!LUI->PickGround(p,UI->m_CurrentRStart,UI->m_CurrentRDir,1,&n)) return false;
     { // pick already executed (see top)
-		ESceneObjectTool* ot = dynamic_cast<ESceneObjectTool*>(parent_tool);
+		ESceneObjectTool* ot = smart_cast<ESceneObjectTool*>(parent_tool);
     	LPCSTR N;
         if (ot->IsAppendRandomActive()&&ot->m_AppendRandomObjects.size()){
         	N = ot->m_AppendRandomObjects[Random.randI(ot->m_AppendRandomObjects.size())].c_str();  
@@ -25,7 +25,7 @@ bool  TUI_ControlObjectAdd::Start(TShiftState Shift)
 
         string256 namebuffer;
         Scene->GenObjectName(OBJCLASS_SCENEOBJECT, namebuffer, N);
-        CSceneObject *obj = xr_new<CSceneObject>((LPVOID)0,namebuffer);
+        CSceneObject *obj = new CSceneObject((LPVOID)0,namebuffer);
         CEditableObject* ref = obj->SetReference(N);
         if (!ref){
         	ELog.DlgMsg(mtError,"TUI_ControlObjectAdd:: Can't load reference object.");

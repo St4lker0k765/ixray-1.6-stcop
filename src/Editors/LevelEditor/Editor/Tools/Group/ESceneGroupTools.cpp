@@ -3,9 +3,9 @@
 void ESceneGroupTool::CreateControls()
 {
 	inherited::CreateDefaultControls(estDefault);
-    AddControl		(xr_new<TUI_ControlGroupAdd >(estDefault,etaAdd,		this));
+    AddControl		(new TUI_ControlGroupAdd (estDefault,etaAdd,		this));
 	// frame
-    pForm = xr_new< UIGroupTool>();
+    pForm = new UIGroupTool();
     ((UIGroupTool*)pForm)->ParentTools = this;
 }
 
@@ -28,7 +28,7 @@ void ESceneGroupTool::UngroupObjects(bool bUndo)
             if ((*it)->Selected())
             {
             	sel_cnt++;
-            	CGroupObject* obj 	= dynamic_cast<CGroupObject*>(*it); 
+            	CGroupObject* obj 	= smart_cast<CGroupObject*>(*it); 
                 VERIFY(obj);
                 if (obj->CanUngroup(true))
                 {
@@ -52,7 +52,7 @@ BOOL  ESceneGroupTool::_RemoveObject(CCustomObject* object)
 {
 	inherited::_RemoveObject(object);
 
-    CGroupObject* go 	= dynamic_cast<CGroupObject*>(object); 
+    CGroupObject* go 	= smart_cast<CGroupObject*>(object); 
     go->Clear1          ();
     return              TRUE;
 }
@@ -61,7 +61,7 @@ void ESceneGroupTool::GroupObjects(bool bUndo)
 {
     string256                   namebuffer;
     Scene->GenObjectName        (OBJCLASS_GROUP, namebuffer);
-    CGroupObject* group         = xr_new<CGroupObject>((LPVOID)0, namebuffer);
+    CGroupObject* group         = new CGroupObject((LPVOID)0, namebuffer);
 
     // validate objects
     ObjectList lst;
@@ -149,7 +149,7 @@ void ESceneGroupTool::AlignToObject()
 
 CCustomObject* ESceneGroupTool::CreateObject(LPVOID data, LPCSTR name)
 {
-	CCustomObject* O	= xr_new<CGroupObject>(data, name);
+	CCustomObject* O	= new CGroupObject(data, name);
     O->FParentTools		= this;
     return O;
 }
@@ -173,7 +173,7 @@ void ESceneGroupTool::ReloadRefsSelectedObject()
         	if ((*it)->Selected())
             {
 			    sel_cnt++;
-            	CGroupObject* obj 	= dynamic_cast<CGroupObject*>(*it); 
+            	CGroupObject* obj 	= smart_cast<CGroupObject*>(*it); 
                 VERIFY				(obj);
                 if (obj->UpdateReference(true))
                 {
@@ -215,7 +215,7 @@ void ESceneGroupTool::SaveSelectedObject()
     {
     	if((*it)->Selected())
         {
-        	obj 		= dynamic_cast<CGroupObject*>(*it);
+        	obj 		= smart_cast<CGroupObject*>(*it);
             
             xr_string fn;
             if(scnt==1)
@@ -250,7 +250,6 @@ void ESceneGroupTool::SetCurrentObject(LPCSTR nm)
     frame->lbCurrent->Caption 	= m_CurrentObject.c_str();*/
 }
 
-
 void ESceneGroupTool::OnActivate()
 {
 	inherited::OnActivate		();
@@ -268,7 +267,7 @@ void ESceneGroupTool::MakeThumbnail()
         {
         	if ((*it)->Selected())
             {
-	            object				= dynamic_cast<CGroupObject*>(*it);
+	            object				= smart_cast<CGroupObject*>(*it);
                 break;
             }
         }

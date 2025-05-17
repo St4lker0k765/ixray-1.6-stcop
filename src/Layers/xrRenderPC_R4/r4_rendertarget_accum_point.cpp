@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "..\xrRender\CHudInitializer.h"
+#include "../xrRender/CHudInitializer.h"
 
 void CRenderTarget::accum_point		(light* L)
 {
@@ -7,7 +7,7 @@ void CRenderTarget::accum_point		(light* L)
 	{
 		return;
 	}
-
+	PROF_EVENT("CRenderTarget::accum_point")
 	phase_accumulator				();
 	RImplementation.stats.l_visible	++;
 
@@ -34,7 +34,6 @@ void CRenderTarget::accum_point		(light* L)
 	Device.mView.transform_tiny		(L_pos,L->position);
 
 	// Xforms
-	L->xform_calc					();
 	RCache.set_xform_world			(L->m_xform);
 	RCache.set_xform_view			(Device.mView);
 	RCache.set_xform_project		(Device.mProject);

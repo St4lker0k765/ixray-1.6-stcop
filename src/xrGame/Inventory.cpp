@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 #include "Inventory.h"
 #include "Actor.h"
@@ -15,13 +15,13 @@
 #include "../xrEngine/xr_level_controller.h"
 #include "Level.h"
 #include "ai_space.h"
-#include "entitycondition.h"
+#include "EntityCondition.h"
 #include "game_base_space.h"
-#include "uigamecustom.h"
+#include "UIGameCustom.h"
 #include "clsid_game.h"
 #include "player_hud.h"
 #include "ai/stalker/ai_stalker.h"
-#include "weaponmagazined.h"
+#include "WeaponMagazined.h"
 #include "Car.h"
 
 using namespace InventoryUtilities;
@@ -579,7 +579,7 @@ void CInventory::Activate(u16 slot, bool bForce)
 			CHudItem* tempItem = active_item->cast_hud_item();
 			R_ASSERT2(tempItem, active_item->object().cNameSect().c_str());
 			
-			if (!tempItem->SendDeactivateItem())
+			if (tempItem == nullptr || !tempItem->SendDeactivateItem())
 				return;
 
 		} else //in case where weapon is going to destroy
@@ -798,7 +798,7 @@ void CInventory::Update()
 			
 			m_iActiveSlot			= GetNextActiveSlot();
 		}
-		if((GetNextActiveSlot()!=NO_ACTIVE_SLOT) && ActiveItem() && ActiveItem()->cast_hud_item()->IsHidden())
+		if((GetNextActiveSlot()!=NO_ACTIVE_SLOT) && ActiveItem() && ActiveItem()->cast_hud_item() && ActiveItem()->cast_hud_item()->IsHidden())
 				ActiveItem()->ActivateItem();
 	}
 	UpdateDropTasks	();

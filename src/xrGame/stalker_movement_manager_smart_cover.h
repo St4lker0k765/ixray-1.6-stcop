@@ -10,7 +10,7 @@
 #define STALKER_MOVEMENT_MANAGER_SMART_COVER_H_INCLUDED
 
 #include "stalker_movement_manager_obstacles.h"
-#include "../include/xrrender/animation_motion.h"
+#include "../Include/xrRender/animation_motion.h"
 
 class CCoverPoint;
 class CPropertyStorage;
@@ -131,7 +131,7 @@ private:
 	typedef	xr_vector<shared_str>						LoopholePath;
 
 private:
-			void				loophole_path			(smart_cover::cover const &cover, shared_str const &source, shared_str const &target, LoopholePath &path) const;
+			void				loophole_path			(smart_cover::cover const &cover, shared_str const &source, shared_str const &target, LoopholePath &path, float* LastCost = nullptr) const;
 			void				build_enter_path		();
 			void				build_exit_path			();
 			void				build_exit_path_to_cover();

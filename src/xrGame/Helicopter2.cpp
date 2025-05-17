@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 #include "helicopter.h"
 #include "script_game_object.h"
@@ -48,7 +48,7 @@ void  CHelicopter::TurnEngineSound(bool bOn)
 void CHelicopter::StartFlame ()
 {
 	if(m_pParticle)return;
-	m_pParticle = CParticlesObject::Create(*m_smoke_particle,FALSE);
+	m_pParticle = Particles::Details::Create(*m_smoke_particle,FALSE).get();
 
 	Fvector zero_vector;
 	zero_vector.set(0.f,0.f,0.f);
@@ -101,7 +101,7 @@ void CHelicopter::ExplodeHelicopter ()
 	m_exploded = true;
 	if(m_pParticle){
 		m_pParticle->Stop();
-		CParticlesObject::Destroy(m_pParticle);
+		Particles::Details::Destroy(m_pParticle);
 	}
 	if(CPHDestroyable::CanDestroy())
 		CPHDestroyable::Destroy(ID(),"physic_destroyable_object");
@@ -260,7 +260,7 @@ void CHelicopter::PHHit(SHit &H)
 #include "team_hierarchy_holder.h"
 #include "squad_hierarchy_holder.h"
 
-#include "../xrPhysics/extendedgeom.h"
+#include "../xrPhysics/ExtendedGeom.h"
 void CollisionCallbackDead(bool& do_colide,bool bo1,dContact& c,SGameMtl* material_1,SGameMtl* material_2)
 {	
 	do_colide=true; 

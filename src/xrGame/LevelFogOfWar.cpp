@@ -1,10 +1,10 @@
-// LevelFogOfWar.cpp:  для карты уровня в одиночном режиме игры
+// LevelFogOfWar.cpp:  РґР»СЏ РєР°СЂС‚С‹ СѓСЂРѕРІРЅСЏ РІ РѕРґРёРЅРѕС‡РЅРѕРј СЂРµР¶РёРјРµ РёРіСЂС‹
 // 
 //////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "LevelFogOfWar.h"
-#include "level.h"
+#include "Level.h"
 #include "alife_registry_wrappers.h"
 #include "ui/UIMap.h"
 #include "game_base_space.h"

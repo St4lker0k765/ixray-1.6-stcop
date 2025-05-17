@@ -6,7 +6,7 @@
 //	Description : ALife communication manager
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "alife_interaction_manager.h"
 /**
 #include "xrServer_Objects_ALife_Monsters.h"
@@ -18,7 +18,9 @@ using namespace ALife;
 /**/
 CALifeInteractionManager::CALifeInteractionManager	(xrServer*server, LPCSTR section) : 
 	CALifeCombatManager			(server,section),
-	CALifeCommunicationManager	(server,section) {
+	CALifeCommunicationManager	(server,section),
+	CALifeSimulatorBase			(server,section)
+{
 /**
 	m_inventory_slot_count		= pSettings->r_u32("inventory","slots");
 	m_temp_weapons.resize		(m_inventory_slot_count);
@@ -159,9 +161,9 @@ public:
 				break;
 			}
 			case eMeetActionTypeInteract : {
-				R_ASSERT2				(l_tpALifeHumanAbstract,"Non-human objects ñannot communicate with each other");
+				R_ASSERT2				(l_tpALifeHumanAbstract,"Non-human objects Ã±annot communicate with each other");
 				CSE_ALifeHumanAbstract	*l_tpALifeHumanAbstract2 = smart_cast<CSE_ALifeHumanAbstract*>(l_tpALifeSchedulable);
-				R_ASSERT2				(l_tpALifeHumanAbstract2,"Non-human objects ñannot communicate with each other");
+				R_ASSERT2				(l_tpALifeHumanAbstract2,"Non-human objects Ã±annot communicate with each other");
 #ifdef DEBUG
 				if (psAI_Flags.test(aiALife)) {
 					Msg					("[LSS] %s interacted with %s",manager->m_tpaCombatObjects[l_iGroupIndex]->base()->name_replace(),manager->m_tpaCombatObjects[l_iGroupIndex ^ 1]->base()->name_replace());

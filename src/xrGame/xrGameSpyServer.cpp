@@ -1,10 +1,10 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "xrMessages.h"
 #include "xrGameSpyServer.h"
-#include "../xrEngine/igame_persistent.h"
+#include "../xrEngine/IGame_Persistent.h"
 
-#include "GameSpy/GameSpy_Base_Defs.h"
-#include "GameSpy/GameSpy_Available.h"
+#include "gamespy/GameSpy_Base_Defs.h"
+#include "gamespy/GameSpy_Available.h"
 
 //#define DEMO_BUILD
 
@@ -60,10 +60,11 @@ xrGameSpyServer::EConnect xrGameSpyServer::Connect(shared_str &session_name, Gam
 
 	if ( 0 == *(game->get_option_s		(*session_name,"hname",nullptr)))
 	{
-		string1024	CompName;
-		DWORD		CompNameSize = 1024;
-		if (GetComputerNameA(CompName, &CompNameSize)) 
-			HostName	= CompName;
+		std::string CompName = Platform::GetCompName();
+		if (!CompName.empty())
+		{
+			HostName = CompName.c_str();
+		}
 	}
 	else
 		HostName	= game->get_option_s		(*session_name,"hname",nullptr);

@@ -10,7 +10,7 @@ struct v2p
     float4 hpos_curr : TEXCOORD2;
     float4 hpos_old : TEXCOORD3;
 
-    float4 hpos : SV_Position;
+    float4 hpos : SV_POSITION;
 };
 
 TextureCube s_sky0 : register(t0);
@@ -24,8 +24,8 @@ struct sky
 
 void main(in v2p I, out sky O)
 {
-    float3 s0 = s_sky0.SampleLevel(smp_base, I.tc0, 0.0f);
-    float3 s1 = s_sky1.SampleLevel(smp_base, I.tc1, 0.0f);
+    float3 s0 = s_sky0.SampleLevel(smp_base, I.tc0, 0.0f).xyz;
+    float3 s1 = s_sky1.SampleLevel(smp_base, I.tc1, 0.0f).xyz;
     float3 sky = L_sky_color.xyz * lerp(s0, s1, I.factor.w);
 
     O.Color = float4(sky, 0.0f);

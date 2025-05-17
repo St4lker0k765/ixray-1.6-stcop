@@ -1,5 +1,6 @@
 #pragma once
 #include <SDL3/SDL.h>
+#include "profiler.h"
 #include "Platform/Platform.h"
 
 // Our headers
@@ -15,10 +16,6 @@
 
 #define IC inline
 
-#if defined(XRCORE_STATIC) || defined(_EDITOR)
-#	define NO_FS_SCAN
-#endif
-
 #define _inline			inline
 #define __inline		inline
 #define ICF				__forceinline			// !!! this should be used only in critical places found by PROFILER
@@ -27,10 +24,9 @@
 #ifndef DEBUG
 	#pragma inline_depth	( 254 )
 	#pragma inline_recursion( on )
-	#ifndef __BORLANDC__
-		#pragma intrinsic	(abs, fabs, fmod, sin, cos, tan, asin, acos, atan, sqrt, exp, log, log10, strcat)
-	#endif
 #endif
+
+#pragma intrinsic(abs, fabs, fmod, sin, cos, tan, asin, acos, atan, sqrt, exp, log, log10, strcat)
 
 #include <filesystem>
 #include <time.h>
@@ -58,6 +54,11 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <math.h>
+#include <fcntl.h>
+
+// FSD
+#include <fast_dynamic_cast/fast_dynamic_cast.hpp>
+#define smart_cast fast_dynamic_cast
 
 // stl
 #pragma warning (push)
@@ -83,6 +84,8 @@
 
 // Engine
 #include "Platform/PlatformAPI.h"
+#include "xr_delegate.h"
+#include "_noncopyable.h"
 
 #include "xrDebug.h"
 #include "vector.h"
@@ -95,14 +98,14 @@
 
 #include "_stl_extensions.h"
 #include "xrsharedmem.h"
+#include "_thread_types.h"
 #include "shared_string.h"
 #include "xrstring.h"
-#include "_thread_types.h"
 #include "xr_resource.h"
 #include "rt_compressor.h"
 #include "xr_shared.h"
 #include "string_concatenations.h"
-
+#include "xr_path.h"
 
 // stl ext
 struct XRCORE_API xr_rtoken
@@ -149,6 +152,8 @@ using RTokenVec = xr_vector<xr_rtoken>;
 using RTokenVecIt = RTokenVec::iterator;
 
 #include "TimeUtils.h"
+#include "xr_delegate.h"
+
 #include "FS.h"
 #include "log.h"
 #include "xr_trims.h"
@@ -157,7 +162,6 @@ using RTokenVecIt = RTokenVec::iterator;
 #include "LocatorAPI.h"
 #include "FileSystem.h"
 #include "FTimer.h"
-#include "fastdelegate.h"
 #include "intrusive_ptr.h"
 
 #include "net_utils.h"
@@ -208,6 +212,3 @@ namespace Platform
 }
 
 extern XRCORE_API xrCore Core;
-
-#include <fast_dynamic_cast/fast_dynamic_cast.hpp>
-#define smart_cast fast_dynamic_cast

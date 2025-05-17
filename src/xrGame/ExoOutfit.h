@@ -1,12 +1,12 @@
 ///////////////////////////////////////////////////////////////
 // ExoOutfit.h
-// ExoOutfit - защитный костюм с усилением
+// ExoOutfit - Р·Р°С‰РёС‚РЅС‹Р№ РєРѕСЃС‚СЋРј СЃ СѓСЃРёР»РµРЅРёРµРј
 ///////////////////////////////////////////////////////////////
 
 
 #pragma once
 
-#include "customoutfit.h"
+#include "CustomOutfit.h"
 
 class CExoOutfit: public CCustomOutfit
 {

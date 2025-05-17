@@ -1,11 +1,11 @@
-#include "stdafx.h"
-#include "climableobject.h "
+#include "StdAfx.h"
+#include "ClimableObject.h"
 #include "../xrPhysics/IPHStaticGeomShell.h"
 #include "xrServer_Objects_ALife.h"
 #include "../xrPhysics/PHCharacter.h"
 #include "../xrPhysics/MathUtils.h"
-#include "../xrPhysics/extendedgeom.h"
-#include "../xrEngine/gamemtllib.h"
+#include "../xrPhysics/ExtendedGeom.h"
+#include "../xrEngine/GameMtlLib.h"
 
 #ifdef DEBUG_DRAW
 #	include "debug_renderer.h"
@@ -72,7 +72,7 @@ BOOL CClimableObject::	net_Spawn			( CSE_Abstract* DC)
 	//m_box.m_halfsize.set(1.f,1.f,1.f);
 	BOOL ret	= inherited::net_Spawn(DC);
 
-	spatial.type					&= ~STYPE_VISIBLEFORAI;
+	SpatialComponent->spatial.type &= ~STYPE_VISIBLEFORAI;
 
 	const float f_min_width=0.2f;
 	Fvector shift;shift.set(0.f,0.f,0.f);

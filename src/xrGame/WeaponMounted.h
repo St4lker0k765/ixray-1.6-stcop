@@ -3,11 +3,11 @@
 #pragma once
 
 #include "holder_custom.h"
-#include "shootingobject.h"
+#include "ShootingObject.h"
 
-#include "hudsound.h"
-#include "weaponammo.h"
-#include "physicsshellholder.h"
+#include "HudSound.h"
+#include "WeaponAmmo.h"
+#include "PhysicsShellHolder.h"
 
 class CWeaponMounted :	public CPhysicsShellHolder, 
 						public CHolderCustom,
@@ -39,7 +39,7 @@ public:
 	virtual const Fmatrix&	get_ParticlesXFORM()	;
 
 	//////////////////////////////////////////////////
-	// непосредственно обработка стрельбы
+	// РЅРµРїРѕСЃСЂРµРґСЃС‚РІРµРЅРЅРѕ РѕР±СЂР°Р±РѕС‚РєР° СЃС‚СЂРµР»СЊР±С‹
 	//////////////////////////////////////////////////
 protected:
 	virtual	void			FireStart	();
@@ -52,10 +52,10 @@ protected:
 	shared_str					m_sAmmoType;
 	CCartridge				m_CurrentAmmo;
 
-	//звук стрельбы
+	//Р·РІСѓРє СЃС‚СЂРµР»СЊР±С‹
 	HUD_SOUND				sndShot;
 
-	//для отдачи
+	//РґР»СЏ РѕС‚РґР°С‡Рё
 	float					camRelaxSpeed;
 	float					camMaxAngle;
 

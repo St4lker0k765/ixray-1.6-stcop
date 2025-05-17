@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 #include "Actor_Flags.h"
 #include "HUDManager.h"
@@ -11,16 +11,16 @@
 #include "PHDestroyable.h"
 #include "Car.h"
 #include "xrServer_Objects_ALife_Monsters.h"
-#include "CameraLook.h"
+#include "cameralook.h"
 #include "CameraFirstEye.h"
-#include "effectorfall.h"
+#include "EffectorFall.h"
 #include "EffectorBobbing.h"
 #include "ActorEffector.h"
 #include "EffectorZoomInertion.h"
 #include "SleepEffector.h"
 #include "character_info.h"
 #include "CustomOutfit.h"
-#include "actorcondition.h"
+#include "ActorCondition.h"
 #include "UIGameCustom.h"
 #include "../xrPhysics/matrix_utils.h"
 #include "clsid_game.h"
@@ -56,10 +56,10 @@
 #include "../xrPhysics/IColisiondamageInfo.h"
 #include "ui/UIMainIngameWnd.h"
 #include "map_manager.h"
-#include "GameTaskManager.h"
+#include "GametaskManager.h"
 #include "actor_memory.h"
 #include "script_game_object.h"
-#include "Game_Object_Space.h"
+#include "game_object_space.h"
 #include "InventoryBox.h"
 #include "location_manager.h"
 #include "player_hud.h"
@@ -71,8 +71,8 @@
 #include "ui/UIMotionIcon.h"
 #include "ui/UIActorMenu.h"
 #include "ActorHelmet.h"
-#include "UI/UIDragDropReferenceList.h"
-#include "UIFontDefines.h"
+#include "ui/UIDragDropReferenceList.h"
+#include "../../xrUI/UIFontDefines.h"
 #include "PickupManager.h"
 
 const u32		patch_frames	= 50;
@@ -94,13 +94,12 @@ static Fvector	vFootCenter;
 static Fvector	vFootExt;
 
 Flags32			psActorFlags={AF_DISABLE_CONDITION_TEST|AF_AUTOPICKUP|AF_RUN_BACKWARD|AF_IMPORTANT_SAVE|AF_DISPLAY_VOICE_ICON};
-int				psActorSleepTime = 1;
 
 
 
 CActor::CActor() : CEntityAlive(),current_ik_cam_shift(0)
 {
-	game_news_registry		= xr_new<CGameNewsRegistryWrapper		>();
+	game_news_registry		= new CGameNewsRegistryWrapper();
 	// Cameras
 	cameras[eacFirstEye] = new CCameraFirstEye(this, CCameraBase::flKeepPitch);
 	cameras[eacFirstEye]->Load("actor_firsteye_cam");
@@ -322,11 +321,10 @@ void CActor::Load	(LPCSTR section )
 	if (IsGameTypeSingle())
 		OnDifficultyChanged		();
 	//////////////////////////////////////////////////////////////////////////
-	ISpatial*		self			=	smart_cast<ISpatial*> (this);
-	if (self)	{
-		self->spatial.type	|=	STYPE_VISIBLEFORAI;
-		self->spatial.type	&= ~STYPE_REACTTOSOUND;
-	}
+	
+	SpatialComponent->spatial.type	|=	STYPE_VISIBLEFORAI;
+	SpatialComponent->spatial.type	&= ~STYPE_REACTTOSOUND;
+	
 	//////////////////////////////////////////////////////////////////////////
 
 	// m_PhysicMovementControl: General
@@ -465,7 +463,6 @@ if(!g_dedicated_server)
 	m_AutoPickUp_AABB				= READ_IF_EXISTS(pSettings,r_fvector3,section,"AutoPickUp_AABB",Fvector().set(0.02f, 0.02f, 0.02f));
 	m_AutoPickUp_AABB_Offset		= READ_IF_EXISTS(pSettings,r_fvector3,section,"AutoPickUp_AABB_offs",Fvector().set(0, 0, 0));
 
-	CStringTable string_table;
 	m_sCharacterUseAction			= "character_use";
 	m_sDeadCharacterUseAction		= "dead_character_use";
 	m_sDeadCharacterUseOrDragAction	= "dead_character_use_or_drag";
@@ -542,12 +539,12 @@ void	CActor::Hit(SHit* pHDS)
 				CParticlesPlayer::MakeXFORM(this,HDS.bone(),HDS.dir,HDS.p_in_bone_space,pos);
 
 				// установить particles
-				CParticlesObject* ps_ = nullptr;
+				xr_shared_ptr<CParticlesObject> ps_ = nullptr;
 
 				if (eacFirstEye == cam_active && this == Level().CurrentEntity())
-					ps_ = CParticlesObject::Create(invincibility_fire_shield_1st,TRUE);
+					ps_ = Particles::Details::Create(invincibility_fire_shield_1st,TRUE);
 				else
-					ps_ = CParticlesObject::Create(invincibility_fire_shield_3rd,TRUE);
+					ps_ = Particles::Details::Create(invincibility_fire_shield_3rd,TRUE);
 
 				ps_->UpdateParent(pos,Fvector().set(0.f,0.f,0.f));
 				GamePersistent().ps_needtoplay.push_back(ps_);
@@ -989,6 +986,7 @@ static bool bLook_cam_fp_zoom = false;
 extern ENGINE_API int m_look_cam_fp_zoom;
 void CActor::UpdateCL	()
 {
+	PROF_EVENT("CActor UpdateCL");
 	if(g_Alive() && Level().CurrentViewEntity() == this)
 	{
 		if(CurrentGameUI() && nullptr==CurrentGameUI()->TopInputReceiver())
@@ -1020,7 +1018,7 @@ void CActor::UpdateCL	()
 	{
 		m_holder->UpdateEx(currentFOV());
 	}
-	else
+	else if (g_Alive())
 	{
 		UpdatePlayerView();
 	}
@@ -1030,7 +1028,7 @@ void CActor::UpdateCL	()
 	m_pPhysics_support->in_UpdateCL	();
 
 
-	if (g_Alive()) 
+	if (g_Alive())  
 		PickupModeUpdate	();	
 
 	PickupModeUpdate_COD();
@@ -1117,7 +1115,7 @@ void CActor::UpdateCL	()
 	if (g_Alive()) 
 		CStepManager::update(this==Level().CurrentViewEntity());
 
-	spatial.type |=STYPE_REACTTOSOUND;
+	SpatialComponent->spatial.type |=STYPE_REACTTOSOUND;
 
 	if(m_sndShockEffector)
 	{
@@ -1161,6 +1159,12 @@ void CActor::UpdatePlayerView()
 		has_visible = pCam && pCam->GetDist() >= 0.43f && (!pWeapon || !pWeapon->render_item_ui_query());
 		has_shadow_only = psGameFlags.test(rsActorShadow) && Render->get_generation() != IRender_interface::GENERATION_R1;
 	}
+
+	if (m_pActorEffector != nullptr && m_pActorEffector->AbsolutePositioning())
+	{
+		has_shadow_only = false;
+	}
+
 	setVisible(has_visible, has_shadow_only);
 
 	if (IsFocused())
@@ -1293,6 +1297,7 @@ void CActor::set_state_box(u32	mstate)
 
 void CActor::shedule_Update	(u32 DT)
 {
+	PROF_EVENT("CActor shedule_Update");
 	setSVU							(OnServer());
 //.	UpdateInventoryOwner			(DT);
 
@@ -1373,14 +1378,28 @@ void CActor::shedule_Update	(u32 DT)
 			m_DangerSnd.stop();
 	}
 	
+	if (!g_Alive())
+	{
+		UpdatePlayerView();
+	}
+
 	//что актер видит перед собой
 	collide::rq_result& RQ				= HUD().GetCurrentRayQuery();
 	
 	Fvector ActorPos, PickPos = { 0.0f, 0.0f, 0.0f };
-	Center(ActorPos);
-	PickPos.mad(Device.vCameraPosition, Device.vCameraDirection, RQ.range);
+	//Center(ActorPos);
+	ActorPos = Position();
+	ActorPos.y += ACTOR_HEIGHT * 0.5f;
 
-	if (!input_external_handler_installed() && RQ.O && RQ.O->getVisible() && ActorPos.distance_to_sqr(PickPos) < 4.0f)
+	PickPos.mad(Device.vCameraPosition, Device.vCameraDirection, RQ.range);
+	if (RQ.O)
+	{
+		//PickPos = RQ.O->Position();
+		RQ.O->Center(PickPos);
+	}
+	const static bool isMonstersInventory = EngineExternal()[EEngineExternalGame::EnableMonstersInventory];
+
+	if (!input_external_handler_installed() && RQ.O && RQ.O->getVisible() && ActorPos.distance_to_sqr(PickPos) < 6.0f)
 	{
 		m_pObjectWeLookingAt			= smart_cast<CGameObject*>(RQ.O);
 		
@@ -1400,12 +1419,11 @@ void CActor::shedule_Update	(u32 DT)
 		{
 			if (m_pUsableObject && m_pUsableObject->tip_text())
 			{
-				m_sDefaultObjAction = CStringTable().translate( m_pUsableObject->tip_text() );
+				m_sDefaultObjAction = g_pStringTable->translate( m_pUsableObject->tip_text() );
 			}
 			else
 			{
-				if (m_pPersonWeLookingAt && pEntityAlive->g_Alive() && m_pPersonWeLookingAt->IsTalkEnabled())
-				{
+				if (m_pPersonWeLookingAt && pEntityAlive->g_Alive() && m_pPersonWeLookingAt->IsTalkEnabled() && !pEntityAlive->cast_actor()) {
 					m_sDefaultObjAction = m_sCharacterUseAction;
 				}
 				else if ( pEntityAlive && !pEntityAlive->g_Alive() )
@@ -1418,7 +1436,7 @@ void CActor::shedule_Update	(u32 DT)
 					{
 						if (CBaseMonster* pMonster = smart_cast<CBaseMonster*>(m_pPersonWeLookingAt))
 						{
-							if (EngineExternal()[EEngineExternalGame::EnableMonstersInventory])
+							if (isMonstersInventory)
 							{
 								m_sDefaultObjAction = m_sDeadCharacterUseAction;
 							}
@@ -1486,7 +1504,8 @@ void CActor::shedule_Update	(u32 DT)
 	UpdateArtefactsOnBeltAndOutfit				();
 	m_pPhysics_support->in_shedule_Update		(DT);
 	Check_for_AutoPickUp						();
-};
+}
+
 #include "debug_renderer.h"
 void CActor::renderable_Render	()
 {
@@ -1935,7 +1954,7 @@ void CActor::spawn_supplies			()
 	inherited::spawn_supplies		();
 	CInventoryOwner::spawn_supplies	();
 
-	if (!pSettings->section_exist("anim_fake"))
+	if (!pGameGlobals->line_exist("actor_item", "anim_fake_item"))
 	{
 		Msg("! Animation slot not registered");
 		Msg("! [anim_fake] section missing");

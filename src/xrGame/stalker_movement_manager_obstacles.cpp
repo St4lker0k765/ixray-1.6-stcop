@@ -6,7 +6,7 @@
 //	Description : Stalker movement manager: dynamic obstacles avoidance
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "stalker_movement_manager_obstacles.h"
 #include "stalker_movement_manager_space.h"
 #include "ai_space.h"
@@ -32,7 +32,7 @@ stalker_movement_manager_obstacles::stalker_movement_manager_obstacles	(CAI_Stal
 	m_last_fail_time				(0),
 	m_failed_to_build_path			(false)
 {
-	m_doors_actor					= xr_new<doors::actor>(*object);
+	m_doors_actor					= new doors::actor(*object);
 	m_static_obstacles.construct	(this, m_failed_to_build_path);
 	m_dynamic_obstacles.construct	(this, m_failed_to_build_path);
 }
@@ -114,20 +114,9 @@ bool stalker_movement_manager_obstacles::can_build_restricted_path	(const obstac
 		return						(false);
 	}
 
-	typedef SBaseParameters<float,u32,u32>	evaluator_type;
 
-	m_failed_to_build_path			= 
-		!ai().graph_engine().search(
-			ai().level_graph(),
-			object().ai_location().level_vertex_id(),
-			level_path().dest_vertex_id(),
-			&m_temp_path,
-			evaluator_type(
-				type_max(_dist_type),
-				_iteration_type(-1),
-				4096
-			)
-		);
+	m_failed_to_build_path			= !ai().level_graph().Search(object().ai_location().level_vertex_id(),level_path().dest_vertex_id(),m_temp_path,type_max(float),0xFFFFFFFF,4096);
+
 
 	remove_border					(query);
 

@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "LevelGameDef.h"
 #include "ai_space.h"
 #include "../xrScripts/script_process.h"
@@ -7,7 +7,7 @@
 #include "Level.h"
 #include "game_cl_base.h"
 #include "../xrEngine/x_ray.h"
-#include "../xrEngine/gamemtllib.h"
+#include "../xrEngine/GameMtlLib.h"
 #include "../xrPhysics/PhysicsCommon.h"
 #include "level_sounds.h"
 #include "GamePersistent.h"
@@ -63,7 +63,7 @@ BOOL CLevel::Load_GameSpecific_After()
 	if (FS.exist(fn_game, "$level$", "level.ps_static")) 
 	{
 		IReader *F = FS.r_open	(fn_game);
-		CParticlesObject* pStaticParticles;
+
 		u32				chunk = 0;
 		string256		ref_name;
 		Fmatrix			transform;
@@ -93,7 +93,7 @@ BOOL CLevel::Load_GameSpecific_After()
 						
 			if ((g_pGamePersistent->m_game_params.m_e_game_type & EGameIDs(gametype_usage)) || (ver == 0))
 			{
-				pStaticParticles				= CParticlesObject::Create(ref_name,FALSE,false);
+				auto pStaticParticles = Particles::Details::Create(ref_name,FALSE,false);
 				pStaticParticles->UpdateParent	(transform,zero_vel_);
 				pStaticParticles->Play			(false);
 				m_StaticParticles.push_back		(pStaticParticles);

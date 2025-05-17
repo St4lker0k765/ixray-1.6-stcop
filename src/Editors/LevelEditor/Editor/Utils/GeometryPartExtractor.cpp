@@ -68,7 +68,7 @@ bool SBPart::prepare				(SBAdjVec& adjs, u32 bone_face_min)
     m_BBox.invalidate				();
     Fmatrix M; M.set				(m_OBB.m_rotate.i,m_OBB.m_rotate.j,m_OBB.m_rotate.k,m_OBB.m_translate);
     m_RefOffset.set					(m_OBB.m_translate);
-    M.getXYZ						(m_RefRotate); // не i потому что в движке так
+    M.getXYZ						(m_RefRotate); // РЅРµ i РїРѕС‚РѕРјСѓ С‡С‚Рѕ РІ РґРІРёР¶РєРµ С‚Р°Рє
     M.invert						();
 
     // transform vertices & calculate bounding box
@@ -118,7 +118,7 @@ bool SBPart::prepare				(SBAdjVec& adjs, u32 bone_face_min)
         	else
             {
                 string1024 Name;
-				sprintf_s(Name,"bone%d",bone_idx);
+				sprintf_s(Name,"%d",bone_idx);
 
                 m_Bones.push_back		(SBBone( Name,parent_bone,F->surf->_GameMtlName(),face_accum,area));
                 parent_bone				= "0";
@@ -134,8 +134,8 @@ bool SBPart::prepare				(SBAdjVec& adjs, u32 bone_face_min)
         	if (face_accum_total_saved!=face_accum_total){
 				face_accum_total_saved 	= face_accum_total;
             }else{
-            	// если проход оказался безрезультатным (т.е. не смогли добавить хоть один фейс) - добавляем 
-                //  все неприаттаченные фейсы к 0-кости (иначе зацикливается (mike - L03_agroprom))
+            	// РµСЃР»Рё РїСЂРѕС…РѕРґ РѕРєР°Р·Р°Р»СЃв‚¬ Р±РµР·СЂРµР·СѓР»СЊС‚Р°С‚РЅС‹Рј (С‚.Рµ. РЅРµ СЃРјРѕРіР»Рё РґРѕР±Р°РІРёС‚СЊ С…РѕС‚СЊ РѕРґРёРЅ С„РµР№СЃ) - РґРѕР±Р°РІР»в‚¬РµРј 
+                //  РІСЃРµ РЅРµРїСЂРёР°С‚С‚Р°С‡РµРЅРЅС‹Рµ С„РµР№СЃС‹ Рє 0-РєРѕСЃС‚Рё (РёРЅР°С‡Рµ Р·Р°С†РёРєР»РёРІР°РµС‚СЃв‚¬ (mike - L03_agroprom))
                 for (SBFaceVecIt f_it=m_Faces.begin(); f_it!=m_Faces.end(); f_it++){
                     SBFace* F				= *f_it;
                     if (-1==F->bone_id){
@@ -206,10 +206,13 @@ bool SBPart::Export	(IWriter& F, u8 infl)
 
     u32 mtl_cnt				= 0;
                                   
-    for (SBFaceVecIt pf_it=m_Faces.begin(); pf_it!=m_Faces.end(); pf_it++){
-    	SBFace* face		= *pf_it;
-        int mtl_idx			= FindSplit(face->surf->_ShaderName(),face->surf->_Texture(),0);
-        if (mtl_idx<0){
+    for (SBFaceVecIt pf_it=m_Faces.begin(); pf_it!=m_Faces.end(); pf_it++)
+    {
+    	SBFace* face = *pf_it;
+        int mtl_idx = FindSplit(face->surf->_ShaderName(), face->surf->_Texture(), 0, face->surf->m_id);
+
+        if (mtl_idx<0)
+        {
             m_Splits.push_back(SSplit(face->surf,m_BBox,0));
             mtl_idx	= mtl_cnt++;
         }
@@ -230,7 +233,8 @@ bool SBPart::Export	(IWriter& F, u8 infl)
     }
 
     // fill per bone vertices
-    for (SplitIt split_it=m_Splits.begin(); split_it!=m_Splits.end(); split_it++){
+    for (SplitIt split_it=m_Splits.begin(); split_it!=m_Splits.end(); split_it++)
+    {
         if (!split_it->valid()){
             ELog.Msg(mtError,"Degenerate part found (Texture '%s').",*split_it->m_Texture);
             bRes = false;
@@ -318,7 +322,7 @@ bool SBPart::Export	(IWriter& F, u8 infl)
         Fvector rot={0,0,0};
         F.w_fvector3(rot);
         F.w_fvector3(bone.offset);
-        F.w_float   (bone.area);	// mass (для Кости посчитал площадь)
+        F.w_float   (bone.area);	// mass (РґР»в‚¬ В РѕСЃС‚Рё РїРѕСЃС‡РёС‚Р°Р» РїР»РѕС‰Р°РґСЊ)
         F.w_fvector3(shape.box.m_translate);	// center of mass        
     }
     F.close_chunk();
@@ -344,7 +348,7 @@ IC void recurse_tri(SBPart* P, SBFaceVec& faces, SBAdjVec& adjs, SBFace* F)
 
 void CGeomPartExtractor::AppendFace(CSurface* surf, const Fvector* v, const Fvector* n, const Fvector2* uvs[3])
 {
-	SBFace* F			= xr_new<SBFace>(surf,uvs);
+	SBFace* F			= new SBFace(surf,uvs);
     // insert verts
     for (int k=0; k<3; k++){
         F->vert_id[k] 	= m_Verts->add_vert(v[k]);
@@ -360,7 +364,7 @@ CGeomPartExtractor::CGeomPartExtractor	()
 void CGeomPartExtractor::Initialize	(const Fbox& bb, float eps, u32 per_bone_face_count_min)
 {
 	VERIFY				(0==m_Verts);
-	m_Verts 			= xr_new<VCPacked>(bb,eps);
+	m_Verts 			= new VCPacked(bb,eps);
     m_PerBoneFaceCountMin=per_bone_face_count_min; VERIFY(m_PerBoneFaceCountMin>0);
 }
 void CGeomPartExtractor::Clear		()
@@ -389,7 +393,7 @@ BOOL CGeomPartExtractor::Process()
 	        pb->Inc();
             SBFace* F	= *f_it;
             if (!F->marked){
-                SBPart* P 		= xr_new<SBPart>();
+                SBPart* P 		= new SBPart();
                 recurse_tri		(P,m_Faces,m_Adjs,*f_it);
                 m_Parts.push_back	(P);
             }

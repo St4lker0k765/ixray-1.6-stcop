@@ -21,7 +21,7 @@ file(GLOB_RECURSE XRR1_SOURCE_BLEND_FILES
     "Blender_*.cpp"
     "Blender_*.h"
 )
-file(GLOB_RECURSE XRR1_SOURCE_DX9_FILES
+file(GLOB_RECURSE XRR1_SOURCE_DX9_FILES CONFIGURE_DEPENDS
     "../xrRenderDX9/*.cpp"
     "../xrRenderDX9/*.h"
 )
@@ -52,6 +52,13 @@ list(FILTER XRR1_SRC_FILES EXCLUDE REGEX "../xrRender/R_sun.cpp")
 list(FILTER XRR1_SRC_FILES EXCLUDE REGEX "../xrRender/Light_Render_Direct_ComputeXFS.cpp")
 list(FILTER XRR1_SRC_FILES EXCLUDE REGEX "../xrRender/R_sun_support.cpp")
 
+list(FILTER XRR1_SRC_FILES EXCLUDE REGEX "../xrRender/light_smapvis.cpp")
+list(FILTER XRR1_SRC_FILES EXCLUDE REGEX "../xrRender/light_smapvis.h")
+list(FILTER XRR1_SRC_FILES EXCLUDE REGEX "../xrRender/light_vis.cpp")
+list(FILTER XRR1_SRC_FILES EXCLUDE REGEX "../xrRender/lights_render.cpp")
+list(FILTER XRR1_SRC_FILES EXCLUDE REGEX "../xrRender/r__blenders.cpp")
+list(FILTER XRR1_SRC_FILES EXCLUDE REGEX "../xrRender/R_calculate.cpp")
+list(FILTER XRR1_SRC_FILES EXCLUDE REGEX "../xrRender/r__types.h")
 # xrRender_R1 project
 add_library(xrRender_R1 SHARED ${XRR1_SRC_FILES})
 target_precompile_headers(xrRender_R1 PRIVATE "stdafx.h")
@@ -67,6 +74,7 @@ target_compile_definitions(xrRender_R1 PRIVATE _USRDLL)
 target_link_libraries(xrRender_R1 PRIVATE xrAbstractions)
 target_link_libraries(xrRender_R1 PRIVATE xrParticles)
 target_link_libraries(xrRender_R1 PRIVATE "d3dcompiler.lib")
+target_link_libraries(xrRender_R1 PRIVATE "d3d9.lib")
 
 ## DirectX SDK
 target_include_directories(xrRender_R1 PUBLIC "${CMAKE_BINARY_DIR}/packages/directxtex_desktop_2019.2024.6.5.1/include/")

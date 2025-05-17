@@ -1,9 +1,9 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "script_game_object.h"
 #include "HudItem.h"
 #include "physic_item.h"
 #include "Actor.h"
-#include "actoreffector.h"
+#include "ActorEffector.h"
 #include "Missile.h"
 #include "xrMessages.h"
 #include "Level.h"
@@ -12,7 +12,7 @@
 #include "player_hud.h"
 #include "../xrEngine/SkeletonMotions.h"
 #include "script_game_object.h"
-#include <ui_base.h>
+#include "../../xrUI/ui_base.h"
 #include "HUDManager.h"
 
 ENGINE_API extern float psHUD_FOV_def;
@@ -216,7 +216,8 @@ void CHudItem::SendHiddenItem()
 
 void CHudItem::UpdateHudAdditonal(Fmatrix& trans)
 {
-	if (!EngineExternal()[EEngineExternalGame::EnableWeaponInertion])
+	const static bool isInertion = EngineExternal()[EEngineExternalGame::EnableWeaponInertion];
+	if (!isInertion)
 		return;
 
 	CActor* pActor = smart_cast<CActor*>(object().H_Parent());
@@ -537,7 +538,7 @@ bool CHudItem::HudAnimationExist(LPCSTR anim_name)
 	{
 		string256 anim_name_r;
 		bool is_16x9 = UI().is_widescreen();
-		u16 attach_place_idx = pSettings->r_u16(HudItemData()->m_sect_name, "attach_place_idx");
+		u16 attach_place_idx = READ_IF_EXISTS(pSettings, r_u16, HudItemData()->m_sect_name, "attach_place_idx", 0);
 		xr_sprintf(anim_name_r, "%s%s", anim_name, ((attach_place_idx == 1) && is_16x9) ? "_16x9" : "");
 		player_hud_motion* anm = HudItemData()->m_hand_motions.find_motion(anim_name_r);
 		if (anm)
@@ -558,7 +559,13 @@ bool CHudItem::HudAnimationExist(LPCSTR anim_name)
 
 u32 CHudItem::PlayHUDMotion(const shared_str& M, BOOL bMixIn, CHudItem*  W, u32 state)
 {
-	u32 anim_time					= PlayHUDMotion_noCB(M, bMixIn);
+	if (HudItemData() && !HudAnimationExist(M.c_str()))
+	{
+		Msg("! model [%s] has no motion alias defined [%s]", hud_sect.c_str(), M.c_str());
+		return 0;
+	}
+
+	u32 anim_time = PlayHUDMotion_noCB(M.c_str(), bMixIn);
 	if (anim_time>0)
 	{
 		m_bStopAtEndAnimIsRunning	= true;
@@ -696,8 +703,8 @@ float CHudItem::GetHudFov()
 
 		float fBaseFov = m_fHudFov ? m_fHudFov : psHUD_FOV_def;
 		clamp(fBaseFov, 5.f, 180.f);
-
-		if (EngineExternal()[EEngineExternalGame::EnableWeaponCollision])
+		const static bool isCollision = EngineExternal()[EEngineExternalGame::EnableWeaponCollision];
+		if (isCollision)
 		{
 
 			float src = m_nearwall_speed_mod * Device.fTimeDelta;

@@ -1,10 +1,10 @@
 #include "stdafx.h"
 #include "base_monster.h"
 #include "../../../ai_space.h"
-#include "../../../hit.h"
+#include "../../../Hit.h"
 #include "../../../PHDestroyable.h"
 #include "../../../CharacterPhysicsSupport.h"
-#include "../../../phmovementcontrol.h"
+#include "../../../PHMovementControl.h"
 #include "../ai_monster_squad_manager.h"
 #include "../../../../Include/xrRender/KinematicsAnimated.h"
 #include "../../../detail_path_manager.h"
@@ -19,14 +19,14 @@
 #include "../monster_cover_manager.h"
 #include "../monster_home.h"
 #include "../../../ai_object_location.h"
-#include "../../../level.h"
-#include "../../../../xrServerEntities/xrserver_objects_alife_monsters.h"
+#include "../../../Level.h"
+#include "../../../../xrServerEntities/xrServer_Objects_ALife_Monsters.h"
 #include "../../../alife_simulator.h"
 #include "../../../alife_object_registry.h"
 #include "../../../xrServer.h"
 #include "../../../inventory_item.h"
-#include "../../../../xrServerEntities/xrServer_objects_ALife.h"
-#include "../../../phMovementControl.h"
+#include "../../../../xrServerEntities/xrServer_Objects_ALife.h"
+#include "../../../PHMovementControl.h"
 #include "../ai_monster_squad.h"
 #include "../control_movement_base.h"
 #include "../control_animation_base.h"
@@ -97,15 +97,15 @@ void CBaseMonster::Load(LPCSTR section)
 
 	m_feel_enemy_who_just_hit_max_distance	=	READ_IF_EXISTS(pSettings, r_float, section, 
 												"feel_enemy_who_just_hit_max_distance", 
-												detail::base_monster::feel_enemy_who_just_hit_max_distance);
+												::detail::base_monster::feel_enemy_who_just_hit_max_distance);
 
 	m_feel_enemy_max_distance				=	READ_IF_EXISTS(pSettings, r_float, section, 
 												"feel_enemy_max_distance", 
-												detail::base_monster::feel_enemy_max_distance);
+												::detail::base_monster::feel_enemy_max_distance);
 
 	m_feel_enemy_who_made_sound_max_distance =	READ_IF_EXISTS(pSettings, r_float, section, 
 												"feel_enemy_who_made_sound_max_distance", 
-												detail::base_monster::feel_enemy_who_made_sound_max_distance);
+												::detail::base_monster::feel_enemy_who_made_sound_max_distance);
 	
 	//------------------------------------
 	// Steering Behaviour 
@@ -117,7 +117,7 @@ void CBaseMonster::Load(LPCSTR section)
 	
 	if ( (separate_factor > 0.0001f) && (separate_range > 0.01f) )
 	{
-		m_steer_manager						=	xr_new<steering_behaviour::manager>();
+		m_steer_manager						=	new steering_behaviour::manager();
 
 		m_grouping_behaviour				=	new squad_grouping_behaviour
 												(this, 
@@ -125,7 +125,7 @@ void CBaseMonster::Load(LPCSTR section)
 												 Fvector3().set(0.f, separate_factor, 0.f), 
 												 separate_range);
 
-		get_steer_manager()->add				( xr_new<steering_behaviour::grouping>(m_grouping_behaviour) );
+		get_steer_manager()->add				( new steering_behaviour::grouping(m_grouping_behaviour) );
 	}
 
 	//------------------------------------
@@ -162,21 +162,21 @@ void CBaseMonster::PostLoad (LPCSTR section)
 	aom.enabled								=	(READ_IF_EXISTS(pSettings, r_bool, section, 
 												"aom_enabled", FALSE)) != 0;
 	aom.far_radius							=	READ_IF_EXISTS(pSettings, r_float, section, 
-												"aom_far_radius", detail::base_monster::aom_far_radius);
+												"aom_far_radius", ::detail::base_monster::aom_far_radius);
 	aom.attack_radius						=	READ_IF_EXISTS(pSettings, r_float, section, 
-												"aom_attack_radius", detail::base_monster::aom_attack_radius);
+												"aom_attack_radius", ::detail::base_monster::aom_attack_radius);
 	aom.update_side_period					=	READ_IF_EXISTS(pSettings, r_float, section, 
 												"aom_update_side_period", 
-												detail::base_monster::aom_update_side_period);
+												::detail::base_monster::aom_update_side_period);
 	aom.prediction_factor					=	READ_IF_EXISTS(pSettings, r_float, section, 
 												"aom_prediction_factor", 
-												detail::base_monster::aom_prediction_factor);
+												::detail::base_monster::aom_prediction_factor);
 	aom.prepare_time						=	READ_IF_EXISTS(pSettings, r_float, section, 
 												"aom_prepare_time", 
-												detail::base_monster::aom_prepare_time);
+												::detail::base_monster::aom_prepare_time);
 	aom.prepare_radius						=	READ_IF_EXISTS(pSettings, r_float, section, 
 												"aom_prepare_radius", 
-												detail::base_monster::aom_prepare_radius);
+												::detail::base_monster::aom_prepare_radius);
 	aom.max_go_close_time					=	READ_IF_EXISTS(pSettings, r_float, section, 
 												"aom_max_go_close_time", 8.f);
 
@@ -338,9 +338,9 @@ BOOL CBaseMonster::net_Spawn (CSE_Abstract* DC)
 	monster_squad().register_member((u8)g_Team(), (u8)g_Squad(), (u8)g_Group(), this);
 	settings_overrides();
 
-	CHARACTER_COMMUNITY community;
-	community.set("monster");
-	CInventoryOwner::SetCommunity(community.index());
+	// CHARACTER_COMMUNITY community;
+	// community.set("monster");
+	// CInventoryOwner::SetCommunity(community.index());
 
 	if(GetScriptControl()) {
 		m_control_manager->animation().reset_data();

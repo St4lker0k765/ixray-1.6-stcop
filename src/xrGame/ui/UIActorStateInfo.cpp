@@ -7,16 +7,16 @@
 
 #include "stdafx.h"
 #include "UIActorStateInfo.h"
-#include "UIProgressBar.h"
-#include "UIProgressShape.h"
-#include "UIScrollView.h"
-#include "UIFrameWindow.h"
-#include "UIStatic.h"
-#include "UIXmlInit.h"
+#include "../../xrUI/Widgets/UIProgressBar.h"
+#include "../../xrUI/Widgets/UIProgressShape.h"
+#include "../../xrUI/Widgets/UIScrollView.h"
+#include "../../xrUI/Widgets/UIFrameWindow.h"
+#include "../../xrUI/Widgets/UIStatic.h"
+#include "../../xrUI/UIXmlInit.h"
 #include "object_broker.h"
 
-#include "UIHelper.h"
-#include "ui_arrow.h"
+#include "UIHelperGame.h"
+#include "../../xrUI/Widgets/ui_arrow.h"
 #include "UIHudStatesWnd.h"
 
 #include "../Level.h"
@@ -166,7 +166,7 @@ void ui_actor_state_wnd::update_round_states( CActor* actor, ALife::EHitType hit
 
 void ui_actor_state_wnd::UpdateHitZone()
 {
-	CUIHudStatesWnd* wnd = CurrentGameUI()->UIMainIngameWnd->get_hud_states(); //некрасиво слишком
+	CUIHudStatesWnd* wnd = CurrentGameUI()->UIMainIngameWnd->get_hud_states(); //РЅРµРєСЂР°СЃРёРІРѕ СЃР»РёС€РєРѕРј
 	VERIFY( wnd );
 	if ( !wnd )
 	{

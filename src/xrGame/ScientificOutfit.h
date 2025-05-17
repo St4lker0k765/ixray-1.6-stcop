@@ -1,12 +1,12 @@
 ///////////////////////////////////////////////////////////////
 // ScientificOutfit.h
-// ScientificOutfit - защитный костюм ученого
+// ScientificOutfit - Р·Р°С‰РёС‚РЅС‹Р№ РєРѕСЃС‚СЋРј СѓС‡РµРЅРѕРіРѕ
 ///////////////////////////////////////////////////////////////
 
 
 #pragma once
 
-#include "customoutfit.h"
+#include "CustomOutfit.h"
 
 class CScientificOutfit: public CCustomOutfit
 {

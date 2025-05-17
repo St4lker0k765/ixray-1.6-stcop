@@ -4,7 +4,7 @@
 
 #include 	"SkeletonCustom.h"
 #include	"SkeletonX.h"
-#include	"../../xrEngine/fmesh.h"
+#include "../../xrEngine/Fmesh.h"
 #ifndef _EDITOR
 #include	"../../xrEngine/Render.h"
 #endif
@@ -101,7 +101,7 @@ CKinematics::CKinematics()
 	mOldWorldMartrix.identity();
 	mOldWorldMartrixTmp.identity();
 
-	dwFirstRenderFrame = u32(-1);
+	dwFirstRenderFrame = 0;
 }
 
 CKinematics::~CKinematics	()
@@ -194,12 +194,11 @@ void	CKinematics::Load(const char* N, IReader *data, u32 dwFlags)
         LD->close	();
     }
 
-#ifndef _EDITOR    
+ 
 	// User data
 	IReader* UD 	= data->open_chunk(OGF_S_USERDATA);
     pUserData		= UD?new CInifile(UD,FS.get_path("$game_config$")->m_Path):0;
     if (UD)			UD->close();
-#endif
 
 	// Globals
 	bone_map_N		= new accel		();
@@ -459,7 +458,7 @@ void CKinematics::Release		()
 
 void CKinematics::LL_SetBoneVisible(u16 bone_id, BOOL val, BOOL bRecursive)
 {
-	VERIFY(bone_id<LL_BoneCount());      
+	VERIFY2(bone_id < LL_BoneCount(), make_string<const char*>("visual_name: %s, bone: %s, bone_id: %d", dbg_name.c_str(), LL_BoneName_dbg(bone_id), bone_id));
 	visimask.set(bone_id, val);
 
 	if(!visimask.is(bone_id)) {
@@ -678,7 +677,9 @@ struct zero_wm_pred {
 
 void CKinematics::CalculateWallmarks()
 {
-	if (!wallmarks.empty()&&(wm_frame!=RDEVICE.dwFrame)){
+	PROF_EVENT("Calculate Wallmarks");
+	if (!wallmarks.empty()&&(wm_frame!=RDEVICE.dwFrame))
+	{
 		wm_frame			= RDEVICE.dwFrame;
 		bool need_remove	= false; 
 		for (SkeletonWMVecIt it=wallmarks.begin(); it!=wallmarks.end(); it++){
@@ -703,6 +704,7 @@ void CKinematics::CalculateWallmarks()
 
 void CKinematics::RenderWallmark(intrusive_ptr<CSkeletonWallmark> wm, FVF::LIT* &V)
 {
+	PROF_EVENT("CKinematics::RenderWallmark");
 	VERIFY(wm);
 	VERIFY(V);
 	VERIFY2(bones,"Invalid visual. Bones already released.");
@@ -762,17 +764,32 @@ int CKinematics::LL_GetBoneGroups(xr_vector<xr_vector<u16> >& groups)
 
 void CKinematics::StoreVisualMatrix(Fmatrix& world_matrix)
 {
+	PROF_EVENT("StoreVisualMatrix")
+
 	if (dwFirstRenderFrame != RDEVICE.dwFrame) {
-		dwFirstRenderFrame = RDEVICE.dwFrame;
-		mOldWorldMartrix.set(mOldWorldMartrixTmp);
-		mOldWorldMartrixTmp.set(world_matrix);
+		if(dwFirstRenderFrame != 0) {
+			mOldWorldMartrix.set(mOldWorldMartrixTmp);
+			mOldWorldMartrixTmp.set(world_matrix);
 
-		for (u16 i = 0; i < LL_BoneCount(); ++i) {
-			auto& Bi = LL_GetBoneInstance(i);
+			for(u16 i = 0; i < LL_BoneCount(); ++i) {
+				auto& Bi = LL_GetBoneInstance(i);
 
-			Bi.mRenderTransform_old.set(Bi.mRenderTransform_tmp);
-			Bi.mRenderTransform_tmp.set(Bi.mRenderTransform);
+				Bi.mRenderTransform_old.set(Bi.mRenderTransform_tmp);
+				Bi.mRenderTransform_tmp.set(Bi.mRenderTransform);
+			}
 		}
+		else {
+			mOldWorldMartrixTmp.set(world_matrix);
+			mOldWorldMartrix.set(mOldWorldMartrixTmp);
+
+			for(u16 i = 0; i < LL_BoneCount(); ++i) {
+				auto& Bi = LL_GetBoneInstance(i);
+
+				Bi.mRenderTransform_tmp.set(Bi.mRenderTransform);
+				Bi.mRenderTransform_old.set(Bi.mRenderTransform_tmp);
+			}
+		}
+		dwFirstRenderFrame = RDEVICE.dwFrame;
 	}
 }
 

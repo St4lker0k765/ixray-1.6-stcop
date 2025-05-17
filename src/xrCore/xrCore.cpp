@@ -52,31 +52,18 @@ void xrCore::_initialize	(LPCSTR _ApplicationName, xrLogger::LogCallback cb, BOO
 		LoadParams();
 #endif
 
-		string_path		fn,dr,di;
-
 		// application path
-#ifdef IXR_WINDOWS
-        GetModuleFileNameA(GetModuleHandleA(MODULE_NAME),fn,sizeof(fn));
-        _splitpath		(fn,dr,di,0,0);
-		xr_strconcat(ApplicationPath,dr,di);
+		std::string ApplicationPath = Platform::GetBinaryFolderPath().string();
+		std::string WorkingPath = std::filesystem::current_path().string();
 
-		GetCurrentDirectoryA(sizeof(WorkingPath),WorkingPath);
-#else
-        xr_strcpy(ApplicationPath, SDL_GetBasePath());
-        xr_strcpy(WorkingPath, SDL_GetBasePath());
-#endif
-#ifndef _EDITOR
-		xr_strcpy		(g_application_path,sizeof(g_application_path),ApplicationPath);
-#endif
+		xr_strcpy(g_application_path, sizeof(g_application_path), ApplicationPath.c_str());
 
 		// User/Comp Name
-#ifdef IXR_WINDOWS
-        DWORD sz_user = sizeof(UserName);
-		GetUserNameA(UserName,&sz_user);
+		std::string user_name = Platform::GetUsrName();
+		std::string comp_name = Platform::GetCompName();
 
-		DWORD sz_comp = sizeof(CompName);
-		GetComputerNameA(CompName,&sz_comp);
-#endif
+		xr_strcpy(UserName, sizeof(UserName), user_name.c_str());
+		xr_strcpy(CompName, sizeof(CompName), comp_name.c_str());
 
 		// Mathematics & PSI detection
 		CPU::Detect			();
@@ -107,29 +94,23 @@ void xrCore::_initialize	(LPCSTR _ApplicationName, xrLogger::LogCallback cb, BOO
 		if (Core.ParamsData.test(ECoreParams::ebuild))
 			flags |= CLocatorAPI::flBuildCopy|CLocatorAPI::flEBuildCopy;
 
-#ifdef _EDITOR // for EDITORS - no cache
-		flags 				&=~ CLocatorAPI::flCacheFiles;
-#endif // _EDITOR
 		flags |= CLocatorAPI::flScanAppRoot;
 
 		FS._initialize		(flags,0,fs_fname);
 		Msg					("'%s' build %d, %s\n","xrCore",build_id, build_date);
 		EFS._initialize		();
 #if defined(DEBUG) && defined(IXR_WINDOWS)
-    #ifndef	_EDITOR
 		Msg					("CRT heap 0x%08x",_get_heap_handle());
 		Msg					("Process heap 0x%08x",GetProcessHeap());
-    #endif
 #endif // DEBUG
 	}
 	xrLogger::AddLogCallback(cb);
 	init_counter++;
 }
 
-#ifndef	_EDITOR
 #include "compression_ppmd_stream.h"
 extern compression::ppmd::stream	*trained_model;
-#endif
+
 void xrCore::_destroy		()
 {
 	--init_counter;
@@ -139,13 +120,11 @@ void xrCore::_destroy		()
 		xr_delete			(xr_FS);
 		xr_delete			(xr_EFS);
 
-#ifndef	_EDITOR
 		if (trained_model) {
 			void			*buffer = trained_model->buffer();
 			xr_free			(buffer);
 			xr_delete		(trained_model);
 		}
-#endif
 
 		Memory._destroy		();
 	}

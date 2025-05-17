@@ -3,20 +3,20 @@
 #include "UIDragDropListEx.h"
 #include "UICharacterInfo.h"
 #include "UIInventoryUtilities.h"
-#include "UI3tButton.h"
+#include "../../xrUI/Widgets/UI3tButton.h"
 #include "UICellItem.h"
 #include "UICellItemFactory.h"
-#include "UIFrameLineWnd.h"
+#include "../../xrUI/Widgets/UIFrameLineWnd.h"
 
 #include "xrMessages.h"
 #include "../alife_registry_wrappers.h"
 #include "../GameObject.h"
 #include "../InventoryOwner.h"
 #include "../Inventory.h"
-#include "../Inventory_item.h"
+#include "../inventory_item.h"
 #include "../InventoryBox.h"
 #include "../../xrEngine/string_table.h"
-#include "../ai/monsters/BaseMonster/base_monster.h"
+#include "../ai/monsters/basemonster/base_monster.h"
 #include "../Car.h"
 
 void move_item_from_to (u16 from_id, u16 to_id, u16 what_id)
@@ -26,7 +26,7 @@ void move_item_from_to (u16 from_id, u16 to_id, u16 what_id)
 	P.w_u16									(what_id);
 	CGameObject::u_EventSend				(P);
 
-	//äðóãîìó èíâåíòàðþ - âçÿòü âåùü 
+	//Ð´Ñ€ÑƒÐ³Ð¾Ð¼Ñƒ Ð¸Ð½Ð²ÐµÐ½Ñ‚Ð°Ñ€ÑŽ - Ð²Ð·ÑÑ‚ÑŒ Ð²ÐµÑ‰ÑŒ 
 	CGameObject::u_EventGen					(P, GE_TRADE_BUY, to_id);
 	P.w_u16									(what_id);
 	CGameObject::u_EventSend				(P);
@@ -57,7 +57,11 @@ void CUIActorMenu::InitDeadBodySearchMode()
 	m_PartnerBottomInfo->Show		(true);
 	m_PartnerWeight->Show			(true);
 	m_takeall_button->Show			(true);
-	m_putall_button->Show			(true);
+
+	if (m_putall_button != nullptr)
+	{
+		m_putall_button->Show(true);
+	}
 
 	if ( m_pPartnerInvOwner )
 	{
@@ -126,7 +130,11 @@ void CUIActorMenu::DeInitDeadBodySearchMode()
 	m_PartnerBottomInfo->Show		(false);
 	m_PartnerWeight->Show			(false);
 	m_takeall_button->Show			(false);
-	m_putall_button->Show			(false);
+
+	if (m_putall_button != nullptr)
+	{
+		m_putall_button->Show(false);
+	}
 
 	if ( m_pInvBox )
 	{

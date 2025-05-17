@@ -1,19 +1,35 @@
 #pragma once
-typedef fastdelegate::FastDelegate0<>		  					TOnRenderContextMenu;
-typedef fastdelegate::FastDelegate1<ImVec2>		  				TOnRenderToolBar;
-class ECORE_API UIRenderForm :public XrUI
+using TOnRenderContextMenu = xr_delegate<void()>;
+using TOnRenderToolBar = xr_delegate<void(ImVec2, ImVec2)>;
+
+class ECORE_API                                     UIRenderForm: public IEditorWnd
 {
+public:
+	using DragCallback = void(const xr_string&, int);
+	DragCallback* DragFunctor;
+
 public:
 	UIRenderForm();
 	virtual ~UIRenderForm();
 	virtual void Draw();
+
 	IC Ivector2 GetMousePos()const { return m_mouse_position; }
+	IC const Frect&	GetRect() const { return m_render_pos; }
+
 	IC void		SetContextMenuEvent(TOnRenderContextMenu e) { m_OnContextMenu = e; }
 	IC void		SetToolBarEvent(TOnRenderToolBar e) { m_OnToolBar = e; }
 
+	xr_delegate<void()> OnFocusCallback;
+	xr_delegate<void()> OnClickCallback;
+	int ViewportID = 0;
+	string32 ViewportName;
 private:
+	void DrawStatistics();
+	void HandleDragDrop(const ImVec2&);
+
 	Ivector2	m_mouse_position;
-	ref_texture m_rt;
+	Frect		m_render_pos;
+
 	TOnRenderToolBar m_OnToolBar;
 	TOnRenderContextMenu m_OnContextMenu;
 	bool m_mouse_down;

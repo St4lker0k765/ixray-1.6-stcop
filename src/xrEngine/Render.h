@@ -2,6 +2,7 @@
 #define _RENDER_H_
 
 #include "../xrCDB/Frustum.h"
+#include "../xrCDB/ISpatial.h"
 #include "vis_common.h"
 //#include "IRenderDetailModel.h"
 
@@ -26,7 +27,10 @@ const	float		fLightSmoothFactor = 4.f;
 #endif
 //////////////////////////////////////////////////////////////////////////
 // definition (Dynamic Light)
-class	ENGINE_API	IRender_Light	: public xr_resource									{
+class ENGINE_API IRender_Light: 
+	public xr_resource,
+	public ISpatialOwner
+{
 public:
 	enum LT
 	{
@@ -57,11 +61,22 @@ public:
 	virtual void					set_hud_mode		(bool b)							= 0;
 	virtual bool					get_hud_mode		()									= 0;
 	virtual vis_data&				get_homdata			()									= 0;
+
+	virtual void	set_occq_mode						(bool b)							= 0;
+	virtual bool	get_occq_mode						()									= 0;
+
+	virtual void	set_ignore_object					(CObject* O)						= 0;
+	virtual CObject* get_ignore_object					()									= 0;
+
+	virtual void	set_decor_object					(CObject* O, int index = 0)			= 0;
+	virtual CObject* get_decor_object					(int index = 0)						= 0;
+
 	virtual ~IRender_Light()		;
+	virtual void					destroy(bool deffered = true)							= 0;
 };
 struct ENGINE_API		resptrcode_light	: public resptr_base<IRender_Light>
 {
-	void				destroy			()				{ _set(nullptr);						}
+	void				destroy			()				{ if(p_){p_->destroy(); p_ = NULL;} }
 };
 typedef	resptr_core<IRender_Light,resptrcode_light >	ref_light;
 
@@ -170,8 +185,6 @@ public:
 		SM_forcedword				= u32(-1)
 	};
 public:
-	// options
-	s32								m_skinning;
 
 	// data
 	CFrustum						ViewBase;
@@ -195,7 +208,6 @@ public:
 	virtual BOOL					InIndoor				()											{ return false; }
 	virtual size_t					SectorsCount			()											{ return size_t(0); }
 
-			void					shader_option_skinning	(s32 mode)									{ m_skinning=mode;	}
 	virtual HRESULT					shader_compile			(
 		LPCSTR							name,
 		DWORD const*                    pSrcData,
@@ -215,6 +227,15 @@ public:
 	virtual IRender_Sector*			detectSector			(const Fvector& P)							{return 0;};
 	virtual IRender_Target*			getTarget				()											{return 0;};
 
+	struct SurfaceParams
+	{
+		float w = 0.0f;
+		float h = 0.0f;
+		void* Surface = nullptr;
+	};
+
+	virtual SurfaceParams			getSurface(const char* nameTexture) { R_ASSERT(!"Method is not overridden"); return SurfaceParams(); };
+
 	// Main 
 	IC		void					set_Frustum				(CFrustum*	O	)							{ VERIFY(O);	View = O;			}
 	virtual void					set_Transform			(Fmatrix*	M	)							{};
@@ -224,7 +245,7 @@ public:
 	virtual void					flush					()											{};	
 	virtual void					set_Object				(IRenderable*		O	)					{};
 	virtual	void					add_Occluder			(Fbox2&	bb_screenspace	)					{};	// mask screen region as oclluded (-1..1, -1..1)
-	virtual void					add_Visual				(IRenderVisual*	V, bool ignore_opt = false)	{};	// add visual leaf	(no culling performed at all)
+	virtual void					add_Visual				(IRenderVisual*	V)						{};	// add visual leaf	(no culling performed at all)
 	virtual void					add_Geometry			(IRenderVisual*	V	)					{};	// add visual(s)	(all culling performed)
 	virtual void					add_StaticWallmark		(const wm_shader& S, const Fvector& P, float s, CDB::TRI* T, Fvector* V) {};
 
@@ -250,6 +271,7 @@ public:
 	virtual IRenderVisual*			model_CreateChild		(LPCSTR name, IReader*	data)				{return 0;};
 	virtual IRenderVisual*			model_Duplicate			(IRenderVisual*	V)							{return 0;};
 	virtual void					model_Delete			(IRenderVisual* &	V, BOOL bDiscard=FALSE)	{};
+	virtual void					model_Delete_Deffered	(IRenderVisual* &	V)						{};
 	virtual void					model_Logging			(BOOL bEnable)								{};
 	virtual void					models_Prefetch			()											{};
 	virtual void					models_Clear			(BOOL b_complete)							{};

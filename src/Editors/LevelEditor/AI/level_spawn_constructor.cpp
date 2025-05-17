@@ -32,7 +32,6 @@ CLevelSpawnConstructor::~CLevelSpawnConstructor()
 		*/
 	VERIFY(!m_level_graph);
 	VERIFY(!m_cross_table);
-	VERIFY(!m_graph_engine);
 }
 
 IC const IGameGraph& CLevelSpawnConstructor::game_graph() const
@@ -60,14 +59,10 @@ IC const IGameLevelCrossTable& CLevelSpawnConstructor::cross_table() const
 	return (*m_cross_table);
 }
 
-IC CGraphEngineEditor& CLevelSpawnConstructor::graph_engine() const
-{
-	return (*m_graph_engine);
-}
 
 void CLevelSpawnConstructor::init()
 {
-	//m_level_graph = xr_new<ILevelGraph>();
+	//m_level_graph = new ILevelGraph();
 	m_level_graph = Scene->GetLevelGraph();
 	m_game_spawn_constructor->game_graph().set_current_level(game_graph().header().level(*m_level.name()).id());
 	m_cross_table = &game_graph().cross_table();
@@ -119,7 +114,7 @@ CSE_Abstract* CLevelSpawnConstructor::create_object(IReader* chunk)
 
 void CLevelSpawnConstructor::add_graph_point(CSE_Abstract* abstract)
 {
-	CSE_ALifeGraphPoint* graph_point = dynamic_cast<CSE_ALifeGraphPoint*>(abstract);
+	CSE_ALifeGraphPoint* graph_point = smart_cast<CSE_ALifeGraphPoint*>(abstract);
 	R_ASSERT(graph_point);
 	m_graph_points.push_back(graph_point);
 }
@@ -143,7 +138,7 @@ void CLevelSpawnConstructor::add_space_restrictor(CSE_ALifeDynamicObject* dynami
 {
 	if (!dynamic_object)
 		return;
-	CSE_ALifeSpaceRestrictor* space_restrictor = dynamic_cast<CSE_ALifeSpaceRestrictor*>(dynamic_object);
+	CSE_ALifeSpaceRestrictor* space_restrictor = smart_cast<CSE_ALifeSpaceRestrictor*>(dynamic_object);
 	if (!space_restrictor)
 		return;
 
@@ -153,12 +148,12 @@ void CLevelSpawnConstructor::add_space_restrictor(CSE_ALifeDynamicObject* dynami
 	if (!space_restrictor->m_flags.test(CSE_ALifeObject::flCheckForSeparator))
 		return;
 
-	m_space_restrictors.push_back(xr_new<CSpaceRestrictorWrapper>(space_restrictor));
+	m_space_restrictors.push_back(new CSpaceRestrictorWrapper(space_restrictor));
 }
 
 void CLevelSpawnConstructor::add_level_changer(CSE_Abstract* abstract)
 {
-	CSE_ALifeLevelChanger* level_changer = dynamic_cast<CSE_ALifeLevelChanger*>(abstract);
+	CSE_ALifeLevelChanger* level_changer = smart_cast<CSE_ALifeLevelChanger*>(abstract);
 	R_ASSERT(level_changer);
 	m_game_spawn_constructor->add_level_changer(level_changer);
 	m_level_changers.push_back(level_changer);
@@ -173,7 +168,7 @@ void CLevelSpawnConstructor::add_free_object(CSE_Abstract* abstract)
 //{
 //	SPAWN_GRPOUP_OBJECTS::iterator	I = m_spawn_objects.find(group_section);
 //	if (I == m_spawn_objects.end()) {
-//		xr_vector<CSE_Abstract*>	*temp = xr_new<GROUP_OBJECTS>();
+//		xr_vector<CSE_Abstract*>	*temp = new GROUP_OBJECTS();
 //		temp->clear					();
 //		temp->push_back				(abstract);
 //		m_spawn_objects.insert		(std::make_pair(group_section,temp));
@@ -197,7 +192,10 @@ bool CLevelSpawnConstructor::load_objects()
 
 	for (auto& Obj : Scene->ListObj(OBJCLASS_SPAWNPOINT))
 	{
-		CSpawnPoint* Spawn = dynamic_cast<CSpawnPoint*>(Obj);
+		CSpawnPoint* Spawn = smart_cast<CSpawnPoint*>(Obj);
+		if (!Spawn->m_SpawnData.Valid())
+			continue;
+
 		CSE_Abstract* abstract = Spawn->GetEntity();
 		if (!abstract)
 		{
@@ -219,13 +217,13 @@ bool CLevelSpawnConstructor::load_objects()
 			continue;
 		}*/
 
-		CSE_ALifeObject* alife_object = dynamic_cast<CSE_ALifeObject*>(abstract);
+		CSE_ALifeObject* alife_object = smart_cast<CSE_ALifeObject*>(abstract);
 		if (!alife_object)
 		{
 			continue;
 		}
 
-		CSE_ALifeCreatureActor* actor = dynamic_cast<CSE_ALifeCreatureActor*>(alife_object);
+		CSE_ALifeCreatureActor* actor = smart_cast<CSE_ALifeCreatureActor*>(alife_object);
 		if (actor)
 		{
 			if (m_actor)
@@ -238,14 +236,14 @@ bool CLevelSpawnConstructor::load_objects()
 
 		m_spawns.push_back(alife_object);
 
-		CSE_ALifeDynamicObject* dynamic_object = dynamic_cast<CSE_ALifeDynamicObject*>(alife_object);
+		CSE_ALifeDynamicObject* dynamic_object = smart_cast<CSE_ALifeDynamicObject*>(alife_object);
 		if (dynamic_object)
 		{
 			add_story_object(dynamic_object);
 			add_space_restrictor(dynamic_object);
 		}
 
-		if (dynamic_cast<CSE_ALifeLevelChanger*>(alife_object))
+		if (smart_cast<CSE_ALifeLevelChanger*>(alife_object))
 			add_level_changer(abstract);
 
 		//		if (xr_strlen(alife_object->m_spawn_control))
@@ -481,8 +479,6 @@ public:
 
 void CLevelSpawnConstructor::generate_artefact_spawn_positions()
 {
-	VERIFY(!m_graph_engine);
-	m_graph_engine = xr_new<CGraphEngineEditor>(m_level_graph->header().vertex_count());
 	// create graph engine
 	CTimer Timer;
 	Timer.Start();
@@ -616,7 +612,7 @@ void CLevelSpawnConstructor::generate_artefact_spawn_positions_worker()
 	{
 		size_t Index = InterlockedDecrement(&m_generate_artefact_spawn_positions_worker_counter);
 		CSE_ALifeObject* Object = m_spawns[Index];
-		CSE_ALifeAnomalousZone* zone = dynamic_cast<CSE_ALifeAnomalousZone*>(Object);
+		CSE_ALifeAnomalousZone* zone = smart_cast<CSE_ALifeAnomalousZone*>(Object);
 		if (!zone)
 			continue;
 		CSE_Abstract* Abstract = Object;
@@ -633,22 +629,41 @@ void CLevelSpawnConstructor::generate_artefact_spawn_positions_worker()
 		Object->m_tGraphID = cell.game_vertex_id();
 		Object->m_fDistance = cell.distance();
 
-		m_generate_artefact_spawn_positions_worker_mutex.Enter();
-		graph_engine().search(
-			level_graph(),
-			Object->m_tNodeID,
-			Object->m_tNodeID,
-			&l_tpaStack,
-			SFlooder<
-				float,
-				u32,
-				u32
-			>(
-				zone->m_offline_interactive_radius,
-				u32(-1),
-				u32(-1)
-			)
-		);
+		xr_vector<u32> CheckNodes;
+		l_tpaStack.push_back(Object->m_tNodeID);
+		CheckNodes.push_back(Object->m_tNodeID);
+
+		xr_set<u32> NodeVisited;
+
+		float m_distance_xz = level_graph().header().cell_size();
+		ILevelGraph::CVertex* MainNode = level_graph().vertex(Object->m_tNodeID);
+		while(CheckNodes.size() > 0)
+		{
+			u32 CurrentNodeID = CheckNodes.back();
+			CheckNodes.pop_back();
+			ILevelGraph::CVertex* Node = level_graph().vertex(CurrentNodeID);
+			NodeVisited.emplace(CurrentNodeID);
+
+			auto DistanceNode = [this,m_distance_xz](ILevelGraph::CVertex* Node1,ILevelGraph::CVertex* Node2)
+			{
+				return level_graph().distance(Node1,Node2);
+			};
+
+			for (s32 NeighborIndex = 0; NeighborIndex < 4; NeighborIndex++)
+			{
+				const u32 NeighborID = Node->link(NeighborIndex);
+				if (!level_graph().valid_vertex_id(NeighborID)) continue;
+				ILevelGraph::CVertex* NeighborNode = level_graph().vertex(Object->m_tNodeID);
+				if(DistanceNode(MainNode,NeighborNode) < zone->m_offline_interactive_radius)
+				{
+					if (!NodeVisited.contains(NeighborID))
+					{
+						l_tpaStack.push_back(NeighborID);
+						CheckNodes.push_back(NeighborID);
+					}
+				}
+			}
+		}
 
 		l_tpaStack.erase(
 			std::remove_if(
@@ -662,11 +677,15 @@ void CLevelSpawnConstructor::generate_artefact_spawn_positions_worker()
 			),
 			l_tpaStack.end()
 		);
+
 		random_shuffle(l_tpaStack.begin(), l_tpaStack.end());
+
+		m_generate_artefact_spawn_positions_worker_mutex.Enter();
 		zone->m_artefact_position_offset = m_level_points.size();
 		m_level_points.resize(zone->m_artefact_position_offset + zone->m_artefact_spawn_count);
 
 		//		Msg								("%s  %f [%f][%f][%f] : artefact spawn positions",zone->name_replace(),zone->m_fRadius,VPUSH(zone->o_Position));
+
 
 		LEVEL_POINT_STORAGE::iterator I = m_level_points.begin() + zone->m_artefact_position_offset;
 		LEVEL_POINT_STORAGE::iterator E = m_level_points.end();
@@ -739,13 +758,13 @@ void CLevelSpawnConstructor::update_artefact_spawn_positions()
 	for (; I != E; ++I)
 	{
 		CSE_Abstract* abstract = (*I);
-		CSE_ALifeObject* alife_object = dynamic_cast<CSE_ALifeObject*>(abstract);
+		CSE_ALifeObject* alife_object = smart_cast<CSE_ALifeObject*>(abstract);
 		//		R_ASSERT3						(level_graph().valid_vertex_id(alife_object->m_tNodeID),"Invalid node for object ",alife_object->name_replace());
 		R_ASSERT2(alife_object, "Non-ALife object!");
 		VERIFY(game_graph().vertex(alife_object->m_tGraphID)->level_id() == m_level.id());
 		//		alife_object->m_spawn_control	= "";
 		;
-		if (CSE_ALifeAnomalousZone* zone = dynamic_cast<CSE_ALifeAnomalousZone*>(alife_object))
+		if (CSE_ALifeAnomalousZone* zone = smart_cast<CSE_ALifeAnomalousZone*>(alife_object))
 		{
 			zone->m_artefact_position_offset = level_point_count;
 			level_point_count += zone->m_artefact_spawn_count;
@@ -766,7 +785,6 @@ bool CLevelSpawnConstructor::Execute()
 	{
 		m_cross_table = 0;
 		m_level_graph = 0;
-		xr_delete(m_graph_engine);
 		return false;
 	}
 	//	fill_spawn_groups					();
@@ -777,19 +795,25 @@ bool CLevelSpawnConstructor::Execute()
 	{
 		m_cross_table = 0;
 		m_level_graph = 0;
-		xr_delete(m_graph_engine);
 		return false;
 	}
-	generate_artefact_spawn_positions();
+
+	if (((CLevelPreferences*)(EPrefs))->PIEArtSpawnPos)
+	{
+		generate_artefact_spawn_positions();
+	}
+
 	correct_level_changers();
+
 	if (MainForm->GetTopBarForm()->VerifySpaceRestrictors())
+	{
 		if (!verify_space_restrictors())
 			return false;
 
-	//xr_delete							(m_level_graph);
+	}
+
 	m_cross_table = 0;
 	m_level_graph = 0;
-	xr_delete(m_graph_engine);
 	Msg("Spawn build completed time %3.2f", Timer.GetElapsed_sec());
 	return true;
 }
@@ -814,7 +838,7 @@ bool CLevelSpawnConstructor::verify_space_restrictors()
 		if ((*I)->object().m_space_restrictor_type == RestrictionSpace::eRestrictorTypeNone)
 			continue;
 
-		if (!(*I)->verify(*m_level_graph, *m_graph_engine, m_no_separator_check))
+		if (!(*I)->verify(*m_level_graph, m_no_separator_check))
 			bResult = false;
 	}
 

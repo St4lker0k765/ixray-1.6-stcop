@@ -6,7 +6,7 @@
 //	Description : Memory manager
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 #include "memory_manager.h"
 #include "visual_memory_manager.h"
@@ -22,7 +22,6 @@
 #include "memory_space_impl.h"
 #include "ai_object_location.h"
 #include "level_graph.h"
-#include "profiler.h"
 #include "agent_enemy_manager.h"
 #include "script_game_object.h"
 
@@ -89,6 +88,7 @@ extern bool g_enemy_manager_second_update;
 
 void CMemoryManager::update_enemies	(const bool &registered_in_combat)
 {
+	PROF_EVENT("CMemoryManager::update_enemies");
 #ifdef _DEBUG
 	g_enemy_manager_second_update	= false;
 #endif // _DEBUG
@@ -123,7 +123,7 @@ void CMemoryManager::update_enemies	(const bool &registered_in_combat)
 
 void CMemoryManager::update			(float time_delta)
 {
-	START_PROFILE("Memory Manager")
+	PROF_EVENT("CMemoryManager::update");
 
 	visual().update		(time_delta);
 	sound().update		();
@@ -146,8 +146,6 @@ void CMemoryManager::update			(float time_delta)
 	update_enemies		(registered_in_combat);
 	item().update		();
 	danger().update		();
-	
-	STOP_PROFILE
 }
 
 void CMemoryManager::enable			(const CObject *object, bool enable)
@@ -160,6 +158,7 @@ void CMemoryManager::enable			(const CObject *object, bool enable)
 template <typename T>
 void CMemoryManager::update			(const xr_vector<T> &objects, bool add_enemies)
 {
+	PROF_EVENT("CMemoryManager::update");
 	squad_mask_type					mask = m_stalker ? m_stalker->agent_manager().member().mask(m_stalker) : 0;
 	typename xr_vector<T>::const_iterator	I = objects.begin();
 	typename xr_vector<T>::const_iterator	E = objects.end();
@@ -170,10 +169,13 @@ void CMemoryManager::update			(const xr_vector<T> &objects, bool add_enemies)
 		if (m_stalker && !(*I).m_squad_mask.test(mask))
 			continue;
 
-		if ((*I).m_object->getDestroy()) {
+		if (!(*I).m_object) {
 			continue;
 		}
 
+		if ((*I).m_object->getDestroy()) {
+			continue;
+		}
 		danger().add				(*I);
 		
 		if (add_enemies) {
@@ -186,8 +188,7 @@ void CMemoryManager::update			(const xr_vector<T> &objects, bool add_enemies)
 		if (m_stalker && stalker)
 			continue;
 
-		if ((*I).m_object)
-			item().add				((*I).m_object);
+		item().add				((*I).m_object);
 	}
 }
 

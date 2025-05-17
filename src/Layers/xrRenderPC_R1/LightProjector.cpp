@@ -4,9 +4,9 @@
 
 #include "stdafx.h"
 #include "LightProjector.h"
-#include "../../include/xrRender/RenderVisual.h"
+#include "../../Include/xrRender/RenderVisual.h"
 #include "../../xrEngine/xr_object.h"
-#include "../xrRender/lighttrack.h"
+#include "../xrRender/LightTrack.h"
 
 // tir2.xrdemo		-> 45.2
 // tir2.xrdemo		-> 61.8
@@ -70,7 +70,7 @@ void CLightProjector::set_object	(IRenderable* O)
 		else				current = 0;
 		
 		if (current)				{
-			ISpatial*	spatial		= dynamic_cast<ISpatial*>	(O);
+			ISpatial*	spatial		= O->SpatialComponent.get();
 			if	(0==spatial) current= 0;
 			else					{
 				spatial->spatial_updatesector	();
@@ -287,7 +287,7 @@ void CLightProjector::calculate	()
 		BB.set					(min,max);
 		R.UVclamp_min.set		(min).add	(.05f);	// shrink a little
 		R.UVclamp_max.set		(max).sub	(.05f);	// shrink a little
-		ISpatial*	spatial		= dynamic_cast<ISpatial*>	(O);
+		ISpatial*	spatial		= O->SpatialComponent.get();
 		if (spatial)			{
 			spatial->spatial_updatesector			();
 			if (spatial->spatial.sector)			RImplementation.r_dsgraph_render_R1_box	(spatial->spatial.sector,BB,SE_R1_LMODELS);

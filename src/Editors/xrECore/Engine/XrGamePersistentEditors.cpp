@@ -12,10 +12,10 @@ XrGamePersistentEditors::XrGamePersistentEditors():IGame_Persistent ()
 	/*switch (xrGameManager::GetGame())
 	{
 	case EGame::SHOC:
-		pEnvironment = xr_new<CEnvironmentSOC>();
+		pEnvironment = new CEnvironmentSOC();
 		break;
 	default:
-		pEnvironment = xr_new<CEnvironment>();
+		pEnvironment = new CEnvironment();
 		break;
 
 	}*/
@@ -67,9 +67,8 @@ void XrGamePersistentEditors::Start		(LPCSTR op)
 		if (*m_game_params.m_game_type)
 			OnGameStart					();
 	}
-	else UpdateGameType();
-
-	VERIFY							(ps_destroy.empty());
+	else 
+		UpdateGameType();
 }
 
 void XrGamePersistentEditors::Disconnect	()

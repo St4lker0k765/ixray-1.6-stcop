@@ -51,6 +51,10 @@ void xrLogger::Msg(LPCSTR Msg, va_list argList)
 {
 	string4096	formattedMessage;
 	int MsgSize = _vsnprintf(formattedMessage, sizeof(formattedMessage) - 1, Msg, argList);
+
+	if (MsgSize < 0)
+		return;
+
 	formattedMessage[MsgSize] = 0;
 
 #ifdef IXR_LINUX
@@ -100,6 +104,7 @@ void xrLogger::EnableFastDebugLog()
 
 void LogThreadEntryStartup(void* nullParam)
 {
+	PROF_THREAD("Logger Thread");
 	theLogger->LogThreadEntry();
 }
 
@@ -202,6 +207,7 @@ void xrLogger::LogThreadEntry()
 	{
 		if (bFlushRequested)
 		{
+			PROF_EVENT("Log Flush")
 			if (logFile != nullptr)
 			{
 				IWriter* mutableWritter = (IWriter*)logFile;
@@ -212,6 +218,7 @@ void xrLogger::LogThreadEntry()
 
 	while (bIsAlive)
 	{
+		PROF_EVENT("Log Frame")
 		bool bHaveMore = true;
 		LogRecord theRecord;
 
@@ -231,7 +238,8 @@ void xrLogger::LogThreadEntry()
 			xr_vector<xr_string> LogLines = theRecord.Message.Split('\n');
 
 			string256 TimeOfDay = {};
-			
+
+			PROF_EVENT("Log: Apply Messages")
 			int TimeOfDaySize = 0;
 			for (const xr_string& line : LogLines)
 			{

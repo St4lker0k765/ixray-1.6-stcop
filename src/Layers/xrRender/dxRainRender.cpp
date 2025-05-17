@@ -50,7 +50,7 @@ void dxRainRender::Copy(IRainRender &_in)
 	*this = *(dxRainRender*)&_in;
 }
 
-#include "../../xrEngine/iGame_persistent.h"
+#include "../../xrEngine/IGame_Persistent.h"
 
 void dxRainRender::Render(CEffect_Rain &owner)
 {
@@ -62,6 +62,12 @@ void dxRainRender::Render(CEffect_Rain &owner)
 	// visual
 	float		factor_visual	= factor/2.f+.5f;
 	Fvector3	f_rain_color	= g_pGamePersistent->Environment().CurrentEnv->rain_color;
+
+#if RENDER != R_R1
+	f_rain_color.mul(0.9f);
+	factor_visual *= 0.8f;
+#endif // RENDER != R_R1
+
 	u32			u_rain_color	= color_rgba_f(f_rain_color.x,f_rain_color.y,f_rain_color.z,factor_visual);
 
 	// born _new_ if needed
@@ -93,7 +99,7 @@ void dxRainRender::Render(CEffect_Rain &owner)
 		if (one.dwTime_Hit<Device.dwTimeGlobal)		owner.Hit (one.Phit);
 		if (one.dwTime_Life<Device.dwTimeGlobal)	owner.Born(one,source_radius);
 
-		// ïîñëåäíÿÿ äåëüòà ??
+		// Ð¿Ð¾ÑÐ»ÐµÐ´Ð½â‚¬â‚¬ Ð´ÐµÐ»ÑŒÑ‚Ð° ??
 		//.		float xdt		= float(one.dwTime_Hit-Device.dwTimeGlobal)/1000.f;
 		//.		float dt		= Device.fTimeDelta;//xdt<Device.fTimeDelta?xdt:Device.fTimeDelta;
 		float dt		= Device.fTimeDelta;

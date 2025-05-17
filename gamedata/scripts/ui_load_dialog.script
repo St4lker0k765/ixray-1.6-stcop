@@ -29,7 +29,7 @@ end
 function load_dialog:FillList()
 	self.list_box:RemoveAll()
 	local f		= getFS()
-	local flist = f:file_list_open_ex("$game_saves$",bit.bor(FS.FS_ListFiles,FS.FS_RootOnly),"*"..saved_game_extension)
+	local flist = f:file_list_open_ex("$game_saves$",bit_or(FS.FS_ListFiles,FS.FS_RootOnly),"*"..saved_game_extension)
 	local f_cnt = flist:Size()
 
 	flist:Sort(FS.FS_sort_by_modif_down)
@@ -109,7 +109,7 @@ end
 
 function file_exist(fname)
 	local f = getFS();
-	local flist = f:file_list_open_ex("$game_saves$",bit.bor(FS.FS_ListFiles,FS.FS_RootOnly) , fname)
+	local flist = f:file_list_open_ex("$game_saves$",bit_or(FS.FS_ListFiles,FS.FS_RootOnly) , fname)
 	local f_cnt = flist:Size()
 
 	if f_cnt > 0 then
@@ -127,9 +127,12 @@ function delete_save_game(filename)
 	local f = getFS()
 
     f:file_delete("$game_saves$", save_file)
+    
+    -- START IX-Ray
     if save_manager then
         save_manager.deleteObsoleteData(filename)
     end
+	-- END IX-Ray
 	
 	if file_exist(dds_file) then
 		f:file_delete("$game_saves$", dds_file)
@@ -150,7 +153,7 @@ end
 
 function file_data(fname)
 	local f = getFS();
-	local flist = f:file_list_open_ex("$game_saves$",bit.bor(FS.FS_ListFiles,FS.FS_RootOnly) , fname .. saved_game_extension)
+	local flist = f:file_list_open_ex("$game_saves$",bit_or(FS.FS_ListFiles,FS.FS_RootOnly) , fname .. saved_game_extension)
 	local f_cnt = flist:Size()
 
 	if f_cnt > 0 then
@@ -326,7 +329,7 @@ function load_dialog:OnKeyboard(dik, keyboard_action)  --virtual function
 		self:OnButton_back_clicked()
 	else
 
-		 DIK_RETURN = 40
+		 DIK_RETURN = 40 -- IX-Ray: Fixed DIK_RETURN
 
 		if dik == DIK_RETURN and keyboard_action == ui_events.WINDOW_KEY_PRESSED then
 			self:OnButton_load_clicked()

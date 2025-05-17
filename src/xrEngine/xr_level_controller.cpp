@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "xr_ioconsole.h"
+#include "XR_IOConsole.h"
 #include "xr_input.h"
 #include "xr_ioc_cmd.h"
 #include "xr_level_controller.h"
@@ -90,7 +90,22 @@ ENGINE_API _action  actions[]		= {
 	{ "quick_save",			kQUICK_SAVE				,_sp},		
 	{ "quick_load",			kQUICK_LOAD				,_sp},		
 //	{ "alife_command",		kALIFE_CMD				,_sp},		
-	
+	{ "custom1",			kCUSTOM1				,_sp},
+	{ "custom2",			kCUSTOM2				,_sp},
+	{ "custom3",			kCUSTOM3				,_sp},
+	{ "custom4",			kCUSTOM4				,_sp},
+	{ "custom5",			kCUSTOM5				,_sp},
+	{ "custom6",			kCUSTOM6				,_sp},
+	{ "custom7",			kCUSTOM7				,_sp},
+	{ "custom8",			kCUSTOM8				,_sp},
+	{ "custom9",			kCUSTOM9				,_sp},
+	{ "custom10",			kCUSTOM10				,_sp},
+	{ "custom11",			kCUSTOM11				,_sp},
+	{ "custom12",			kCUSTOM12				,_sp},
+	{ "custom13",			kCUSTOM13				,_sp},
+	{ "custom14",			kCUSTOM14				,_sp},
+	{ "custom15",			kCUSTOM15				,_sp},
+	{ "cam_autoaim",		kCAM_AUTOAIM			,_sp},
 																
 	{ nullptr, 				kLASTACTION				,_both}		
 };															
@@ -468,7 +483,7 @@ ENGINE_API _action* action_name_to_ptr(LPCSTR _name)
 			return &actions[idx];
 		++idx;
 	}
-	Msg				("! cant find corresponding [id] for action_name", _name);
+	Msg				("! cant find corresponding [id] for action_name %s", _name);
 	return			nullptr;
 }
 
@@ -607,7 +622,7 @@ ENGINE_API void GetActionAllBinding(LPCSTR _action, char* dst_buff, int dst_buff
 		xr_strcpy(sec, pbinding->m_keyboard[1]->key_local_name.c_str());
 
 	if (nullptr == pbinding->m_keyboard[0] && nullptr == pbinding->m_keyboard[1])
-		xr_sprintf(dst_buff, dst_buff_sz, "%s", CStringTable().translate("st_key_notbinded").c_str());
+		xr_sprintf(dst_buff, dst_buff_sz, "%s", g_pStringTable->translate("st_key_notbinded").c_str());
 	else
 		xr_sprintf(dst_buff, dst_buff_sz, "%s%s%s", prim[0] ? prim : "", (sec[0] && prim[0]) ? " , " : "", sec[0] ? sec : "");
 }
@@ -787,7 +802,14 @@ public:
 		CCC_UnBindAll::Execute(args);
 		string_path				_cfg;
 		string_path				cmd;
-		FS.update_path			(_cfg,"$game_config$","default_controls.ltx");
+		if (FS.exist("$game_config$", "ixray_settings\\default_controls.ltx"))
+		{
+			FS.update_path(_cfg, "$game_config$", "ixray_settings\\default_controls.ltx");
+		}
+		else
+		{
+			FS.update_path(_cfg, "$game_config$", "default_controls.ltx");
+		}
 		xr_strconcat(cmd,"cfg_load", " ", _cfg);
 		Console->Execute		(cmd);
 	}

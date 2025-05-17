@@ -3,7 +3,7 @@
 #pragma hdrstop
 
 #include "SHCompilerTools.h"
-#include "../xrEProps/folderlib.h"
+#include "../xrEProps/FolderLib.h"
 //#include "../xrEProps/ItemList.h"
 //------------------------------------------------------------------------------
 
@@ -40,6 +40,8 @@ void CSHCompilerTools::RealUpdateProperties()
         PHelper().CreateFlag32	(items, "Flags\\Cast shadow",	&L.m_Flags,   	Shader_xrLC::flLIGHT_CastShadow);
 //.		PHelper().CreateFlag32	(items, "Flags\\Sharp",			&L.m_Flags,   	Shader_xrLC::flLIGHT_Sharp);
     }
+
+    Ext.m_ItemProps->ClearProperties();
     Ext.m_ItemProps->AssignItems		(items);
     Ext.m_ItemProps->SetModifiedEvent	(TOnModifiedEvent(this,&CSHCompilerTools::Modified));
 }

@@ -7,7 +7,18 @@
 
 #include "../xrCore/net_utils.h"
 #include "NET_Messages.h"
-#include "net_compressor.h"
+#include "NET_Compressor.h"
+
+// #define USE_DIRECT_PLAY
+
+IC bool UseDirectPlay()
+{
+#ifdef USE_DIRECT_PLAY
+	return true;
+#else
+	return false;
+#endif // USE_DIRECT_PLAY
+}
 
 XRNETSERVER_API extern ClientID BroadcastCID;
 

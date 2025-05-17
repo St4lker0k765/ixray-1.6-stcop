@@ -1,7 +1,7 @@
 #pragma once
-#include "missile.h"
-#include "explosive.h"
-#include "../xrEngine/feel_touch.h"
+#include "Missile.h"
+#include "Explosive.h"
+#include "../xrEngine/Feel_Touch.h"
 
 class CGrenade :
 	public CMissile,
@@ -75,7 +75,7 @@ public:
 	virtual CGameObject		*cast_game_object					()	{return this;}
 	virtual IDamageSource	*cast_IDamageSource					()	{return CExplosive::cast_IDamageSource();}
 
-	typedef					fastdelegate::FastDelegate< void (CGrenade*) >	destroy_callback;
+	typedef					xr_delegate< void (CGrenade*) >	destroy_callback;
 	void					set_destroy_callback				(destroy_callback callback) 
 																{ m_destroy_callback = callback; }
 private:

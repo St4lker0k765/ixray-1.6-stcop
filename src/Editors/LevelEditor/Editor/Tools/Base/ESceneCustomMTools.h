@@ -47,6 +47,10 @@ public:
     UIToolCustom*       pForm = nullptr;
 	TUI_CustomControl* FindControl(int subtarget, int action);
 protected:
+    // For loading event 
+    volatile bool IsLoaded = false;
+
+protected:
     void            	AddControl				(TUI_CustomControl* c);
     void            	UpdateControl			();
 public:
@@ -150,6 +154,15 @@ public:
     virtual void		GetBBox 				(Fbox& bb, bool bSelOnly)=0;
 	virtual const CCustomObject* LastSelected	() const {return NULL;}
     virtual class ESceneCustomOTool* CastObjectTool() { return nullptr; }
+
+    enum class ETestResult
+    {
+        None,
+        Found,
+        All
+    };
+
+    virtual ETestResult TestSelectedObjectsFlag(size_t Flag) const { return ETestResult::Found; };
 };
 
 using SceneToolsMap = xr_map<ObjClassID,ESceneToolBase*>;

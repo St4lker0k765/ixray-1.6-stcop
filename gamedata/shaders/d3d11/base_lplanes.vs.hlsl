@@ -4,7 +4,7 @@ struct vf
 {
     float2 tc0 : TEXCOORD0; // base
     float4 c0 : COLOR0; // color
-    float4 hpos : SV_Position;
+    float4 hpos : SV_POSITION;
 };
 
 vf main(v_static v)
@@ -16,9 +16,10 @@ vf main(v_static v)
 
     // calculate fade
     float3 dir_v = normalize(mul(m_WV, v.P));
-    float3 norm_v = normalize(mul(m_WV, unpack_normal(v.Nh).zyx));
+    float3 norm_v = normalize(mul((float3x3)m_WV, unpack_normal(v.Nh.zyx)));
     float fade = abs(dot(dir_v, norm_v));
     o.c0 = fade;
 
     return o;
 }
+

@@ -2,7 +2,7 @@
 
 enum class EEngineExternalUI {
 	HQIcons,
-	DiasbleCharacterInfo,
+	DisableCharacterInfo,
 	None
 };
 
@@ -24,8 +24,9 @@ enum class EEngineExternalGame
 	EnableWeaponCollision
 };
 
-enum class EEngineExternalRender {
-	LoadScreenTips,
+enum class EEngineExternalRender 
+{
+	DisableLoadScreenTips,
 	None
 };
 
@@ -45,6 +46,9 @@ public:
 	~CEngineExternal();
 
 	xr_string GetTitle() const;
+	const char* GetPlayerHudOmfAdditional() const;
+
+	u32 GetFontAltasSize() const;
 
 	bool operator[](const EEngineExternalUI& ID) const;
 	bool operator[](const EEngineExternalPhysical& ID) const;

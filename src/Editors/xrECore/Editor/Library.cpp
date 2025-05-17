@@ -114,10 +114,10 @@ void ELibrary::EvictObjects()
 CEditableObject* ELibrary::LoadEditObject(LPCSTR name)
 {
 	VERIFY(m_bReady);
-    CEditableObject* m_EditObject = xr_new<CEditableObject>(name);
+    CEditableObject* m_EditObject = new CEditableObject(name);
     string_path fn;
     FS.update_path(fn,_objects_,EFS.ChangeFileExt(name,".object").c_str());
-    if (FS.exist(fn))
+    if (FS.TryLoad(fn))
     {
         if (m_EditObject->Load(fn))	return m_EditObject;
     }else{

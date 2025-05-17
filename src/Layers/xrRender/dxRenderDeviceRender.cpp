@@ -1,6 +1,5 @@
 #include "stdafx.h"
 #include "dxRenderDeviceRender.h"
-#include "../../xrParticles/ParticlesObject.h"
 
 #ifdef DEBUG_DRAW
 #include "dxDebugRender.h"
@@ -118,6 +117,8 @@ void  dxRenderDeviceRender::Reset(SDL_Window* window, u32 &dwWidth, u32 &dwHeigh
 
 void dxRenderDeviceRender::SetupStates()
 {
+	Caps.Update();
+
 #ifndef _EDITOR
 #ifdef USE_DX11
 	//	TODO: DX10: Implement Resetting of render states into default mode
@@ -167,9 +168,9 @@ void dxRenderDeviceRender::SetupStates()
 void dxRenderDeviceRender::OnDeviceCreate(LPCSTR shName)
 {
 #ifndef _EDITOR
-#ifndef USE_DX11
-	Caps.Update();
-#endif
+//#ifndef USE_DX11
+//	Caps.Update();
+//#endif
 
 	// Signal everyone - device created
 	RCache.OnDeviceCreate		();
@@ -226,12 +227,12 @@ void dxRenderDeviceRender::Create(SDL_Window* window, u32 &dwWidth, u32 &dwHeigh
 			for (const auto& Line : DebugRenderImpl.m_lines)
 			{
 				CmdList.AddLine(
-					ImVec2(Line.first.p.x + ViewPort->WorkPos.x, Line.first.p.y + ViewPort->WorkPos.y),
-					ImVec2(Line.second.p.x + ViewPort->WorkPos.x, Line.second.p.y + ViewPort->WorkPos.y),
-					Line.first.color
+					ImVec2(Line.x1, Line.y1),
+					ImVec2(Line.x2, Line.y2),
+					Line.color
 				);
 			}
-			DebugRenderImpl.m_lines.clear();
+			DebugRenderImpl.m_lines.resize(0);
 		}
 
 		ImGui::End();
@@ -402,8 +403,6 @@ void dxRenderDeviceRender::Begin()
 	CHK_DX					(RDevice->BeginScene());
 #endif //USE_DX11
 	
-	CParticlesObject::WaitForParticles();
-
 	RCache.OnFrameBegin		();
 	RCache.set_CullMode		(CULL_CW);
 	RCache.set_CullMode		(CULL_CCW);
@@ -441,24 +440,28 @@ void dxRenderDeviceRender::End()
 	VERIFY	(RDevice);
 
 	RCache.OnFrameEnd();
-
-	DoAsyncScreenshot();
-
+	{
+		PROF_EVENT("Async Screenshot");
+		DoAsyncScreenshot();
+	}
 #ifdef DEBUG_DRAW
-	CImGuiManager& MyImGui = CImGuiManager::Instance();
-	MyImGui.BeginRender();
+	{
+		PROF_EVENT("ImGui EndRender");
+		CImGuiManager& MyImGui = CImGuiManager::Instance();
+		MyImGui.BeginRender();
 
 #ifdef USE_DX11
-	ID3D11RenderTargetView* RTV = RSwapchainTarget;
-	RContext->OMSetRenderTargets(1, &RTV, nullptr);
+		ID3D11RenderTargetView* RTV = RSwapchainTarget;
+		RContext->OMSetRenderTargets(1, &RTV, nullptr);
 #else
-	RDevice->SetRenderTarget(0, RSwapchainTarget);
+		RDevice->SetRenderTarget(0, RSwapchainTarget);
 #endif
 
-	MyImGui.Render();
-	MyImGui.AfterRender();
+		MyImGui.Render();
+		MyImGui.AfterRender();
 
-	DebugRenderImpl.m_lines.resize(0);
+		DebugRenderImpl.m_lines.resize(0);
+	}
 #else
 
 #ifdef USE_DX11
@@ -469,7 +472,7 @@ void dxRenderDeviceRender::End()
 #endif
 
 #endif
-
+	PROF_EVENT("Present");
 #ifdef USE_DX11
 	RSwapchain->Present(psDeviceFlags.test(rsVSync) ? 1 : 0, 0);
 #else

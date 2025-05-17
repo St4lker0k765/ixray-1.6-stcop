@@ -1,12 +1,12 @@
 ///////////////////////////////////////////////////////////////
 // ExoOutfit.h
-// ExoOutfit - защитный костюм с усилением
+// ExoOutfit - Р·Р°С‰РёС‚РЅС‹Р№ РєРѕСЃС‚СЋРј СЃ СѓСЃРёР»РµРЅРёРµРј
 ///////////////////////////////////////////////////////////////
 
 #pragma once
 
-#include "stdafx.h"
-#include "exooutfit.h"
+#include "StdAfx.h"
+#include "ExoOutfit.h"
 
 CExoOutfit::CExoOutfit()
 {

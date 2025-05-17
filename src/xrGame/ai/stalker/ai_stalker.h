@@ -9,7 +9,7 @@
 #pragma once
 
 #include "../../CustomMonster.h"
-#include "../../object_handler.h"
+#include "../../ObjectHandler.h"
 #include "../../AI_PhraseDialogManager.h"
 #include "../../step_manager.h"
 #include "../../../xrScripts/script_export_space.h"
@@ -260,7 +260,7 @@ public:
 	virtual	const MonsterSpace::SBoneRotation &head_orientation	() const;
 
 	//InventoryOwner stuff
-	virtual bool						CanPutInSlot			(PIItem item, u32 slot)		{return(slot!=OUTFIT_SLOT)&&(slot!=PDA_SLOT);};
+	virtual bool						CanPutInSlot			(PIItem item, u32 slot);
 
 	//////////////////////////////////////////////////////////////////////////
 	// action/evaluators support functions
@@ -312,8 +312,8 @@ public:
 	virtual BOOL						feel_touch_contact		(CObject* O);
 	virtual BOOL						feel_touch_on_contact	(CObject* O);
 
-	//флаги, какие действия совершал актер по отношению к сталкеру
-	//(помог, атаковал и т.д.)
+	//С„Р»Р°РіРё, РєР°РєРёРµ РґРµР№СЃС‚РІРёСЏ СЃРѕРІРµСЂС€Р°Р» Р°РєС‚РµСЂ РїРѕ РѕС‚РЅРѕС€РµРЅРёСЋ Рє СЃС‚Р°Р»РєРµСЂСѓ
+	//(РїРѕРјРѕРі, Р°С‚Р°РєРѕРІР°Р» Рё С‚.Рґ.)
 	Flags32								m_actor_relation_flags;
 
 	// ALife
@@ -627,8 +627,8 @@ public:
 	IC		float						auto_queue_fire_dist_med		() const;
 	IC		float						auto_queue_fire_dist_far		() const;
 public:
-	typedef fastdelegate::FastDelegate<void (const CCoverPoint *, const CCoverPoint *)>	on_best_cover_changed_delegate;
-	typedef	fastdelegate::FastDelegate<bool (SHit const*)>								HitCallback;
+	typedef xr_delegate<void (const CCoverPoint *, const CCoverPoint *)>	on_best_cover_changed_delegate;
+	typedef	xr_delegate<bool (SHit const*)>								HitCallback;
 
 private:
 	typedef xr_vector<on_best_cover_changed_delegate>	cover_delegates;
@@ -814,7 +814,7 @@ public:
 			bool						use_smart_covers_only						() const;
 
 public:
-	typedef fastdelegate::FastDelegate<void (Fmatrix& )>							EyeMatrixCallback;
+	typedef xr_delegate<void (Fmatrix& )>							EyeMatrixCallback;
 
 private:
 	virtual BOOL						AlwaysTheCrow								();

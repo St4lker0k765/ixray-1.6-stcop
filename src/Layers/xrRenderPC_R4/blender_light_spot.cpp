@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #pragma hdrstop
 
-#include "Blender_light_spot.h"
+#include "blender_light_spot.h"
 
 CBlender_accum_spot::CBlender_accum_spot() {
 	description.CLS = 0;
@@ -44,6 +44,10 @@ void CBlender_accum_spot::Compile(CBlender_Compile& C) {
 	C.r_dx10Texture("s_material", r2_material);
 	C.r_dx10Texture("s_lmap", C.L_textures[0]);
 	C.r_dx10Texture("s_accumulator", r2_RT_accum);
+
+	C.r_dx10Sampler("smp_rtlinear");
+	C.r_dx10Sampler("smp_material");
+	C.r_dx10Sampler("smp_nofilter");
 
 	jitter(C);
 

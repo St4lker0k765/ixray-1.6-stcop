@@ -28,7 +28,7 @@
 class CSE_ALifeItemWeapon;
 class CSE_ALifeDynamicObject;
 class CSE_ALifeObject;
-class ISE_AbstractLEOwner;
+struct ISE_AbstractLEOwner;
 class CALifeMonsterAbstract;
 
 
@@ -95,6 +95,9 @@ public:
 
 #if !defined(XRGAME_EXPORTS)
 	virtual void 			on_render				(CDUInterface* du, ISE_AbstractLEOwner* owner, bool bSelected, const Fmatrix& parent,int priority, bool strictB2F);
+	void					ChangeColorEvent(PropValue*);
+	Fcolor RenderColor;
+
 #endif
 SERVER_ENTITY_DECLARE_END
 

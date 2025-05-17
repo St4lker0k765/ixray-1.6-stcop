@@ -2,9 +2,9 @@
 #include "GameFont.h"
 #pragma hdrstop
 
-#include "../xrcdb/ISpatial.h"
+#include "../xrCDB/ISpatial.h"
 #include "IGame_Persistent.h"
-#include "render.h"
+#include "Render.h"
 #include "xr_object.h"
 
 #include "../Include/xrRender/DrawUtils.h"
@@ -166,7 +166,7 @@ void CStats::Show()
 		//F.OutNext	("VERT:        %d/%d",		RCache.stat.verts,RCache.stat.calls?RCache.stat.verts/RCache.stat.calls:0);
 		//F.OutNext	("POLY:        %d/%d",		RCache.stat.polys,RCache.stat.calls?RCache.stat.polys/RCache.stat.calls:0);
 		//F.OutNext	("DIP/DP:      %d",			RCache.stat.calls);
-#ifdef DEBUG
+#ifdef _DEBUG
 		F.OutSkip	();
 		F.OutNext	("mapped:      %d",			g_file_mapped_memory);
 		F.OutSkip	();
@@ -399,7 +399,7 @@ void CStats::OnDeviceCreate			()
 	g_bDisableRedText = Core.ParamsData.test(ECoreParams::xclsx);
 
 	if (!g_dedicated_server) {
-		pFont = g_FontManager->GetFont("stat_font", CGameFont::fsDeviceIndependent);// xr_new<CGameFont>("stat_font", CGameFont::fsDeviceIndependent);
+		pFont = g_FontManager->GetFont("stat_font", CGameFont::fsDeviceIndependent);// new CGameFont("stat_font", CGameFont::fsDeviceIndependent);
 	}
 	
 	if(!pSettings->section_exist("evaluation")

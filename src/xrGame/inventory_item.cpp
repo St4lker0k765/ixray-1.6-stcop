@@ -7,24 +7,24 @@
 ////////////////////////////////////////////////////////////////////////////
 
 //#include "stdafx.h"
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 #include "inventory_item.h"
 #include "inventory_item_impl.h"
 #include "Inventory.h"
 //#include "Physics.h"
-#include "physicsshellholder.h"
+#include "PhysicsShellHolder.h"
 #include "entity_alive.h"
 #include "Level.h"
 #include "game_cl_base.h"
 #include "Actor.h"
-#include "UIFontDefines.h"
-#include "ui_base.h"
+#include "../../xrUI/UIFontDefines.h"
+#include "../../xrUI/ui_base.h"
 #include "../xrEngine/string_table.h"
 #include "../Include/xrRender/Kinematics.h"
 #include "ai_object_location.h"
 #include "object_broker.h"
-#include "../xrEngine/igame_persistent.h"
+#include "../xrEngine/IGame_Persistent.h"
 
 #ifdef DEBUG_DRAW
 #	include "debug_renderer.h"
@@ -106,8 +106,10 @@ void CInventoryItem::Load(LPCSTR section)
 {
 	CHitImmunity::LoadImmunities	(pSettings->r_string(section,"immunities_sect"),pSettings);
 
-	ISpatial*			self				=	smart_cast<ISpatial*> (this);
-	if (self)			self->spatial.type	|=	STYPE_VISIBLEFORAI;	
+	if (cast_game_object())
+	{
+		cast_game_object()->SpatialComponent->spatial.type |= STYPE_VISIBLEFORAI;
+	}
 
 	m_section_id._set	( section );
 	m_name				= g_pStringTable->translate( pSettings->r_string(section, "inv_name") );
@@ -123,9 +125,9 @@ void CInventoryItem::Load(LPCSTR section)
 	m_Description = g_pStringTable->translate( pSettings->r_string(section, "description") );
 
 	m_flags.set(Fbelt,			READ_IF_EXISTS(pSettings, r_bool, section, "belt",		FALSE));
-	m_can_trade = READ_IF_EXISTS(pSettings, r_bool, section, "can_take",	TRUE);
-	m_flags.set(FCanTake,		m_can_trade);
-	m_flags.set(FCanTrade,		READ_IF_EXISTS(pSettings, r_bool, section, "can_trade",	TRUE));
+	m_can_trade = READ_IF_EXISTS(pSettings, r_bool, section, "can_trade", TRUE);
+	m_flags.set(FCanTake, READ_IF_EXISTS(pSettings, r_bool, section, "can_take", TRUE));
+	m_flags.set(FCanTrade, m_can_trade);
 	m_flags.set(FIsQuestItem,	READ_IF_EXISTS(pSettings, r_bool, section, "quest_item",FALSE));
 
 	// Added by Axel, to enable optional condition use on any item
@@ -138,6 +140,13 @@ void CInventoryItem::Load(LPCSTR section)
 		m_fControlInertionFactor	= pSettings->r_float(section,"control_inertion_factor");
 	}
 	m_icon_name					= READ_IF_EXISTS(pSettings, r_string,section,"icon_name",		nullptr);
+
+	u32 inv_grid_x = pSettings->r_u32(m_object->cNameSect(), "inv_grid_x");
+	u32 inv_grid_y = pSettings->r_u32(m_object->cNameSect(), "inv_grid_y");
+	u32 inv_grid_width = pSettings->r_u32(m_object->cNameSect(), "inv_grid_width");
+	u32 inv_grid_height = pSettings->r_u32(m_object->cNameSect(), "inv_grid_height");
+
+	m_inv_rect.set(inv_grid_x, inv_grid_y, inv_grid_width, inv_grid_height);
 	
 	ReadCustomTextAndMarks		(section);
 }
@@ -1284,6 +1293,11 @@ void CInventoryItem::activate_physic_shell()
 	object().CPhysicsShellHolder::activate_physic_shell();
 }
 
+void CInventoryItem::setControlInertionFactor(float value)
+{
+	m_fControlInertionFactor = value;
+}
+
 void CInventoryItem::UpdateXForm	()
 {
 	if (0==object().H_Parent())	return;
@@ -1483,14 +1497,17 @@ Frect CInventoryItem::GetKillMsgRect() const
 
 Irect CInventoryItem::GetInvGridRect() const
 {
-	u32 x,y,w,h;
+	return m_inv_rect;
+}
 
-	x = pSettings->r_u32(m_object->cNameSect(),"inv_grid_x");
-	y = pSettings->r_u32(m_object->cNameSect(),"inv_grid_y");
-	w = pSettings->r_u32(m_object->cNameSect(),"inv_grid_width");
-	h = pSettings->r_u32(m_object->cNameSect(),"inv_grid_height");
+void CInventoryItem::SetInvGridRect(const Irect& rect)
+{
+	m_inv_rect.set(rect);
+}
 
-	return Irect().set(x,y,w,h);
+void CInventoryItem::SetInvGridRect(u32 x, u32 y, u32 w, u32 h)
+{
+	SetInvGridRect(Irect().set(x,y,w,h));
 }
 
 Irect CInventoryItem::GetUpgrIconRect() const
@@ -1513,6 +1530,16 @@ bool CInventoryItem::IsNecessaryItem(CInventoryItem* item)
 BOOL CInventoryItem::IsInvalid() const
 {
 	return object().getDestroy() || GetDropManual();
+}
+
+void CInventoryItem::setCost(u32 nValue)
+{
+	m_cost = nValue;
+}
+
+void CInventoryItem::setWeight(float value)
+{
+	m_weight = value;
 }
 
 u16 CInventoryItem::object_id()const

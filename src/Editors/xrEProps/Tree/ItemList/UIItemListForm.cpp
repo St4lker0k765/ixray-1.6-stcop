@@ -1,4 +1,4 @@
-﻿#include "stdafx.h"
+#include "stdafx.h"
 
 UIItemListForm::UIItemListForm()
 {
@@ -16,7 +16,7 @@ void UIItemListForm::Draw()
 	m_UseMenuEdit = false;
 
 	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
-	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 1));
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 3));
 	DrawMenuEdit();
 	DrawNode(&m_GeneralNode);
 	ImGui::PopStyleVar(2);
@@ -77,6 +77,11 @@ void UIItemListForm::SelectItem(const char* name, bool ClearOld)
 		return;
 
 	Node* N = SelectObject(&m_GeneralNode, name);
+
+	R_ASSERT3(N, "Item not found", name);
+	if(!N) {
+		return;
+	}
 
 	if (ClearOld)
 	{
@@ -153,7 +158,11 @@ void UIItemListForm::AssignItems(ListItemsVec& items, const char* name_selection
 		item->Parent = this;
 		Node* N = AppendObject(&m_GeneralNode, item->Key());
 		VERIFY(N);
-		N->Object = item;
+
+		if (N)
+		{
+			N->Object = item;
+		}
 	}
 	if (name_selection)
 	{
@@ -391,7 +400,7 @@ void UIItemListForm::DrawMenuEdit()
 
 		ImGui::EndPopup();
 		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
-		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 1));
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 3));
 	}
 }
 
@@ -449,7 +458,7 @@ void UIItemListForm::DrawItem(Node* Node)
 	{
 		if (m_Flags.test(fMultiSelect))
 		{
-			if (!ImGui::GetIO().KeyCtrl)
+			if (!ImGui::GetIO().KeyCtrl && !ImGui::GetIO().KeyShift)
 			{
 				ClearSelectedItems();
 			}
@@ -462,15 +471,44 @@ void UIItemListForm::DrawItem(Node* Node)
 					});
 				VERIFY(p != m_SelectedItems.end());
 				m_SelectedItems.erase(p);
+
+				if (!OnItemUnfocusedEvent.empty())
+					OnItemUnfocusedEvent(Node->Object);
 			}
 			else
 			{
-				Node->Object->selected = true;
-				m_SelectedItems.push_back(Node->Object);
-				if (!OnItemFocusedEvent.empty())
-					OnItemFocusedEvent(Node->Object);
-				if (!OnItemsFocusedEvent.empty())
-					OnItemsFocusedEvent(m_SelectedItems);
+				if (ImGui::GetIO().KeyShift && !m_SelectedItems.empty())
+				{
+					ListItem* LastItem = m_SelectedItems.back();
+					auto Begin = std::find(m_Items.begin(), m_Items.end(), LastItem);
+					auto End = std::find(m_Items.begin(), m_Items.end(), Node->Object);
+
+					ptrdiff_t Dis = std::distance(Begin, End);
+					if (Dis < 0)
+					{
+						std::swap(Begin, End);
+					}
+
+					for (auto Iter = Begin; Iter < End; Iter++)
+					{
+						ListItem* NodeObj = *Iter;
+						NodeObj->selected = true;
+						m_SelectedItems.push_back(NodeObj);
+						if (!OnItemFocusedEvent.empty())
+							OnItemFocusedEvent(NodeObj);
+						if (!OnItemsFocusedEvent.empty())
+							OnItemsFocusedEvent(m_SelectedItems);
+					}
+				}
+				else
+				{
+					Node->Object->selected = true;
+					m_SelectedItems.push_back(Node->Object);
+					if (!OnItemFocusedEvent.empty())
+						OnItemFocusedEvent(Node->Object);
+					if (!OnItemsFocusedEvent.empty())
+						OnItemsFocusedEvent(m_SelectedItems);
+				}
 			}
 		}
 		else

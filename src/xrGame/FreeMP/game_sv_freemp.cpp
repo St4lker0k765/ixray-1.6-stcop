@@ -8,6 +8,7 @@
 #include "alife_time_manager.h"
 
 #include "restriction_space.h"
+#include "../xrServerEntities/clsid_game.h"
 
 game_sv_freemp::game_sv_freemp()
 	:pure_relcase(&game_sv_freemp::net_Relcase)
@@ -66,8 +67,6 @@ void game_sv_freemp::AddMoneyToPlayer(game_PlayerState* ps, s32 amount)
 	ps->money_for_round = s32(total_money);
 	signal_Syncronize();
 }
-
-
 
 void game_sv_freemp::OnTransferMoney(NET_Packet& P, ClientID const& clientID)
 {
@@ -246,6 +245,41 @@ void game_sv_freemp::OnPlayerReady(ClientID id_who)
 	};
 }
 
+void game_sv_freemp::RespawnPlayer(ClientID id_who, bool NoSpectator)
+{
+	inherited::RespawnPlayer(id_who, NoSpectator);
+
+	xrClientData* xrCData = (xrClientData*)m_server->ID_to_client(id_who);
+	if (!xrCData) return;
+
+	game_PlayerState* ps = xrCData->ps;
+	if (!ps) return;
+
+	CSE_ALifeCreatureActor* pA = smart_cast<CSE_ALifeCreatureActor*>(xrCData->owner);
+	if (!pA) return;
+
+	SpawnWeapon4Actor(pA->ID, "mp_players_rukzak", 0, ps->pItemList);
+	SpawnWeapon4Actor(pA->ID, "device_pda", 0, ps->pItemList);
+
+}
+
+void game_sv_freemp::OnDetach(u16 eid_who, u16 eid_what)
+{
+	CSE_ActorMP* e_who = smart_cast<CSE_ActorMP*>(m_server->ID_to_entity(eid_who));
+	if (!e_who)
+		return;
+
+	CSE_Abstract* e_entity = m_server->ID_to_entity(eid_what);
+	if (!e_entity)
+		return;
+
+	// drop players bag
+	if (e_entity->m_tClassID == CLSID_OBJECT_PLAYERS_BAG)
+	{
+		OnDetachPlayersBag(e_who, e_entity);
+	}
+}
+
 // player disconnect
 void game_sv_freemp::OnPlayerDisconnect(ClientID id_who, LPSTR Name, u16 GameID)
 {
@@ -274,6 +308,11 @@ void game_sv_freemp::OnEvent(NET_Packet& P, u16 type, u32 time, ClientID sender)
 		KillPlayer(l_pC->ID, l_pC->ps->GameID);
 	}
 	break;
+	case GAME_EVENT_TRANSFER_MONEY:
+	{
+		OnTransferMoney(P, sender);
+	}
+	break;
 	default:
 		inherited::OnEvent(P, type, time, sender);
 	};
@@ -281,8 +320,23 @@ void game_sv_freemp::OnEvent(NET_Packet& P, u16 type, u32 time, ClientID sender)
 
 void game_sv_freemp::Update()
 {
+	inherited::Update();
+
 	if (Phase() != GAME_PHASE_INPROGRESS)
 	{
 		OnRoundStart();
 	}
+}
+
+BOOL game_sv_freemp::OnTouch(u16 eid_who, u16 eid_what, BOOL bForced)
+{
+	CSE_ActorMP* e_who = smart_cast<CSE_ActorMP*>(m_server->ID_to_entity(eid_who));
+	if (!e_who)
+		return TRUE;
+
+	CSE_Abstract* e_entity = m_server->ID_to_entity(eid_what);
+	if (!e_entity)
+		return FALSE;
+
+	return TRUE;
 }

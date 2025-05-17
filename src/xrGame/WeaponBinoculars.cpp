@@ -1,10 +1,10 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "WeaponBinoculars.h"
 
 #include "../xrEngine/xr_level_controller.h"
 
 #include "Level.h"
-#include "ui/UIFrameWindow.h"
+#include "../../xrUI/Widgets/UIFrameWindow.h"
 #include "WeaponBinocularsVision.h"
 #include "object_broker.h"
 #include "Inventory.h"

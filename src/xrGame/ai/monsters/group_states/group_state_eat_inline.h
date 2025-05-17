@@ -9,7 +9,7 @@
 #include "../../../CharacterPhysicsSupport.h"
 #include "group_state_eat_drag.h"
 #include "group_state_custom.h"
-#include "group_state_eat_eat.h "
+#include "group_state_eat_eat.h"
 
 
 #define TEMPLATE_SPECIALIZATION template <\
@@ -23,14 +23,14 @@
 TEMPLATE_SPECIALIZATION
 CStateGroupEatAbstract::CStateGroupEat(_Object *obj) : inherited(obj)
 {
-	this->add_state	(eStateEat_CorpseApproachRun,	xr_new<CStateMonsterMoveToPoint<_Object> >	(obj));
-	this->add_state	(eStateEat_CorpseApproachWalk,	xr_new<CStateMonsterMoveToPoint<_Object> >	(obj));
-	this->add_state	(eStateEat_CheckCorpse,			xr_new<CStateMonsterCustomAction<_Object> >	(obj));
-	this->add_state	(eStateEat_Eat,					xr_new<CStateGroupEating<_Object> >		(obj));
-	this->add_state	(eStateEat_WalkAway,			xr_new<CStateMonsterHideFromPoint<_Object> >(obj));
-	this->add_state	(eStateEat_Rest,				xr_new<CStateMonsterCustomAction<_Object> >	(obj));
-	this->add_state	(eStateEat_Drag,				xr_new<CStateGroupDrag<_Object> >				(obj));
-	this->add_state	(eStateCustom,					xr_new<CStateCustomGroup<_Object> >			(obj));
+	this->add_state	(eStateEat_CorpseApproachRun,	new CStateMonsterMoveToPoint<_Object> 	(obj));
+	this->add_state	(eStateEat_CorpseApproachWalk,	new CStateMonsterMoveToPoint<_Object> 	(obj));
+	this->add_state	(eStateEat_CheckCorpse,			new CStateMonsterCustomAction<_Object> 	(obj));
+	this->add_state	(eStateEat_Eat,					new CStateGroupEating<_Object> 		(obj));
+	this->add_state	(eStateEat_WalkAway,			new CStateMonsterHideFromPoint<_Object> (obj));
+	this->add_state	(eStateEat_Rest,				new CStateMonsterCustomAction<_Object> 	(obj));
+	this->add_state	(eStateEat_Drag,				new CStateGroupDrag<_Object> 				(obj));
+	this->add_state	(eStateCustom,					new CStateCustomGroup<_Object> 			(obj));
 }
 
 TEMPLATE_SPECIALIZATION
@@ -207,7 +207,7 @@ void CStateGroupEatAbstract::setup_substates()
 
 	if (this->current_substate == eStateEat_CorpseApproachRun) {
 
-		// Îïðåäåëèòü ïîçèöèþ áëèæàéøåé áîíû ó òðóïà
+		// ÐžÐ¿Ñ€ÐµÐ´ÐµÐ»Ð¸Ñ‚ÑŒ Ð¿Ð¾Ð·Ð¸Ñ†Ð¸ÑŽ Ð±Ð»Ð¸Ð¶Ð°Ð¹ÑˆÐµÐ¹ Ð±Ð¾Ð½Ñ‹ Ñƒ Ñ‚Ñ€ÑƒÐ¿Ð°
 		Fvector nearest_bone_pos;
 		const CEntityAlive *corpse_ = this->object->EatedCorpse;
 		if ((corpse_->m_pPhysicsShell == NULL) || (!corpse_->m_pPhysicsShell->isActive())) {
@@ -277,7 +277,7 @@ void CStateGroupEatAbstract::setup_substates()
 
 	if (this->current_substate == eStateEat_CorpseApproachWalk) {
 
-		// Îïðåäåëèòü ïîçèöèþ áëèæàéøåé áîíû ó òðóïà
+		// ÐžÐ¿Ñ€ÐµÐ´ÐµÐ»Ð¸Ñ‚ÑŒ Ð¿Ð¾Ð·Ð¸Ñ†Ð¸ÑŽ Ð±Ð»Ð¸Ð¶Ð°Ð¹ÑˆÐµÐ¹ Ð±Ð¾Ð½Ñ‹ Ñƒ Ñ‚Ñ€ÑƒÐ¿Ð°
 		Fvector nearest_bone_pos;
 		const CEntityAlive *corpse_ = this->object->EatedCorpse;
 

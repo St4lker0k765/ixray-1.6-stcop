@@ -1,6 +1,6 @@
 #pragma once
 #include "PHReqComparer.h"
-#include "phcommander.h"
+#include "PHCommander.h"
 #include "../xrScripts/script_engine.h"
 #include "../xrScripts/script_space_forward.h"
 #include "../xrScripts/script_callback_ex.h"
@@ -150,8 +150,8 @@ class CPHSriptReqObjComparer :
 	luabind::object					*m_lua_object;
 
 public:
-								CPHSriptReqObjComparer	(const luabind::object & lua_object)			{m_lua_object= xr_new<luabind::object>(lua_object);}
-								CPHSriptReqObjComparer	(const CPHSriptReqObjComparer &object)			{m_lua_object= xr_new<luabind::object>(*object.m_lua_object);}
+								CPHSriptReqObjComparer	(const luabind::object & lua_object)			{m_lua_object= new luabind::object(lua_object);}
+								CPHSriptReqObjComparer	(const CPHSriptReqObjComparer &object)			{m_lua_object= new luabind::object(*object.m_lua_object);}
 		virtual					~CPHSriptReqObjComparer	()												{xr_delete(m_lua_object);}
 		virtual		bool		compare					(const	CPHScriptObjectCondition* v)	const	{return v->compare(m_lua_object);}
 		virtual		bool		compare					(const	CPHScriptObjectAction* v)		const	{return v->compare(m_lua_object);}

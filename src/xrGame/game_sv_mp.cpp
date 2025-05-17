@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "game_sv_mp.h"
 #include "xrServer.h"
 #include "xrMessages.h"
@@ -7,9 +7,10 @@
 #include "Level.h"
 #include "xrServer_Objects_ALife_Monsters.h"
 #include "Actor.h"
+#include "actor_mp_client.h"
 #include "../xrEngine/XR_IOConsole.h"
-#include "../xrEngine/igame_persistent.h"
-#include "date_time.h"
+#include "../xrEngine/IGame_Persistent.h"
+#include "../xrEngine/date_time.h"
 #include "game_cl_base.h"
 #include "Spectator.h"
 #include "Grenade.h"
@@ -73,7 +74,7 @@ game_sv_mp::game_sv_mp() :inherited()
 
 game_sv_mp::~game_sv_mp()
 {
-	xr_delete(m_alife_simulator);
+	delete_data(m_alife_simulator);
 	xr_delete(m_strWeaponsData);
 }
 
@@ -537,7 +538,7 @@ void game_sv_mp::Create (shared_str &options)
 
 	if (FS.exist(file_name, "$level$", "alife", ".spawn"))
 	{
-		m_alife_simulator = xr_new<CALifeSimulator>(&server(), &options);
+		m_alife_simulator = new CALifeSimulator(&server(), &options);
 	}
 	else
 	{
@@ -1974,10 +1975,10 @@ void game_sv_mp::DumpOnlineStatistic()
 	
 	ini.w_u32					(current_section.c_str(), "players_total_cnt", m_server->GetClientsCount());
 
-	xr_sprintf					(str_buff,"\"%s\"",CStringTable().translate(Level().name().c_str()).c_str());
+	xr_sprintf					(str_buff,"\"%s\"", g_pStringTable->translate(Level().name().c_str()).c_str());
 	ini.w_string				(current_section.c_str(), "current_map_name", str_buff);
 
-	xr_sprintf					(str_buff,"%s",CStringTable().translate(type_name()).c_str() );
+	xr_sprintf					(str_buff,"%s", g_pStringTable->translate(type_name()).c_str() );
 	ini.w_string				(current_section.c_str(), "game_mode", str_buff);
 
 	auto it		= m_pMapRotation_List.begin();
@@ -1986,7 +1987,7 @@ void game_sv_mp::DumpOnlineStatistic()
 	{
 		string16					num_buf;
 		xr_sprintf					(num_buf,"%d",idx);
-		xr_sprintf					(str_buff,"\"%s\"", CStringTable().translate((*it).map_name.c_str()).c_str());
+		xr_sprintf					(str_buff,"\"%s\"", g_pStringTable->translate((*it).map_name.c_str()).c_str());
 		ini.w_string				("map_rotation", num_buf, str_buff);
 	}
 
@@ -2180,10 +2181,10 @@ void game_sv_mp::DumpRoundStatistics()
 	timestamp					(str_current_time);
 	ini.w_string				(current_section.c_str(),"end_time", str_current_time);
 
-	xr_sprintf					(str_buff,"%s",CStringTable().translate(type_name()).c_str() );
+	xr_sprintf					(str_buff,"%s", g_pStringTable->translate(type_name()).c_str() );
 	ini.w_string				(current_section.c_str(), "game_mode", str_buff);
 
-	xr_sprintf					(str_buff,"\"%s\"",CStringTable().translate(Level().name().c_str()).c_str());
+	xr_sprintf					(str_buff,"\"%s\"", g_pStringTable->translate(Level().name().c_str()).c_str());
 	ini.w_string				(current_section.c_str(), "current_map_name", str_buff);
 
 	xr_sprintf					(str_buff,"\"%s\"",Level().name().c_str());

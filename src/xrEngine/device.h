@@ -212,7 +212,13 @@ public:
 	// Registrators
 	CRegistrator	<pureFrame			>			seqFrameMT;
 	CRegistrator	<pureDeviceReset	>			seqDeviceReset;
-	xr_vector		<fastdelegate::FastDelegate0<> >	seqParallel;
+	xr_vector		<xr_delegate<void()>>	seqParallel;
+	xr_vector		<xr_delegate<void()>>	seqParallelRender;
+
+	xr_vector<xr_delegate<void()>> seqParallelBeforRender;
+
+	std::function<void()> ParticleWorkerCallback;
+	xr_delegate<void()> ModelDefferClear;
 
 	std::unordered_multimap<u32,std::function<void()>> m_time_callbacks;
 	void callback(const u32& cb_time, const std::function<void()> &func);
@@ -224,11 +230,11 @@ public:
 	
 	CRenderDevice();
 
-	void	Pause							(BOOL bOn, BOOL bTimer, BOOL bSound, LPCSTR reason);
+	virtual void	Pause							(BOOL bOn, BOOL bTimer, BOOL bSound, LPCSTR reason);
 	BOOL	Paused							();
 
 	// Scene control
-	void PreCache							(u32 amount, bool b_draw_loadscreen, bool b_wait_user_input);
+	virtual void PreCache							(u32 amount, bool b_draw_loadscreen, bool b_wait_user_input);
 	BOOL Begin								();
 	virtual void Clear						();
 	void End								();
@@ -263,13 +269,11 @@ public:
 	}
 
 	// Multi-threading
-	xrCriticalSection	mt_csEnter;
-	xrCriticalSection	mt_csLeave;
-	volatile BOOL		mt_bMustExit;
+	xr_task_group secondary_tasks, details_task;
 
-	ICF		void			remove_from_seq_parallel	(const fastdelegate::FastDelegate0<> &delegate)
+	ICF		void			remove_from_seq_parallel	(const xr_delegate<void()> &delegate)
 	{
-		xr_vector<fastdelegate::FastDelegate0<> >::iterator I = std::find(
+		xr_vector<xr_delegate<void()> >::iterator I = std::find(
 			seqParallel.begin(),
 			seqParallel.end(),
 			delegate
@@ -292,11 +296,13 @@ virtual		CStatsPhysics*	_BCL	StatPhysics			()	{ return  Statistic ;}
 extern ENGINE_API CRenderDevice* DevicePtr;
 extern ENGINE_API CTimer loading_save_timer;
 extern ENGINE_API bool loading_save_timer_started;
+extern ENGINE_API void* g_pAnnotation;
+
 
 #define Device (*DevicePtr)
 #define	RDEVICE	Device
 
-typedef fastdelegate::FastDelegate0<bool>		LOADING_EVENT;
+typedef xr_delegate<bool()>		LOADING_EVENT;
 extern	ENGINE_API xr_list<LOADING_EVENT>		g_loading_events;
 
 class ENGINE_API CLoadScreenRenderer :public pureRender

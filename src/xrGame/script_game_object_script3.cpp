@@ -6,7 +6,7 @@
 //	Description : XRay Script game object script export
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 #include "script_game_object.h"
 #include "alife_space.h"
@@ -28,9 +28,9 @@
 #include "script_zone.h"
 #include "relation_registry.h"
 #include "GameTask.h"
-#include "car.h"
+#include "Car.h"
 #include "ZoneCampfire.h"
-#include "physicobject.h"
+#include "PhysicObject.h"
 #include "Artefact.h"
 #include "sight_manager_space.h"
 #include "../xrScripts/exports/script_ini_file.h"
@@ -215,6 +215,7 @@ class_<CScriptGameObject> script_register_game_object2(class_<CScriptGameObject>
 		.def("character_icon",				&CScriptGameObject::CharacterIcon)
 		.def("character_rank",				&CScriptGameObject::CharacterRank)
 		.def("set_character_rank",			&CScriptGameObject::SetCharacterRank)
+		.def("change_character_rank",		&CScriptGameObject::ChangeCharacterRank)
 		.def("character_reputation",		&CScriptGameObject::CharacterReputation)
 		.def("change_character_reputation",	&CScriptGameObject::ChangeCharacterReputation)
 		.def("character_community",			&CScriptGameObject::CharacterCommunity)
@@ -300,6 +301,7 @@ class_<CScriptGameObject> script_register_game_object2(class_<CScriptGameObject>
 
 		.def("location_on_path",			&CScriptGameObject::location_on_path)
 		.def("is_there_items_to_pickup",	&CScriptGameObject::is_there_items_to_pickup)
+		.def("is_ladder",					&CScriptGameObject::IsActorLadder)
 
 		.def("wounded",						(bool (CScriptGameObject::*)() const)(&CScriptGameObject::wounded))
 		.def("wounded",						(void (CScriptGameObject::*)(bool))(&CScriptGameObject::wounded))
@@ -344,6 +346,7 @@ class_<CScriptGameObject> script_register_game_object2(class_<CScriptGameObject>
 		.def("start_particles",				&CScriptGameObject::start_particles)
 		.def("stop_particles",				&CScriptGameObject::stop_particles)
 		.def("ray",							&CScriptGameObject::RayPick)
+		.def("is_jump",						&CScriptGameObject::ActorIsJump)
 
 		//
 		.def("iterate_feel_touch",			&CScriptGameObject::IterateFeelTouch)
@@ -356,7 +359,35 @@ class_<CScriptGameObject> script_register_game_object2(class_<CScriptGameObject>
 		// CoC
 		.def("is_on_belt",					&CScriptGameObject::IsOnBelt)
 		.def("item_on_belt",				&CScriptGameObject::ItemOnBelt) 
+		.def("get_actor_max_weight",		&CScriptGameObject::GetActorMaxWeight)
+		.def("set_actor_max_weight",		&CScriptGameObject::SetActorMaxWeight)
+		.def("get_actor_max_walk_weight",	&CScriptGameObject::GetActorMaxWalkWeight)
+		.def("set_actor_max_walk_weight",	&CScriptGameObject::SetActorMaxWalkWeight)
+		.def("get_additional_max_weight",		&CScriptGameObject::GetAdditionalMaxWeight)
+		.def("set_additional_max_weight",		&CScriptGameObject::SetAdditionalMaxWeight)
+		.def("get_additional_max_walk_weight",	&CScriptGameObject::GetAdditionalMaxWalkWeight)
+		.def("set_additional_max_walk_weight",	&CScriptGameObject::SetAdditionalMaxWalkWeight)
+		.def("get_total_weight",			&CScriptGameObject::GetTotalWeight)
+		.def("weight",						&CScriptGameObject::Weight)        
+
+		.def("get_actor_jump_speed",		&CScriptGameObject::GetActorJumpSpeed)
+		.def("set_actor_jump_speed",		&CScriptGameObject::SetActorJumpSpeed)
+		.def("get_actor_sprint_koef",		&CScriptGameObject::GetActorSprintKoef)
+		.def("set_actor_sprint_koef",		&CScriptGameObject::SetActorSprintKoef) 
+		.def("get_actor_run_coef",		&CScriptGameObject::GetActorRunCoef)
+		.def("set_actor_run_coef",		&CScriptGameObject::SetActorRunCoef) 
+		.def("get_actor_runback_coef",		&CScriptGameObject::GetActorRunBackCoef)
+		.def("set_actor_runback_coef",		&CScriptGameObject::SetActorRunBackCoef)   
 			
+		//For Weapons
+		.def("weapon_get_ammo_section",		&CScriptGameObject::Weapon_GetAmmoSection)
+		.def("weapon_addon_attach",			&CScriptGameObject::Weapon_AddonAttach)
+		.def("weapon_addon_detach",			&CScriptGameObject::Weapon_AddonDetach)
+		.def("get_ammo_count_for_type",     &CScriptGameObject::GetAmmoCount)
+		.def("get_main_weapon_type",		&CScriptGameObject::GetMainWeaponType)
+		.def("get_weapon_type",				&CScriptGameObject::GetWeaponType)
+		.def("get_weapon_substate",			&CScriptGameObject::GetWeaponSubstate)
+
 		// For CHudItem
 		.def("play_hud_motion",				&CScriptGameObject::PlayHudMotion)
 		.def("switch_state",				&CScriptGameObject::SwitchState)
@@ -372,6 +403,8 @@ class_<CScriptGameObject> script_register_game_object2(class_<CScriptGameObject>
 		.def("ammo_set_count",				&CScriptGameObject::AmmoSetCount)
 		.def("ammo_box_size",				&CScriptGameObject::AmmoBoxSize)
 		.def("is_ammo",						&CScriptGameObject::IsAmmo)
+		// Actor
+		.def("set_character_icon", &CScriptGameObject::SetCharacterIcon)
 
 		//For Weapons
 		.def("weapon_get_ammo_section",		&CScriptGameObject::Weapon_GetAmmoSection)

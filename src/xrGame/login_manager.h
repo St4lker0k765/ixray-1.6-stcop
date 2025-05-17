@@ -2,7 +2,7 @@
 #define LOGIN_MANAGER
 
 #include "mixed_delegate.h"
-#include "../xrGameSpy/GameSpy/GP/gp.h"
+#include "../xrGameSpy/gamespy/GP/gp.h"
 #include "account_manager.h"
 #include "../xrScripts/script_export_space.h"
 #include "login_manager.h"
@@ -11,7 +11,6 @@
 class CGameSpy_Full;
 class CGameSpy_GP;
 class CGameSpy_ATLAS;
-class CGameSpy_Patching;
 
 namespace gamespy_gp
 {
@@ -44,7 +43,7 @@ struct profile
 	DECLARE_SCRIPT_REGISTER_FUNCTION
 };//struct profile
 
-//typedef fastdelegate::FastDelegate<void (profile const *, shared_str const &)>	login_operation_cb;
+//typedef xr_delegate<void (profile const *, shared_str const &)>	login_operation_cb;
 typedef mixed_delegate<void (profile const *, char const *), mdut_login_operation_cb_tag>	login_operation_cb;
 
 class login_manager
@@ -117,7 +116,6 @@ private:
 
 	CGameSpy_GP*				m_gamespy_gp;
 	CGameSpy_ATLAS*				m_gamespy_atlas;
-	CGameSpy_Patching*			m_gamespy_patching;
 	profile*					m_current_profile;
 
 	shared_str					m_last_email;

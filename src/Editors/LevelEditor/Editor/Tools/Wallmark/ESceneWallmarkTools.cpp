@@ -163,6 +163,9 @@ const int	MAX_R_VERTEX	= 4096;
 
 void ESceneWallmarkTool::OnRender(int priority, bool strictB2F)
 {
+    if (!IsLoaded)
+        return;
+
 	if (!m_Flags.is(flDrawWallmark))return;
     if (marks.empty())				return;
 
@@ -420,6 +423,8 @@ bool ESceneWallmarkTool::LoadStream(IReader& F)
 	    slot->items.erase	(new_end,slot->items.end());
     }
     
+    IsLoaded = true;
+
     return true;
 }
 
@@ -527,7 +532,7 @@ void ESceneWallmarkTool::OnSynchronize()
 ESceneWallmarkTool::wallmark*	ESceneWallmarkTool::wm_allocate		()
 {
 	wallmark*			W = 0;
-	if (pool.empty())	W = xr_new<wallmark> ();
+	if (pool.empty())	W = new wallmark ();
 	else				{ W = pool.back(); pool.pop_back(); }
 
 	W->verts.clear		();
@@ -555,7 +560,7 @@ ESceneWallmarkTool::wm_slot* ESceneWallmarkTool::FindSlot	(shared_str sh_name, s
 }
 ESceneWallmarkTool::wm_slot* ESceneWallmarkTool::AppendSlot(shared_str sh_name, shared_str tx_name)
 {
-	wm_slot* slot			= xr_new<wm_slot>(sh_name,tx_name);
+	wm_slot* slot			= new wm_slot(sh_name,tx_name);
     if (0==slot->shader)	xr_delete(slot);
     else marks.push_back	(slot);
     return slot;
@@ -867,17 +872,15 @@ bool ESceneWallmarkTool::ExportStatic(SceneBuilder* B, bool b_selected_only)
 	return true;
 }
 
-
-
 void ESceneWallmarkTool::CreateControls()
 {
-	inherited::CreateDefaultControls(estDefault);
-	// node tools
-    AddControl(xr_new<TUI_ControlWallmarkAdd>		(0,		etaAdd, 	this));
-    AddControl(xr_new<TUI_ControlWallmarkSelect>		(0,		etaSelect,	this));
+    inherited::CreateDefaultControls(estDefault);
+    // node tools
+    AddControl(new TUI_ControlWallmarkAdd(0, etaAdd, this));
+    AddControl(new TUI_ControlWallmarkMove(0, etaMove, this));
+    // AddControl(new TUI_CustomControl(0, etaSelect, this));
 }
 
- 
 void ESceneWallmarkTool::RemoveControls()
 {
 	inherited::RemoveControls();

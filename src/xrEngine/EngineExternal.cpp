@@ -15,31 +15,36 @@ CEngineExternal::~CEngineExternal() {
 }
 
 xr_string CEngineExternal::GetTitle() const {
-	return pOptions->r_string_wb("general", "title").c_str();
+	return READ_IF_EXISTS(pOptions, r_string_wb, "general", "title", "IX-Ray Platform").c_str();
+}
+
+const char* CEngineExternal::GetPlayerHudOmfAdditional() const
+{
+	return READ_IF_EXISTS(pOptions, r_string_wb, "player_hud", "PlayerHudOmfAdditional", "").c_str();
 }
 
 bool CEngineExternal::operator[](const EEngineExternalUI& ID) const
 {
-	return pOptions->r_bool("ui", magic_enum::enum_name(ID).data());
+	return READ_IF_EXISTS(pOptions, r_bool, "ui", magic_enum::enum_name(ID).data(), false);
 }
 
 bool CEngineExternal::operator[](const EEngineExternalPhysical& ID) const
 {
-	return pOptions->r_bool("physics", magic_enum::enum_name(ID).data());
+	return READ_IF_EXISTS(pOptions, r_bool, "physics", magic_enum::enum_name(ID).data(), false);
 }
 
 bool CEngineExternal::operator[](const EEngineExternalGame& ID) const
 {
-	return pOptions->r_bool("gameplay", magic_enum::enum_name(ID).data());
+	return READ_IF_EXISTS(pOptions, r_bool, "gameplay", magic_enum::enum_name(ID).data(), false);
 }
 
 bool CEngineExternal::operator[](const EEngineExternalRender& ID) const
 {
-	return pOptions->r_bool("render", magic_enum::enum_name(ID).data());
+	return READ_IF_EXISTS(pOptions, r_bool, "render", magic_enum::enum_name(ID).data(), false);
 }
 
 bool CEngineExternal::operator[](const EEngineExternalEnvironment& ID) const {
-	return pOptions->r_bool("environment", magic_enum::enum_name(ID).data());
+	return READ_IF_EXISTS(pOptions, r_bool, "environment", magic_enum::enum_name(ID).data(), false);
 }
 
 ENGINE_API CEngineExternal& EngineExternal() {
@@ -47,4 +52,9 @@ ENGINE_API CEngineExternal& EngineExternal() {
 		g_pEngineExternal = new CEngineExternal;
 	}
 	return *g_pEngineExternal;
+}
+
+u32 CEngineExternal::GetFontAltasSize() const
+{
+	return READ_IF_EXISTS(pOptions, r_u32, "render", "FontAtlasSize", 4096);
 }

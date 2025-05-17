@@ -27,9 +27,6 @@ CLevelTool::~CLevelTool()
 	
 }
 
-
-
-
 bool CLevelTool::OnCreate()
 {
 	inherited::OnCreate();
@@ -41,27 +38,11 @@ bool CLevelTool::OnCreate()
 	m_Flags.set(flChangeTarget, FALSE);
 	Scene->OnCreate();
 	ExecCommand(COMMAND_CHANGE_TARGET, OBJCLASS_SCENEOBJECT);
-	m_Props = xr_new < UIPropertiesForm>();
+	m_Props = new UIPropertiesForm();
 	m_Props->SetModifiedEvent(TOnCloseEvent(this, &CLevelTool::OnPropsModified));
-	m_WorldProps = xr_new < UIPropertiesForm>();
+	m_WorldProps = new UIPropertiesForm();
 	m_WorldProps->SetModifiedEvent(TOnCloseEvent(this, &CLevelTool::OnPropsModified));
-	m_Gizmo = xr_new<Gizmo>();
-  /*
-	ssRBOnly << ssRight;
-	paParent 		= fraLeftBar->paFrames;   VERIFY(paParent);
 
-	// scene creating
-  
-	// change target to Object
-	
-	m_Props 		= TProperties::CreateForm(	"Object Inspector",
-												0,
-												alClient,
-												TOnModifiedEvent(this,&CLevelTool::OnPropsModified),
-												0,
-												TOnCloseEvent(this,&CLevelTool::OnPropsClose),
-						  TProperties::plItemFolders|TProperties::plFolderStore|TProperties::plNoClearStore|TProperties::plFullExpand);
-	pObjectListForm = TfrmObjectList::CreateForm();*/
 	return true;
 }
 
@@ -77,7 +58,6 @@ void CLevelTool::OnDestroy()
 	if (pCurTool)
 		pCurTool->OnDeactivate();
 	Scene->OnDestroy		();
-	xr_delete(m_Gizmo);
 }
 
 void CLevelTool::Reset()
@@ -88,6 +68,9 @@ void CLevelTool::Reset()
 
 bool  CLevelTool::MouseStart(TShiftState Shift)
 {
+	if (Scene->IsPlayInEditor())
+		return false;
+
 	inherited::MouseStart(Shift);
 	if(pCurTool && pCurTool->pCurControl)
 	{
@@ -176,29 +159,14 @@ void CLevelTool::RealSetAction   (ETAction act)
 
 void  CLevelTool::SetAction(ETAction act)
 {
-	// если мышь захвачена - изменим action после того как она освободится
-	//if (UI->IsMouseCaptured() || UI->IsMouseInUse())
+	// РµСЃР»Рё РјС‹С€СЊ Р·Р°С…РІР°С‡РµРЅР° - РёР·РјРµРЅРёРј action РїРѕСЃР»Рµ С‚РѕРіРѕ РєР°Рє РѕРЅР° РѕСЃРІРѕР±РѕРґРёС‚СЃСЏ
+	if (UI->IsMouseCaptured() || UI->IsMouseInUse())
 	{
 		m_Flags.set(flChangeAction, TRUE);
 		iNeedAction = act;
 	}
-	//else
-	//	RealSetAction(act);
-
-	if (m_Gizmo)
-	{
-		Gizmo::EType Type = Gizmo::EType::None;
-
-		switch (act)
-		{
-			case ETAction::etaMove:   Type = Gizmo::EType::Move;   iNeedAction = ETAction::etaSelect; break;
-			case ETAction::etaScale:  Type = Gizmo::EType::Scale;  iNeedAction = ETAction::etaSelect; break;
-			case ETAction::etaRotate: Type = Gizmo::EType::Rotate; iNeedAction = ETAction::etaSelect; break;
-		}
-
-		m_Gizmo->SetType(Type);
-		UI->RedrawScene();
-	}
+	else
+		RealSetAction(act);
 }
 
 void  CLevelTool::RealSetTarget   (ObjClassID tgt,int sub_tgt,bool bForced)
@@ -236,7 +204,7 @@ void  CLevelTool::ResetSubTarget()
 
 void  CLevelTool::SetTarget(ObjClassID tgt, int sub_tgt)
 {
-	// если мышь захвачена - изменим target после того как она освободится
+	// РµСЃР»Рё РјС‹С€СЊ Р·Р°С…РІР°С‡РµРЅР° - РёР·РјРµРЅРёРј target РїРѕСЃР»Рµ С‚РѕРіРѕ РєР°Рє РѕРЅР° РѕСЃРІРѕР±РѕРґРёС‚СЃСЏ
 	if (UI->IsMouseCaptured()||UI->IsMouseInUse()||!false){
 		m_Flags.set(flChangeTarget,TRUE);
 		if(tgt == OBJCLASS_WAY && sub_tgt==2 && target==tgt)
@@ -270,7 +238,7 @@ bool CLevelTool::Pick(TShiftState Shift)
 	if( Scene->locked() && (esEditLibrary==UI->GetEState())){
 		UI->m_CurrentCp = MainForm->GetRenderForm()->GetMousePos();
 		UI->m_StartCp = UI->m_CurrentCp;
-		EDevice->m_Camera.MouseRayFromPoint(UI->m_CurrentRStart, UI->m_CurrentRDir, UI->m_CurrentCp );
+		UI->CurrentView().m_Camera.MouseRayFromPoint(UI->m_CurrentRStart, UI->m_CurrentRDir, UI->m_CurrentCp );
 		SRayPickInfo pinf;
 		//TfrmEditLibrary::RayPick(UI->m_CurrentRStart,UI->m_CurrentRDir,&pinf);
 		return true;
@@ -288,7 +256,15 @@ bool CLevelTool::UpdateCamera()
 {
 	if (Scene->IsPlayInEditor())
 	{
-		g_pGameLevel->Cameras().ApplyDevice(VIEWPORT_NEAR);
+		//g_pGameLevel->Cameras().ApplyDevice(VIEWPORT_NEAR);
+
+		extern ENGINE_API float psHUD_FOV;
+		Device.mProject_hud.build_projection(deg2rad(psHUD_FOV), Device.fASPECT,
+			HUD_VIEWPORT_NEAR, g_pGamePersistent->Environment().CurrentEnv->far_plane);
+
+		Device.mView_hud.set(Device.mView);
+		Device.mFullTransform_hud.mul(Device.mProject_hud, Device.mView_hud);
+
 		return true;
 	}
 	return false;
@@ -353,6 +329,7 @@ void CLevelTool::RealUpdateProperties()
 	PropUpdateIsCompleted = false;
 	SetEvent(mtPropObj);
 	m_Flags.set(flUpdateProperties, FALSE);
+	m_Props->setModified(FALSE);
 }
 
 
@@ -439,16 +416,15 @@ void  CLevelTool::OnFrame()
 	if ((est==esEditScene)||(est==esEditLibrary)||(est==esEditLightAnim)){
 		if (true/*!UI->IsMouseCaptured()*/)
 		{
-			// если нужно изменить target выполняем после того как мышь освободится
+			// РµСЃР»Рё РЅСѓР¶РЅРѕ РёР·РјРµРЅРёС‚СЊ target РІС‹РїРѕР»РЅСЏРµРј РїРѕСЃР»Рµ С‚РѕРіРѕ РєР°Рє РјС‹С€СЊ РѕСЃРІРѕР±РѕРґРёС‚СЃСЏ
 			if(m_Flags.is(flChangeTarget)) 		RealSetTarget(iNeedTarget,iNeedSubTarget,false);
-			// если нужно изменить action выполняем после того как мышь освободится
+			// РµСЃР»Рё РЅСѓР¶РЅРѕ РёР·РјРµРЅРёС‚СЊ action РІС‹РїРѕР»РЅСЏРµРј РїРѕСЃР»Рµ С‚РѕРіРѕ РєР°Рє РјС‹С€СЊ РѕСЃРІРѕР±РѕРґРёС‚СЃСЏ
 			if(m_Flags.is(flChangeAction)) 		RealSetAction(ETAction(iNeedAction));
 		}
 		if (m_Flags.is(flUpdateProperties)) 	RealUpdateProperties();
 		if (m_Flags.is(flUpdateObjectList)) 	RealUpdateObjectList();
 		//TfrmEditLightAnim::OnIdle();
 	}
-	m_Gizmo->OnFrame();
 
 	if (IsCompilerRunning())
 	{
@@ -509,10 +485,12 @@ void  CLevelTool::RenderEnvironment()
 void  CLevelTool::Render()
 {
 	// Render update
-	::Render->Calculate		();
-	::Render->Render		();
+	if(!Scene->IsPlayInEditor()) {
+		::Render->Calculate();
+		::Render->Render();
+	}
 
-	EEditorState est 		= UI->GetEState();
+	EEditorState est = UI->GetEState();
 	// draw scene
 	switch(est)
 	{
@@ -522,16 +500,16 @@ void  CLevelTool::Render()
 
 	case esEditLightAnim:
 	case esEditScene:
-		Scene->Render(EDevice->m_Camera.GetTransform()); 
+		Scene->Render(UI->CurrentView().m_Camera.GetTransform()); 
 		if (psDeviceFlags.is(rsEnvironment) || UI->IsPlayInEditor())
 			g_pGamePersistent->Environment().RenderLast();
 	break;
-	case esBuildLevel:  	Builder.OnRender();				break;
+	case esBuildLevel: Builder.OnRender(); break;
 	}
+
 	// draw cursor
 	LUI->m_Cursor->Render();
-	m_Gizmo->Render();
-	inherited::Render		();
+    inherited::Render();
 }
 
 
@@ -689,9 +667,20 @@ void CLevelTool::RunXrLC()
 	si.cb = sizeof(si);
 	ZeroMemory(&m_CompilerProcess, sizeof(m_CompilerProcess));
 
+	;
 
 	string_path CommandLine;
-	xr_sprintf(CommandLine, "XrLC.exe -f %s", Scene->m_LevelOp.m_FNLevelPath.c_str());
+	const xr_string& CompPath = ((CLevelPreferences*)EPrefs)->Compiler_xrLC.c_str();
+
+	if (CompPath.empty())
+	{
+		xr_sprintf(CommandLine, " xrLC.exe -f %s", Scene->m_LevelOp.m_FNLevelPath.c_str());
+	}
+	else
+	{
+		xr_sprintf(CommandLine, " %s -f %s", CompPath.data(), Scene->m_LevelOp.m_FNLevelPath.c_str());
+	}
+
 	Msg("~ Run %s.\n", CommandLine);
 	// Start the child process. 
 	if (!CreateProcessA(NULL,   // No module name (use command line)
@@ -726,7 +715,15 @@ void CLevelTool::RunXrDO()
 
 
 	string_path CommandLine;
-	xr_sprintf(CommandLine, "xrDO_light.exe -f %s", Scene->m_LevelOp.m_FNLevelPath.c_str());
+	const xr_string& CompPath = ((CLevelPreferences*)EPrefs)->Compiler_xrDO.c_str();
+	if (CompPath.empty())
+	{
+		xr_sprintf(CommandLine, "xrDO_light.exe -f %s", Scene->m_LevelOp.m_FNLevelPath.c_str());
+	}
+	else
+	{
+		xr_sprintf(CommandLine, "%s -f %s", CompPath.data(), Scene->m_LevelOp.m_FNLevelPath.c_str());
+	}
 	Msg("~ Run %s.\n", CommandLine);
 	// Start the child process. 
 	if (!CreateProcessA(NULL,   // No module name (use command line)
@@ -761,7 +758,15 @@ void CLevelTool::RunXrAI_Spawn(bool current_level)
 
 
 	string_path CommandLine;
-	xr_sprintf(CommandLine, "xrAI.exe -no_separator_check -s %s -out all", current_level? Scene->m_LevelOp.m_FNLevelPath.c_str():"");
+	const xr_string& CompPath = ((CLevelPreferences*)EPrefs)->Compiler_xrAI.c_str();
+	if (CompPath.empty())
+	{
+		xr_sprintf(CommandLine, "xrAI.exe -no_separator_check -s %s -out all", current_level ? Scene->m_LevelOp.m_FNLevelPath.c_str() : "");
+	}
+	else
+	{
+		xr_sprintf(CommandLine, "%s -no_separator_check -s %s -out all", CompPath.data(), current_level ? Scene->m_LevelOp.m_FNLevelPath.c_str() : "");
+	}
 	Msg("~ Run %s.\n", CommandLine);
 	// Start the child process. 
 	if (!CreateProcessA(NULL,   // No module name (use command line)
@@ -796,7 +801,16 @@ void CLevelTool::RunXrAI_AIMap(bool draw)
 
 
 	string_path CommandLine;
-	xr_sprintf(CommandLine, "xrAI.exe -f %s %s", Scene->m_LevelOp.m_FNLevelPath.c_str(), draw?"-draft":"");
+	const xr_string& CompPath = ((CLevelPreferences*)EPrefs)->Compiler_xrAI.c_str();
+	if (CompPath.empty())
+	{
+		xr_sprintf(CommandLine, "xrAI.exe -f %s %s", Scene->m_LevelOp.m_FNLevelPath.c_str(), draw ? "-draft" : "");
+	}
+	else
+	{
+		xr_sprintf(CommandLine, "%s -f %s %s", CompPath.data(), Scene->m_LevelOp.m_FNLevelPath.c_str(), draw ? "-draft" : "");
+	}
+	
 	Msg("~ Run %s.\n", CommandLine);
 	// Start the child process. 
 	if (!CreateProcessA(NULL,   // No module name (use command line)
@@ -831,7 +845,16 @@ void CLevelTool::RunXrAI_Verify()
 
 
 	string_path CommandLine;
-	xr_sprintf(CommandLine, "xrAI.exe -verify %s", Scene->m_LevelOp.m_FNLevelPath.c_str());
+	const xr_string& CompPath = ((CLevelPreferences*)EPrefs)->Compiler_xrAI.c_str();
+	if (CompPath.empty())
+	{
+		xr_sprintf(CommandLine, "xrAI.exe -verify %s", Scene->m_LevelOp.m_FNLevelPath.c_str());
+	}
+	else
+	{
+	    xr_sprintf(CommandLine, "%s -verify %s", CompPath.data(), Scene->m_LevelOp.m_FNLevelPath.c_str());
+	}
+	
 	Msg("~ Run %s.\n", CommandLine);
 	// Start the child process. 
 	if (!CreateProcessA(NULL,   // No module name (use command line)

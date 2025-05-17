@@ -32,6 +32,7 @@ class ButtonValue;
 //----------------------------------------------------
 
 #define GAMEMTL_SUBITEM_COUNT			4
+#define GAMEMTL_STEPSOUND_SUBITEM_COUNT 16
 
 #define GAMEMTL_NONE_ID					u32(-1)
 #define GAMEMTL_NONE_IDX				u16(-1)
@@ -111,21 +112,22 @@ public:
 
     Flags32				Flags;
     // physics part
-    float				fPHFriction;            // ?
-    float				fPHDamping;             // ?
-    float				fPHSpring;              // ?
-    float				fPHBounceStartVelocity;	// ?
-	float				fPHBouncing;            // ?
-	// shoot&bounce&visibility&flotation
-    float		    	fFlotationFactor;		// 0.f - 1.f   	(1.f-полностью проходимый)
-    float				fShootFactor;			// 0.f - 1.f	(1.f-полностью простреливаемый)
-    float				fShootFactorMP;			// 0.f - 1.f	(1.f-полностью простреливаемый)
-    float				fBounceDamageFactor;	// 0.f - 100.f
-    float				fInjuriousSpeed; 		// 0.f - ...	(0.f-не отбирает здоровье (скорость уменьшения здоровья))
-    float				fVisTransparencyFactor;	// 0.f - 1.f	(1.f-полностью прозрачный)
-    float				fSndOcclusionFactor;	// 0.f - 1.f    (1.f-полностью слышен)
-	float				fDensityFactor;
-public:
+    float               fPHFriction;            // ?
+    float               fPHDamping;             // ?
+    float               fPHSpring;              // ?
+    float               fPHBounceStartVelocity; // ?
+    float               fPHBouncing;            // ?
+    // shoot&bounce&visibility&flotation
+    float               fFlotationFactor;       // 0.f - 1.f    (1.f-РїРѕР»РЅРѕСЃС‚СЊСЋ РїСЂРѕС…РѕРґРёРјС‹Р№)
+    float               fShootFactor;           // 0.f - 1.f    (1.f-РїРѕР»РЅРѕСЃС‚СЊСЋ РїСЂРѕСЃС‚СЂРµР»РёРІР°РµРјС‹Р№)
+    float               fShootFactorMP;         // 0.f - 1.f    (1.f-РїРѕР»РЅРѕСЃС‚СЊСЋ РїСЂРѕСЃС‚СЂРµР»РёРІР°РµРјС‹Р№)
+    float               fBounceDamageFactor;    // 0.f - 100.f
+    float               fInjuriousSpeed;        // 0.f - ...    (0.f-РЅРµ РѕС‚Р±РёСЂР°РµС‚ Р·РґРѕСЂРѕРІСЊРµ (СЃРєРѕСЂРѕСЃС‚СЊ СѓРјРµРЅСЊС€РµРЅРёСЏ Р·РґРѕСЂРѕРІСЊСЏ))
+    float               fVisTransparencyFactor; // 0.f - 1.f    (1.f-РїРѕР»РЅРѕСЃС‚СЊСЋ РїСЂРѕР·СЂР°С‡РЅС‹Р№)
+    float               fSndOcclusionFactor;    // 0.f - 1.f    (1.f-РїРѕР»РЅРѕСЃС‚СЊСЋ СЃР»С‹С€РµРЅ)
+    float               fDensityFactor;
+
+  public:
 	SGameMtl			()
     {
         ID						= -1;
@@ -217,7 +219,7 @@ public:
         m_Owner			= owner;
         OwnProps.one	();
 	}
-	~SGameMtlPair		();
+	virtual ~SGameMtlPair		();
     IC int				GetMtl0			(){return mtl0;}
     IC int				GetMtl1			(){return mtl1;}
     IC int				GetID			(){return ID;}
@@ -368,7 +370,7 @@ extern MTL_EXPORT_API CGameMtlLibrary		GMLib;
 //#ifdef	_EDITOR
 //extern MTL_EXPORT_API CGameMtlLibrary*		PGMLib;
 //#else
-#include "../xrCore/API/xrapi.h"
+#include "../xrCore/API/xrAPI.h"
 //#endif
 
 #endif

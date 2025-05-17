@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 #include "Actor.h"
 #include "HUDManager.h"
@@ -7,16 +7,16 @@
 #include "xrServer_Objects_ALife_Monsters.h"
 #include "xrServer.h"
 #include "../xrEngine/CustomHUD.h"
-#include "CameraLook.h"
+#include "cameralook.h"
 #include "CameraFirstEye.h"
 
 #include "ActorEffector.h"
 
-#include "../xrPhysics/iPHWorld.h"
-#include "../xrPhysics/actorcameracollision.h"
+#include "../xrPhysics/IPHWorld.h"
+#include "../xrPhysics/ActorCameraCollision.h"
 #include "Level.h"
 #include "game_cl_base.h"
-#include "infoportion.h"
+#include "InfoPortion.h"
 #include "alife_registry_wrappers.h"
 #include "../Include/xrRender/Kinematics.h"
 #include "client_spawn_manager.h"
@@ -36,16 +36,16 @@
 
 #include "map_manager.h"
 #include "ui/UIMainIngameWnd.h"
-#include "gamepersistent.h"
+#include "GamePersistent.h"
 #include "game_object_space.h"
-#include "GameTaskManager.h"
+#include "GametaskManager.h"
 #include "game_base_kill_type.h"
 #include "holder_custom.h"
 #include "actor_memory.h"
 #include "actor_statistic_mgr.h"
-#include "characterphysicssupport.h"
+#include "CharacterPhysicsSupport.h"
 #include "game_cl_base_weapon_usage_statistic.h"
-#include "../xrengine/xr_collide_form.h"
+#include "../xrEngine/xr_collide_form.h"
 #include "actor_mp_client.h"
 #ifdef DEBUG
 #	include "debug_renderer.h"
@@ -742,7 +742,7 @@ BOOL CActor::net_Spawn		(CSE_Abstract* DC)
 	}
 
 
-	spatial.type |=STYPE_REACTTOSOUND;
+	SpatialComponent->spatial.type |=STYPE_REACTTOSOUND;
 	psHUD_Flags.set(HUD_WEAPON_RT,TRUE);
 	psHUD_Flags.set(HUD_WEAPON_RT2,TRUE);
 	
@@ -1963,10 +1963,9 @@ void				CActor::OnPlayHeadShotParticle (NET_Packet P)
 	if (!m_sHeadShotParticle.size()) return;
 	Fmatrix pos; 	
 	CParticlesPlayer::MakeXFORM(this,element,HitDir,HitPos,pos);
+
 	//  particles
-	CParticlesObject* ps = nullptr;
-	
-	ps = CParticlesObject::Create(m_sHeadShotParticle.c_str(),TRUE);
+	xr_shared_ptr<CParticlesObject> ps = Particles::Details::Create(m_sHeadShotParticle.c_str(),TRUE);
 
 	ps->UpdateParent(pos,Fvector().set(0.f,0.f,0.f));
 	GamePersistent().ps_needtoplay.push_back(ps);

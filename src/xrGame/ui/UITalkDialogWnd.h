@@ -1,22 +1,24 @@
 #pragma once
 
 
-#include "UIStatic.h"
-#include "UI3tButton.h"
-#include "UIFrameLineWnd.h"
+#include "../../xrUI/Widgets/UIStatic.h"
+#include "../../xrUI/Widgets/UI3tButton.h"
+#include "../../xrUI/Widgets/UIFrameLineWnd.h"
 
 #include "../InfoPortion.h"
 
 #include "UICharacterInfo.h"
 #include "UIItemInfo.h"
 
-#include "UIWndCallback.h"
+#include "../../xrUI/Widgets/UIWndCallback.h"
 
 class CUIScrollView;
 class CUIXml;
 class CUITalkWnd;
 
-class CUITalkDialogWnd: public CUIWindow, public CUIWndCallback
+class CUITalkDialogWnd: 
+	public CUIWindow, 
+	public CUIWndCallback
 {
 private:
 	typedef CUIWindow inherited;
@@ -39,10 +41,10 @@ public:
 
 	bool				mechanic_mode; // for inventory upgrades
 	
-	//номер выбранного вопроса
+	//РЅРѕРјРµСЂ РІС‹Р±СЂР°РЅРЅРѕРіРѕ РІРѕРїСЂРѕСЃР°
 	shared_str			m_ClickedQuestionID;
 
-	//список вопросов, которые мы можем задавать персонажу
+	//СЃРїРёСЃРѕРє РІРѕРїСЂРѕСЃРѕРІ, РєРѕС‚РѕСЂС‹Рµ РјС‹ РјРѕР¶РµРј Р·Р°РґР°РІР°С‚СЊ РїРµСЂСЃРѕРЅР°Р¶Сѓ
 
 //	Fvector2			m_btn_pos[3];
 	CUI3tButton			UIToTradeButton;
@@ -65,10 +67,10 @@ private:
 	CUIScrollView*			UIQuestionsList;
 	CUIScrollView*			UIAnswersList;
 
-	// Шрифт и цвет текста с именем персонажа
+	// РЋСЂРёС„С‚ Рё С†РІРµС‚ С‚РµРєСЃС‚Р° СЃ РёРјРµРЅРµРј РїРµСЂСЃРѕРЅР°Р¶Р°
 	CGameFont			*m_pNameTextFont;
 	u32					m_iNameTextColor;
-	// Цвет тeкста и шрифт наших реплик
+	// Г·РІРµС‚ С‚eРєСЃС‚Р° Рё С€СЂРёС„С‚ РЅР°С€РёС… СЂРµРїР»РёРє
 	u32					m_uOurReplicsColor;
 
 	void 		OnTradeClicked			(CUIWindow* w, void*);

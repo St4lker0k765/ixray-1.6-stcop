@@ -115,10 +115,10 @@ public:
 	bool		m_save_as_object;
 	string_path	m_LevelPath;
     xr_string	MakeLevelPath		(LPCSTR nm){return xr_string(m_LevelPath)+xr_string(nm);}
+    bool 	PreparePath				();
 protected:
 	bool 	EvictResource			();
 	bool 	PrepareFolders          ();
-    bool 	PreparePath				();
 
 	bool 	GetBounding            	();
 
@@ -142,6 +142,7 @@ public:
 
 	BOOL	Compile            		(bool b_selected_only,bool show_message=true);
 	BOOL 	MakeGame				();
+	BOOL 	MakePuddles				();
     BOOL 	MakeDetails				();
     BOOL 	MakeHOM					();
 	BOOL 	MakeSOM					();

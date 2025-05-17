@@ -1,6 +1,6 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
-#include "physicobject.h"
+#include "PhysicObject.h"
 #include "../xrPhysics/PhysicsShell.h"
 //#include "Physics.h"
 #include "xrServer_Objects_ALife.h"
@@ -13,10 +13,10 @@
 #include "game_object_space.h"
 //#include "../xrPhysics/PhysicsShellAnimator.h"
 #include "moving_bones_snd_player.h"
-#include "../xrPhysics/extendedgeom.h"
+#include "../xrPhysics/ExtendedGeom.h"
 #ifdef	DEBUG
-#include "phdebug.h"
-#include "../xrengine/objectdump.h"
+#include "PHDebug.h"
+#include "../xrEngine/ObjectDump.h"
 #endif
 BOOL dbg_draw_doors = false;
 CPhysicObject::CPhysicObject(void): 
@@ -342,11 +342,11 @@ void CPhysicObject::UpdateCL()
 {
 	inherited::UpdateCL();
 
-	//Åñëè íàø ôèçè÷åñêèé îáúåêò àíèìèðîâàííûé, òî 
-	//äâèãàåì îáúåêò çà àíèìàöèåé
+	//Ð•ÑÐ»Ð¸ Ð½Ð°Ñˆ Ñ„Ð¸Ð·Ð¸Ñ‡ÐµÑÐºÐ¸Ð¹ Ð¾Ð±ÑŠÐµÐºÑ‚ Ð°Ð½Ð¸Ð¼Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð½Ñ‹Ð¹, Ñ‚Ð¾ 
+	//Ð´Ð²Ð¸Ð³Ð°ÐµÐ¼ Ð¾Ð±ÑŠÐµÐºÑ‚ Ð·Ð° Ð°Ð½Ð¸Ð¼Ð°Ñ†Ð¸ÐµÐ¹
 	if (m_pPhysicsShell->PPhysicsShellAnimator())
 	{
-		m_pPhysicsShell->AnimatorOnFrame(!!Render->ViewBase.testSphere_dirty(spatial.sphere.P,spatial.sphere.R));
+		m_pPhysicsShell->AnimatorOnFrame(!!Render->ViewBase.testSphere_dirty(SpatialComponent->spatial.sphere.P, SpatialComponent->spatial.sphere.R));
 	}
 	
 	if (!IsGameTypeSingle())

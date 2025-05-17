@@ -6,7 +6,7 @@
 #define ResourceManagerH
 #pragma once
 
-#include	"shader.h"
+#include "Shader.h"
 #include	"tss_def.h"
 #include	"TextureDescrManager.h"
 // refs
@@ -163,7 +163,7 @@ public:
 #endif //USE_DX11
 
 #ifdef USE_DX11
-	CRT*							_CreateRT			(LPCSTR Name, u32 w, u32 h, DxgiFormat f, u32 SampleCount = 1, bool useUAV=false );
+	CRT*							_CreateRT			(LPCSTR Name, u32 w, u32 h, DxgiFormat f, u32 SampleCount = 1, CRT::CRTCreationFlags CreationFlags = (CRT::CRTCreationFlags)NULL);
 #else
 	CRT*							_CreateRT			(LPCSTR Name, u32 w, u32 h,	D3DFORMAT f, u32 SampleCount = 1 );
 #endif

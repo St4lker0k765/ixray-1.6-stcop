@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 #include "PHCollisionDamageReceiver.h"
 #include "PhysicObject.h"
@@ -145,6 +145,7 @@ void CDestroyablePhysicsObject::InitServerObject(CSE_Abstract* D)
 }
 void CDestroyablePhysicsObject::shedule_Update(u32 dt)
 {
+	PROF_EVENT("CDestroyablePhysicsObject::shedule_Update")
 	inherited::shedule_Update(dt);
 	CPHDestroyable::SheduleUpdate(dt);
 }

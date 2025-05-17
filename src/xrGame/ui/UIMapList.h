@@ -1,6 +1,6 @@
 #pragma once
 
-#include "UIWindow.h"
+#include "../../xrUI/Widgets/UIWindow.h"
 #include "gametype_chooser.h"
 #include "../UIGameCustom.h"
 
@@ -35,12 +35,15 @@ public:
 			void	LoadMapList();
 			void	SaveMapList();
 	const char*		GetCommandLine(LPCSTR player_name);
+	const char*     GetCommandLineDedicated(LPCSTR player_name);
+	const char*     GetPlayerName(const LPCSTR player_name);
 			EGameIDs	GetCurGameType();
 			void	StartDedicatedServer();
 			void	ClearList();
 			bool	IsEmpty();
 			const	SGameTypeMaps::SMapItm&	GetMapNameInt(EGameIDs _type, u32 idx);
 
+			static void script_register(lua_State* L);
 private:
 	CUIListBoxItem* GetMapItem_fromList1(shared_str const& map_name);
 			void	UpdateMapList(EGameIDs GameType);						

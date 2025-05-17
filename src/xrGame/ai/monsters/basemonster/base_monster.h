@@ -25,8 +25,8 @@
 #include "../monster_sound_defs.h"
 
 #include "../monster_aura.h"
-#include "../../../inventoryowner.h"
-#include "../../../../xrphysics/PHCharacter.h"
+#include "../../../InventoryOwner.h"
+#include "../../../../xrPhysics/PHCharacter.h"
 
 #include "../xrServerEntities/xrServer_Objects_ALife_Monsters.h"
 
@@ -510,7 +510,7 @@ protected:
 
 	u16 u_last_motion_idx = u16(-1);
 	u16 u_last_motion_slot = u16(-1);
-	u8	u_last_motion_no_loop = u16(-1);
+	u8	u_last_motion_no_loop = u8(-1);
 	CSE_ALifeMonsterBase::eMonsterSound m_sv_snd_sync_flag = CSE_ALifeMonsterBase::eMonsterSound::monster_sound_no;
 	u8	m_sv_snd_sync_sound = 0;
 	u32 m_sv_snd_sync_sound_delay = 0;
@@ -622,9 +622,9 @@ public:
 // CBaseMonster's  Auras
 //-------------------------------------------------------------------
 public:
-	float							get_psy_influence			();
-	float							get_radiation_influence		();
-	float							get_fire_influence			();
+	float							get_psy_influence			() const;
+	float							get_radiation_influence		() const;
+	float							get_fire_influence			() const;
 	void							play_detector_sound			();
 
 private:

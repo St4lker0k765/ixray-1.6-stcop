@@ -39,34 +39,40 @@ enum class EditorUI : u8
 	HudAdjust,
 	ScenesViewer,
 	CameraEffectors,
+	Game_TimeManager,
+	Game_SpawnManager,
+	Game_WeaponManager,
+	Game_SearchManager,
 	Count
 };
 
-class ENGINE_API		CEngineAPI
+class ENGINE_API CEngineAPI
 {
 private:
-	HMODULE				hGame;
-	HMODULE				hRender;
+	HMODULE hGame;
+	HMODULE hRender;
 
 public:
-	HMODULE				hGameSpy;
+	HMODULE hGameSpy;
+
+	Factory_Create* pCreate;
+	Factory_Destroy* pDestroy;
 
 	std::array<bool, static_cast<u8>(EditorUI::Count)> EditorStates = {};
 
 public:
-	Factory_Create*		pCreate;
-	Factory_Destroy*	pDestroy;
+	CEngineAPI();
+	~CEngineAPI();
+
+public:
 	void				Initialize	();
-	
 	void				InitializeNotDedicated();
 	void				Destroy		();
 
 	void				CreateRendererList();
-
 	APILevel			GetAPI();
-
-	CEngineAPI	();
-	~CEngineAPI	();
+	int					GetSkinningMode() const;
+	void				SetSkinningMode(int Mode = -1);
 };
 
 #define NEW_INSTANCE(a)		Engine.External.pCreate(a)

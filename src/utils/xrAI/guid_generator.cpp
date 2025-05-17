@@ -5,7 +5,7 @@
 //	Author		: Dmitriy Iassenev
 //	Description : GUID generator
 ////////////////////////////////////////////////////////////////////////////
-#include "stdafx.h"
+#include "StdAfx.h"
 #pragma hdrstop
 
 #include "guid_generator.h"
@@ -13,7 +13,6 @@
 #ifdef WINVER
 #	include <rpcdce.h>
 #	include <rpc.h>
-#	pragma comment(lib,"rpcrt4.lib")
 #endif
 
 xrGUID generate_guid()

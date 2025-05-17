@@ -3,8 +3,8 @@
 void  CCustomObject::OnMotionableChange(PropValue* sender)
 {
 	if (m_CO_Flags.is(flMotion)){
-    	m_Motion		= xr_new<COMotion>();
-        m_MotionParams	= xr_new<SAnimParams>();
+    	m_Motion		= new COMotion();
+        m_MotionParams	= new SAnimParams();
     }else{
     	xr_delete		(m_Motion);
     	xr_delete		(m_MotionParams);
@@ -39,7 +39,7 @@ void CCustomObject::AnimationUpdate(float t)
     UpdateTransform			(true);
     m_CO_Flags.set			(flAutoKey,bAK);
     if (m_CO_Flags.is(flCameraView))
-    	EDevice->m_Camera.Set	(-r.y,-r.x,-r.z,P.x,P.y,P.z);
+    	UI->CurrentView().m_Camera.Set	(-r.y,-r.x,-r.z,P.x,P.y,P.z);
 }
 
 void CCustomObject::AnimationOnFrame()
@@ -58,7 +58,7 @@ void CCustomObject::AnimationDrawPath()
 {
     // motion path
 	VERIFY (m_Motion);
-#ifdef _EDITOR
+
 	if (EPrefs->object_flags.is(epoDrawAnimPath)){
         float fps 				= m_Motion->FPS();
         float min_t				= (float)m_Motion->FrameStart()/fps;
@@ -79,7 +79,7 @@ void CCustomObject::AnimationDrawPath()
         CEnvelope* E 			= m_Motion->Envelope();
         for (KeyIt k_it=E->keys.begin(); k_it!=E->keys.end(); k_it++){
             m_Motion->_Evaluate	((*k_it)->time,T,r);
-            if (EDevice->m_Camera.GetPosition().distance_to_sqr(T)<50.f*50.f){
+            if (UI->CurrentView().m_Camera.GetPosition().distance_to_sqr(T)<50.f*50.f){
                 DU_impl.DrawCross	(T,0.1f,0.1f,0.1f, 0.1f,0.1f,0.1f, clr,false);
 
                 string256 Data = {};
@@ -89,12 +89,11 @@ void CCustomObject::AnimationDrawPath()
             }
         }
     }
-#endif    
 }
 
 void 	CCustomObject::OnMotionControlClick(ButtonValue* value, bool& bModif, bool& bSafe)
 {
-	ButtonValue* B = dynamic_cast<ButtonValue*>(value); R_ASSERT(B);
+	ButtonValue* B = smart_cast<ButtonValue*>(value); R_ASSERT(B);
 	switch(B->btn_num){
     case 0:{
 		m_MotionParams->t_current 	= m_MotionParams->min_t;
@@ -195,7 +194,7 @@ void CCustomObject::OnDrawUI()
 }
 void 	CCustomObject::OnMotionCommandsClick(ButtonValue* value, bool& bModif, bool& bSafe)
 {
-	ButtonValue* B = dynamic_cast<ButtonValue*>(value); R_ASSERT(B);
+	ButtonValue* B = smart_cast<ButtonValue*>(value); R_ASSERT(B);
 	switch(B->btn_num){
     case 0:
     	AnimationCreateKey	(m_MotionParams->t_current);
@@ -242,7 +241,7 @@ void 	CCustomObject::OnMotionCommandsClick(ButtonValue* value, bool& bModif, boo
 
 void 	CCustomObject::OnMotionFilesClick(ButtonValue* value, bool& bModif, bool& bSafe)
 {
-	ButtonValue* B = dynamic_cast<ButtonValue*>(value); R_ASSERT(B);
+	ButtonValue* B = smart_cast<ButtonValue*>(value); R_ASSERT(B);
     bModif = false;
     xr_string fn;
 	switch(B->btn_num){

@@ -1,16 +1,20 @@
 #pragma once
-#include "Engine/ShapeData.h"
+#include "../../xrServerEntities/ShapeData.h"
 
 enum eShapeUsage{eShapeCommon=0, eShapeLevelBound};
 
-class CEditShape: public CCustomObject,protected CShapeData
+class CEditShape: 
+	public CCustomObject,
+	protected CShapeData
 {
 	typedef CCustomObject inherited;
-private:
+	friend class IM_Manipulator;
+public:
 // bounds
 	Fbox			m_Box;
 	Fsphere			m_Sphere;
 	void			ComputeBounds	( );
+
 public:
 	u8				m_shape_type;
 	u32				m_DrawTranspColor;
@@ -33,7 +37,7 @@ public:
     virtual bool	CanAttach		() {return true;}
     
     // pick functions
-	virtual bool 	RayPick		(float& distance, const Fvector& start, const Fvector& direction, SRayPickInfo* pinf = NULL);
+	virtual bool 	RayPick		(float& distance, const Fvector& start, const Fvector& direction, SRayPickInfo* pinf = NULL) override;
     virtual bool 	FrustumPick	(const CFrustum& frustum);
 
     // placement functions

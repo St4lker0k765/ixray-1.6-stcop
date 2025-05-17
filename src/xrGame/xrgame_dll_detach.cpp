@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 #include "ai_space.h"
 #include "object_factory.h"
@@ -7,8 +7,8 @@
 
 #include "entity_alive.h"
 #include "ui/UIInventoryUtilities.h"
-#include "UI/UIXmlInit.h"
-#include "UI/UItextureMaster.h"
+#include "../../xrUI/UIXmlInit.h"
+#include "../../xrUI/UItextureMaster.h"
 
 #include "InfoPortion.h"
 #include "PhraseDialog.h"
@@ -22,8 +22,6 @@
 #include "character_rank.h"
 #include "character_reputation.h"
 
-#include "profiler.h"
-
 #include "sound_collection_storage.h"
 #include "relation_registry.h"
 
@@ -31,13 +29,13 @@ typedef xr_vector<std::pair<shared_str,int> >	STORY_PAIRS;
 extern STORY_PAIRS								story_ids;
 extern STORY_PAIRS								spawn_story_ids;
 
-extern void dump_list_wnd							();
-extern void dump_list_lines							();
-extern void dump_list_sublines						();
-extern void clean_wnd_rects							();
-extern void dump_list_xmls							();
-extern void CreateUIGeom							();
-extern void DestroyUIGeom							();
+extern UI_API void dump_list_wnd							();
+extern UI_API void dump_list_lines							();
+extern UI_API void dump_list_sublines						();
+extern UI_API void clean_wnd_rects							();
+extern UI_API void dump_list_xmls							();
+extern UI_API void CreateUIGeom								();
+extern UI_API void DestroyUIGeom							();
 extern void InitHudSoundSettings					();
 
 #include "../xrEngine/IGame_Persistent.h"
@@ -116,12 +114,8 @@ void clean_game_globals()
 	InventoryUtilities::ClearCharacterInfoStrings	();
 
 	xr_delete										(g_sound_collection_storage);
-	
-#ifdef DEBUG
-	xr_delete										(g_profiler);
-	xr_delete										(pGameGlobals);
-#endif
 
+	xr_delete(pGameGlobals);
 	RELATION_REGISTRY::clear_relation_registry		();
 
 	dump_list_wnd									();

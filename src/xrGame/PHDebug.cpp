@@ -1,10 +1,10 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 
 #ifdef DEBUG_DRAW
 #include "PHDebug.h"
 #include "../xrPhysics/PHWorld.h"
 
-#include "ui_base.h"
+#include "../../xrUI/ui_base.h"
 float	dbg_text_height_scale = 1.f;
 float	dbg_text_current_height_scale = 1.f;
 
@@ -143,19 +143,19 @@ void _cdecl DBG_OutText(LPCSTR s, ...)
 #include "../xrPhysics/MathUtils.h"
 //#include "PHObject.h"
 #include "../xrPhysics/ExtendedGeom.h"
-#include "../xrPhysics/iphworld.h"
-#include "../xrPhysics/physicsshell.h"
+#include "../xrPhysics/IPHWorld.h"
+#include "../xrPhysics/PhysicsShell.h"
 
 
 #include "Level.h"
 
 #include "debug_renderer.h"
-#include "physicsshellholder.h"
+#include "PhysicsShellHolder.h"
 
 #include "../Include/xrRender/Kinematics.h"
 #include "../Include/xrRender/KinematicsAnimated.h"
 #include "../xrEngine/bone.h"
-#include "../xrEngine/iphdebug.h"
+#include "../xrEngine/IPHdebug.h"
 //#include "phelement.h"
 
 Flags32		ph_dbg_draw_mask						;
@@ -184,7 +184,7 @@ struct SPHObjDBGDraw:public SPHDBGDrawAbsract
 	SPHObjDBGDraw(const CPHObject* obj)
 	{
 		AABB.set(obj->AABB);
-		AABB_center.set(obj->spatial.sphere.P);
+		AABB_center.set(obj->SpatialComponent->spatial.sphere.P);
 	}
 	void render		( )
 	{

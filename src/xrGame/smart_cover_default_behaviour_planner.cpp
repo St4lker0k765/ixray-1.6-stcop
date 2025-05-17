@@ -5,16 +5,14 @@
 //	Description : Default behaviour planner for target selector
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 #include "smart_cover_default_behaviour_planner.hpp"
 #include "script_game_object.h"
 #include "smart_cover_animation_planner.h"
 #include "smart_cover_planner_target_provider.h"
 #include "smart_cover_evaluators.h"
-#include "stalker_decision_space.h"
 #include "ai/stalker/ai_stalker.h"
-#include "stalker_property_evaluators.h"
 #include "script_game_object.h"
 
 using namespace StalkerDecisionSpace;
@@ -56,7 +54,7 @@ void default_behaviour_planner::add_evaluators			()
 {
 	add_evaluator			(
 		eWorldPropertyPlannerHasTarget,
-		xr_new<evaluators::loophole_planner_const_evaluator>(
+		new evaluators::loophole_planner_const_evaluator(
 			&object(),
 			"default behaviour planner has target",
 			false
@@ -64,7 +62,7 @@ void default_behaviour_planner::add_evaluators			()
 	);
 	add_evaluator			(
 		eWorldPropertyLoopholeCanStayIdle,
-		xr_new<evaluators::is_action_available_evaluator>(
+		new evaluators::is_action_available_evaluator(
 			&object(),
 			"can stay idle",
 			"idle"
@@ -72,7 +70,7 @@ void default_behaviour_planner::add_evaluators			()
 	);
 	add_evaluator			(
 		eWorldPropertyLoopholeCanLookout,
-		xr_new<evaluators::is_action_available_evaluator>(
+		new evaluators::is_action_available_evaluator(
 			&object(),
 			"can lookout",
 			"lookout"
@@ -80,7 +78,7 @@ void default_behaviour_planner::add_evaluators			()
 	);
 	add_evaluator			(
 		eWorldPropertyReadyToLookout,
-		xr_new<evaluators::lookout_time_interval_passed_evaluator>(
+		new evaluators::lookout_time_interval_passed_evaluator(
 			&object(),
 			"ready to lookout",
 			object().default_lookout_interval()
@@ -88,7 +86,7 @@ void default_behaviour_planner::add_evaluators			()
 	);
 	add_evaluator			(
 		eWorldPropertyReadyToIdle,
-		xr_new<evaluators::idle_time_interval_passed_evaluator>(
+		new evaluators::idle_time_interval_passed_evaluator(
 			&object(),
 			"stay idle",
 			object().default_idle_interval()

@@ -21,11 +21,13 @@ enum EEditorState{
     esBuildLevel
 };
 
-struct ECORE_API SPBItem{
+struct ECORE_API SPBItem
+{
 	shared_str	text;
     shared_str	info;
-    float 		max;
-    float 		progress;
+    volatile float max;
+    volatile float progress;
+
 public:
                 SPBItem				(LPCSTR txt, LPCSTR inf, float mx):text(txt),info(inf),max(mx),progress(0.f){}
     void		GetInfo				(xr_string& txt, float& p, float& m);
@@ -76,13 +78,11 @@ protected:
 
     void PrepareRedraw	();
     void Redraw			();
+
 protected:
     void D3D_CreateStateBlocks();
     void D3D_DestroyStateBlocks();
-public:
-    virtual void OutUICursorPos	()=0;
-	virtual void OutGridSize	()=0;
-	virtual void OutInfo		()=0;
+
 public:
 	// non-hidden ops
 	Ivector2 m_StartCp;
@@ -109,32 +109,31 @@ protected:
 
     // mailslot
     HANDLE			hMailSlot;
+
 public:
-    void ShowObjectHint();
     void ShowHint(const xr_string& s);
     bool ShowHint(const AStringVec& SS);
     void HideHint();
+    void Invalidate();
+
 public:
     // mouse sensetive
     float m_MouseSM, m_MouseSS, m_MouseSR;
+
+    enum class ECommandListID
+    {
+        NextFrame,
+        CurrentFrame
+    };
+    xr_hash_map<ECommandListID, xr_vector<std::function<void()>>> CommandList;
+
 protected:
     virtual void 	RealUpdateScene	()=0;
     void			RealRedrawScene	();
     void			RealResize		();
     void			OnFrame			();
+
 public:
-    struct DrawDebugString
-    {
-        ImVec2 Pos;
-        u32 Color;
-        xr_string Text;
-    };
-
-    xr_vector<std::function<void()>> CommandList;
-    xr_vector<DrawDebugString> ViewportLines;
-    xr_vector<DrawDebugString> ViewportFrameLines;
-    ImVec2 ViewportPos;
-
     				TUI				();
     virtual 		~TUI			();
 
@@ -145,7 +144,7 @@ public:
     int 			GetRealWidth	()	{   return EDevice->dwRealWidth; }
     int 			GetRealHeight	()  {   return EDevice->dwRealHeight; }
 
-    IC float 		ZFar			()	{	return EDevice->m_Camera.m_Zfar; }
+    IC float 		ZFar			()	{	return CurrentView().m_Camera.m_Zfar; }
     IC TShiftState	GetShiftState 	()	{	return m_ShiftState; }
 
     virtual bool 	OnCreate		();
@@ -184,7 +183,7 @@ public:
     void 			BeginEState			(EEditorState st){ m_EditorState.push_back(st); }
     void 			EndEState			(){ m_EditorState.pop_back(); }
     void 			EndEState			(EEditorState st){
-    	VERIFY(std::find(m_EditorState.begin(),m_EditorState.end(),st)!=m_EditorState.end());
+    	//VERIFY(std::find(m_EditorState.begin(),m_EditorState.end(),st)!=m_EditorState.end());
         for (EStateIt it=m_EditorState.end()-1; it>=m_EditorState.begin(); it--)
         	if (*it==st){
             	m_EditorState.erase(it,m_EditorState.end());
@@ -194,7 +193,6 @@ public:
     EEditorState 	GetEState			(){ return m_EditorState.back(); }
     bool 			ContainEState		(EEditorState st){ return std::find(m_EditorState.begin(),m_EditorState.end(),st)!=m_EditorState.end(); }
 
-    virtual void 	OutCameraPos		()=0;
     virtual void 	SetStatus			(LPCSTR s, bool bOutLog=true)=0;
     virtual void 	ResetStatus			()=0;
     
@@ -215,16 +213,6 @@ public:
 
     void 			OnDeviceCreate		();
     void			OnDeviceDestroy		();
-
-    // mailslot
-#if 0
-	bool 			CreateMailslot		();
-	void 			CheckMailslot		();
-	void 			OnReceiveMail		(LPCSTR msg);
-	void 			SendMail			(LPCSTR name, LPCSTR dest, LPCSTR msg);
-#endif
-
-    void			CheckWindowPos		(HWND* form);
 
     virtual LPCSTR 	EditorName			()=0;
     virtual LPCSTR	EditorDesc			()=0;
@@ -250,13 +238,40 @@ public:
     virtual void	ProgressDraw();
     SPBItem*		ProgressLast		(){return m_ProgressItems.empty()?0:m_ProgressItems.back();}
 
-	void ShowConsole();
-    void WriteConsole(TMsgDlgType mt, const char* txt);
-    void CloseConsole();
 public:
-    ref_rt				RT;
-    ref_rt				ZB;
-    _vector2<u32>            RTSize;
+    // Progress load
+    volatile bool IsLoading = false;
+    volatile float ProgressStatus = 0.f;
+    xr_string ProgressStatusName;
+
+    // Render form
+    ref_rt RT;
+    ref_rt RTPostion;
+    ref_rt RTNormal;
+    ref_rt RTDiffuse;
+    ref_rt RTCopy;
+    ref_rt ZB;
+
+    struct Viewport
+    {
+        CUI_Camera m_Camera;
+        ref_rt RTFreez;
+        Ivector2 RTSize;
+    };
+
+    Viewport& CurrentView();
+    void CreateViewport(int ID);
+    size_t ViewID = -1;
+    xr_vector<Viewport> Views;
+
+    ref_texture	m_HeaderLogo = nullptr;
+    ref_texture	m_WinMin = nullptr;
+    ref_texture	m_WinRes = nullptr;
+    ref_texture	m_WinMax = nullptr;
+    ref_texture	m_WinClose = nullptr;
+
+    
+    void InitWindowIcons();
 protected:
     virtual void OnDrawUI();
     void RealResetUI();
@@ -264,7 +279,6 @@ protected:
 public:
    IC  void ResetUI(bool bForced=false)  { if (!bForced)m_Flags.set(flResetUI, TRUE); if (bForced) RealResetUI(); }
    virtual Ivector2 GetRenderMousePosition()const { return Ivector2().set(0, 0); }
-   virtual void	OnStats();
 };
 //---------------------------------------------------------------------------
 extern ECORE_API TUI* UI;  

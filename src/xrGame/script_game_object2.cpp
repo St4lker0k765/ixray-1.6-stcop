@@ -6,22 +6,21 @@
 //	Description : Script game object class script export
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 #include "script_game_object.h"
 #include "ai_space.h"
 #include "../xrScripts/script_engine.h"
-#include "explosive.h"
+#include "Explosive.h"
 #include "script_zone.h"
-#include "object_handler.h"
 #include "script_hit.h"
 #include "../Include/xrRender/Kinematics.h"
-#include "pda.h"
+#include "PDA.h"
 #include "InfoPortion.h"
 #include "memory_manager.h"
-#include "ai_phrasedialogmanager.h"
+#include "AI_PhraseDialogManager.h"
 #include "xrMessages.h"
-#include "custommonster.h"
+#include "CustomMonster.h"
 #include "memory_manager.h"
 #include "visual_memory_manager.h"
 #include "sound_memory_manager.h"
@@ -34,7 +33,7 @@
 #include "../Include/xrRender/Kinematics.h"
 #include "../xrEngine/CameraBase.h"
 #include "ai/stalker/ai_stalker.h"
-#include "car.h"
+#include "Car.h"
 #include "movement_manager.h"
 #include "detail_path_manager.h"
 
@@ -511,4 +510,16 @@ bool CScriptGameObject::is_there_items_to_pickup	() const
 		return	false;
 	}
 	return (!!stalker->memory().item().selected());
+}
+
+bool CScriptGameObject::IsActorLadder() const
+{
+	CActor* actor = smart_cast<CActor*>(&object());
+	if (actor == nullptr)
+	{
+		ai().script_engine().script_log(ScriptStorage::eLuaMessageTypeError, "ScriptGameObject : attempt to call IsActorLadder method for non-actor object");
+		return false;
+	}
+
+	return actor->is_ladder();
 }

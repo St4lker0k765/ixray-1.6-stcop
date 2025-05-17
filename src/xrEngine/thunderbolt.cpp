@@ -2,17 +2,17 @@
 #pragma once
 
 #ifndef _EDITOR
-    #include "render.h"
+#include "Render.h"
 #endif    
-#include "Thunderbolt.h"
-#include "igame_persistent.h"
+#include "thunderbolt.h"
+#include "IGame_Persistent.h"
 #include "LightAnimLibrary.h"
 
 #ifdef _EDITOR
     #include "ui_toolscustom.h"
 #else
-	#include "igame_level.h"
-	#include "../xrcdb/xr_area.h"
+#include "IGame_Level.h"
+#include "../xrCDB/xr_area.h"
 	#include "xr_object.h"
 #endif
 
@@ -222,6 +222,7 @@ void CEffect_Thunderbolt::Bolt(shared_str id, float period, float lt)
 
 void CEffect_Thunderbolt::OnFrame(shared_str id, float period, float duration)
 {
+	PROF_EVENT("CEffect_Thunderbolt::OnFrame");
 	BOOL enabled			= !!(id.size());
 	if (bEnabled!=enabled){
     	bEnabled			= enabled;

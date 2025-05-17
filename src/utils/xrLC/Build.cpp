@@ -2,16 +2,16 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 
-#include "build.h"
+#include "Build.h"
 
 #include "../xrLC_Light/xrMU_Model.h"
 
 
 
 #include "../xrLC_Light/xrLC_GlobalData.h"
-#include "../xrLC_Light/xrface.h"
+#include "../xrLC_Light/xrFace.h"
 #include "../xrLC_Light/mu_model_light.h"
 
 //#include "../xrLC_Light/lcnet_task_manager.h"
@@ -249,7 +249,7 @@ void CBuild::Run	(LPCSTR P)
 }
 void	CBuild::StartMu	()
 {
-  //mu_base.start				(xr_new<CMUThread> (0));
+  //mu_base.start				(new CMUThread (0));
   run_mu_light(  );
 }
 void CBuild::	RunAfterLight			( IWriter* fs	)

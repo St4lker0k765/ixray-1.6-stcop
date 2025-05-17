@@ -12,14 +12,13 @@ class CLevelTool: public CToolCustom
 {
 	typedef CToolCustom inherited;
 
-	PROCESS_INFORMATION m_CompilerProcess;
-	PROCESS_INFORMATION m_GameProcess;
+	PROCESS_INFORMATION m_CompilerProcess = {};
+	PROCESS_INFORMATION m_GameProcess = {};
 	UIToolCustom*           m_ToolForm;
 	int             sub_target;
 	ObjClassID		target;
 
 	Flags32			m_Flags;
-	Gizmo*      m_Gizmo = nullptr;
 
 	enum{
 		flChangeAction		= (1<<0),
@@ -64,7 +63,6 @@ public:
 						CLevelTool			();
 	virtual         	~CLevelTool		();
 
-	IC Gizmo* GetGimzo() { return m_Gizmo; }
 	IC UIToolCustom*            GetToolForm         ()const{ return m_ToolForm; }
 	IC UIPropertiesForm*GetProperties       ()const { return m_Props; }
 	IC UIPropertiesForm*GetWorldProperties  ()const { return m_WorldProps; }
@@ -140,6 +138,7 @@ public:
 	CCommandVar			CommandEnableTarget		(CCommandVar p1, CCommandVar p2);
 	CCommandVar			CommandShowTarget		(CCommandVar p1, CCommandVar p2);
 	CCommandVar			CommandReadonlyTarget	(CCommandVar p1, CCommandVar p2);
+	CCommandVar			CommandMultiReplaceObjects(CCommandVar p1, CCommandVar p2);
 	CCommandVar			CommandMultiRenameObjects(CCommandVar p1,CCommandVar p2);
 public:
 	void RunGame(const char* Params = "");

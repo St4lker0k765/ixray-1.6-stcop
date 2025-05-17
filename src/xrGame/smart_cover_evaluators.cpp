@@ -5,12 +5,10 @@
 //	Description : Smart cover evaluators classes
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 #include "smart_cover_evaluators.h"
-#include "stalker_property_evaluators.h"
 #include "script_game_object.h"
-#include "stalker_decision_space.h"
 #include "ai/stalker/ai_stalker.h"
 #include "ai_space.h"
 #include "stalker_movement_manager_smart_cover.h"

@@ -1,172 +1,319 @@
 #include "stdafx.h"
-#include "..\XrECore\Editor\EditorChooseEvents.h"
+
+#include "../xrECore/Editor/EditorChooseEvents.h"
+#include "../xrECore/Editor/UIEditLightAnim.h"
+
+#include "../xrEUI/ImGuizmo.h"
+
+#include "Editor/Utils/Gizmo/IM_Manipulator.h"
 
 UIMainForm* MainForm = nullptr;
+
+static void ViewportFocusCallback()
+{
+	LUI->EndEState(esEditLibrary);
+	LUI->BeginEState(esEditScene);
+}
+
 UIMainForm::UIMainForm()
 {
-    EnableReceiveCommands();
-    if (!ExecCommand(COMMAND_INITIALIZE, (u32)0, (u32)0))
-    {
-        xrLogger::FlushLog();
-        exit(-1);
-    }
-    ExecCommand(COMMAND_UPDATE_GRID);
-    ExecCommand(COMMAND_RENDER_FOCUS);
-    FillChooseEvents();
-    m_TopBar = xr_new<UITopBarForm>();
-    m_Render = xr_new<UIRenderForm>();
-    m_MainMenu = xr_new<UIMainMenuForm>();
-    m_LeftBar = xr_new<UILeftBarForm>();
-    m_Properties = xr_new<UILPropertiesFrom>();
-    m_WorldProperties = xr_new<UIWorldPropertiesFrom>();
-    m_Render->SetContextMenuEvent(TOnRenderContextMenu(this, &UIMainForm::DrawContextMenu));
-    m_Render->SetToolBarEvent(TOnRenderToolBar(this, &UIMainForm::DrawRenderToolBar));
-    if (dynamic_cast<CLevelPreferences*>(EPrefs)->OpenObjectList)
-    {
-        UIObjectList::Show();
-    }
-    if (!dynamic_cast<CLevelPreferences*>(EPrefs)->OpenProperties)
-    {
-        m_Properties->Close();
-    }
-	if (!dynamic_cast<CLevelPreferences*>(EPrefs)->OpenWorldProperties)
+	EnableReceiveCommands();
+	if (!ExecCommand(COMMAND_INITIALIZE, (u32)0, (u32)0))
 	{
-        m_WorldProperties->Close();
+		xrLogger::FlushLog();
+		exit(-1);
+	}
+	ExecCommand(COMMAND_UPDATE_GRID);
+	ExecCommand(COMMAND_RENDER_FOCUS);
+	FillChooseEvents();
+	m_TopBar = new UITopBarForm();
+	m_Render = new UIRenderForm();
+	m_MainMenu = new UIMainMenuForm();
+	m_LeftBar = new UILeftBarForm();
+	m_Properties = new UILPropertiesFrom();
+	m_WorldProperties = new UIWorldPropertiesFrom();
+	m_Render->SetContextMenuEvent(TOnRenderContextMenu(this, &UIMainForm::DrawContextMenu));
+	m_Render->SetToolBarEvent(TOnRenderToolBar(this, &UIMainForm::DrawRenderToolBar));
+	m_Render->OnFocusCallback = ViewportFocusCallback;
+
+	// Action
+	m_tMenu         = EDevice->Resources->_CreateTexture("ed\\bar\\menu");
+	m_tSelect       = EDevice->Resources->_CreateTexture("ed\\bar\\select");
+	m_tAdd          = EDevice->Resources->_CreateTexture("ed\\bar\\add");
+	m_tMove         = EDevice->Resources->_CreateTexture("ed\\bar\\move");
+	m_tScale        = EDevice->Resources->_CreateTexture("ed\\bar\\scale");
+	m_tRotate       = EDevice->Resources->_CreateTexture("ed\\bar\\rotate");
+
+	// Snap
+	m_tGSnap        = EDevice->Resources->_CreateTexture("ed\\bar\\gsnap");
+	m_tOSnap        = EDevice->Resources->_CreateTexture("ed\\bar\\osnap");
+	m_tMoveToSnap   = EDevice->Resources->_CreateTexture("ed\\bar\\movetosnap");
+	m_tNSnap        = EDevice->Resources->_CreateTexture("ed\\bar\\nsnap");
+	m_tVSnap        = EDevice->Resources->_CreateTexture("ed\\bar\\vsnap");
+	m_tASnap        = EDevice->Resources->_CreateTexture("ed\\bar\\asnap");
+	m_tMSnap        = EDevice->Resources->_CreateTexture("ed\\bar\\msnap");
+
+	m_tZoom         = EDevice->Resources->_CreateTexture("ed\\bar\\zoom");
+	m_tZoomSel      = EDevice->Resources->_CreateTexture("ed\\bar\\zoomsel");
+
+	// Axis
+	m_tX            = EDevice->Resources->_CreateTexture("ed\\bar\\AxisX");
+	m_tY            = EDevice->Resources->_CreateTexture("ed\\bar\\AxisY");
+	m_tZ            = EDevice->Resources->_CreateTexture("ed\\bar\\AxisZ");
+	m_tZX           = EDevice->Resources->_CreateTexture("ed\\bar\\AxisZX");
+	
+	m_tGrid         = EDevice->Resources->_CreateTexture("ed\\bar\\grid");
+	m_tScaleGrid    = EDevice->Resources->_CreateTexture("ed\\bar\\scale_grid");
+	m_tAngle        = EDevice->Resources->_CreateTexture("ed\\bar\\angle");
+
+	m_tCsLocal      = EDevice->Resources->_CreateTexture("ed\\bar\\cslocal");
+	m_tNuScale      = EDevice->Resources->_CreateTexture("ed\\bar\\nuscale");
+
+	// View
+	m_tVFront       = EDevice->Resources->_CreateTexture("ed\\bar\\ViewFront");
+	m_tVBack        = EDevice->Resources->_CreateTexture("ed\\bar\\ViewB");
+	m_tVLeft        = EDevice->Resources->_CreateTexture("ed\\bar\\ViewLeft");
+	m_tVRight       = EDevice->Resources->_CreateTexture("ed\\bar\\ViewRight");
+	m_tVTop         = EDevice->Resources->_CreateTexture("ed\\bar\\ViewTop");
+	m_tVBottom      = EDevice->Resources->_CreateTexture("ed\\bar\\ViewB");
+	m_tVReset       = EDevice->Resources->_CreateTexture("ed\\bar\\ViewReset");
+
+	// Camera
+	m_tPlaneMove    = EDevice->Resources->_CreateTexture("ed\\bar\\PlaneMove");
+	m_tArcBall      = EDevice->Resources->_CreateTexture("ed\\bar\\ArcBall");
+	m_tFreeFly      = EDevice->Resources->_CreateTexture("ed\\bar\\FreeFly");
+
+	LoadWindowsStates();
+}
+
+void UIMainForm::LoadWindowsStates()
+{
+	CLevelPreferences* LPrefs = static_cast<CLevelPreferences*>(EPrefs);
+
+	if (LPrefs->OpenObjectList)
+	{
+		UIObjectList::Show();
+	}
+	else
+	{
+		UIObjectList::Close();
 	}
 
-    m_tMenu = EDevice->Resources->_CreateTexture("ed\\bar\\menu");
-    m_tSelect = EDevice->Resources->_CreateTexture("ed\\bar\\select");
-    m_tAdd = EDevice->Resources->_CreateTexture("ed\\bar\\add");
-    m_tMove = EDevice->Resources->_CreateTexture("ed\\bar\\move");
-    m_tScale = EDevice->Resources->_CreateTexture("ed\\bar\\scale");
-    m_tRotate = EDevice->Resources->_CreateTexture("ed\\bar\\rotate");
-    m_tNSnap = EDevice->Resources->_CreateTexture("ed\\bar\\nsnap");
-    m_tZoomSel = EDevice->Resources->_CreateTexture("ed\\bar\\zoomsel");
+	if (LPrefs->OpenProperties)
+	{
+		m_Properties->Open();
+	}
+	else
+	{
+		m_Properties->Close();
+	}
 
-    m_tGrid = EDevice->Resources->_CreateTexture("ed\\bar\\grid");
-    m_tScaleGrid = EDevice->Resources->_CreateTexture("ed\\bar\\scale_grid");
-    m_tAngle = EDevice->Resources->_CreateTexture("ed\\bar\\angle");
+	if (LPrefs->OpenWorldProperties)
+	{
+		m_WorldProperties->Open();
+	}
+	else
+	{
+		m_WorldProperties->Close();
+	}
 
-    LTools->GetGimzo()->SetStep(Gizmo::EType::Move, 0.1f);
-    LTools->GetGimzo()->SetStep(Gizmo::EType::Scale, 0.1f);
-    LTools->GetGimzo()->SetStep(Gizmo::EType::Rotate, 5.625f);
-
-    LTools->GetGimzo()->SwitchStep(Gizmo::EType::Move, true);
-    LTools->GetGimzo()->SwitchStep(Gizmo::EType::Scale, true);
-    LTools->GetGimzo()->SwitchStep(Gizmo::EType::Rotate, true);
-
+	if (LPrefs->OpenLightAnim)
+	{
+		UIEditLightAnim::Show();
+	}
 }
 
 UIMainForm::~UIMainForm()
 {
-	dynamic_cast<CLevelPreferences*>(EPrefs)->OpenProperties = !m_Properties->IsClosed();
-	dynamic_cast<CLevelPreferences*>(EPrefs)->OpenWorldProperties = !m_WorldProperties->IsClosed();
-    dynamic_cast<CLevelPreferences*>(EPrefs)->OpenObjectList = UIObjectList::IsOpen();
-    ClearChooseEvents();
-    xr_delete(m_WorldProperties);
-    xr_delete(m_Properties);
-    xr_delete(m_LeftBar);
-    xr_delete(m_MainMenu);
-    xr_delete(m_Render);
-    xr_delete(m_TopBar);
-    
-    m_tMenu.destroy();
-    m_tSelect.destroy();
-    m_tAdd.destroy();
-    m_tMove.destroy();
-    m_tScale.destroy();
-    m_tRotate.destroy();
-    m_tNSnap.destroy();
-    m_tZoomSel.destroy();
-    m_tGrid.destroy();
-    m_tScaleGrid.destroy();
-    m_tAngle.destroy();
+	CLevelPreferences* LPrefs = static_cast<CLevelPreferences*>(EPrefs);
 
-    ExecCommand(COMMAND_DESTROY, (u32)0, (u32)0);
+	LPrefs->OpenProperties = !m_Properties->IsClosed();
+	LPrefs->OpenWorldProperties = !m_WorldProperties->IsClosed();
+	LPrefs->OpenObjectList = UIObjectList::IsOpen();
+	LPrefs->OpenLightAnim = UIEditLightAnim::IsOpen();
+
+	ClearChooseEvents();
+	xr_delete(m_WorldProperties);
+	xr_delete(m_Properties);
+	xr_delete(m_LeftBar);
+	xr_delete(m_MainMenu);
+	xr_delete(m_Render);
+	xr_delete(m_TopBar);
+
+	// Action
+	m_tMenu.destroy();
+	m_tSelect.destroy();
+	m_tAdd.destroy();
+	m_tMove.destroy();
+	m_tScale.destroy();
+	m_tRotate.destroy();
+
+	// Snap
+	m_tGSnap.destroy();
+	m_tOSnap.destroy();
+	m_tMoveToSnap.destroy();
+	m_tNSnap.destroy();
+	m_tVSnap.destroy();
+	m_tASnap.destroy();
+	m_tMSnap.destroy();
+
+	// Axis
+	m_tX.destroy();
+	m_tY.destroy();
+	m_tZ.destroy();
+	m_tZX.destroy();
+
+	m_tZoom.destroy();
+	m_tZoomSel.destroy();
+	m_tGrid.destroy();
+	m_tScaleGrid.destroy();
+	m_tAngle.destroy();
+
+	m_tCsLocal.destroy();
+	m_tNuScale.destroy();
+
+	// View
+	m_tVFront.destroy();
+	m_tVBack.destroy();
+	m_tVLeft.destroy();
+	m_tVRight.destroy();
+	m_tVTop.destroy();
+	m_tVBottom.destroy();
+	m_tVReset.destroy();
+
+	// Camera
+	m_tPlaneMove.destroy();
+	m_tArcBall.destroy();
+	m_tFreeFly.destroy();
+
+	ExecCommand(COMMAND_DESTROY, (u32)0, (u32)0);
 }
 
 void UIMainForm::Draw()
 {
-    bOpen = true;
-    m_MainMenu->Draw();
-    m_TopBar->Draw();
-    m_LeftBar->Draw();
+	bOpen = true;
+	m_MainMenu->Draw();
+	m_TopBar->Draw();
+	m_LeftBar->Draw();
 	m_Properties->Draw();
 	m_WorldProperties->Draw();
-    //static bool Demo = true;
+	//static bool Demo = true;
    // ImGui::ShowDemoWindow(&Demo);
-    m_Render->Draw();
+	m_Render->Draw();
 }
 
 bool UIMainForm::Frame()
 {
-    if(UI)  return UI->Idle();
-    return false;
+	if(UI)  return UI->Idle();
+	return false;
 }
 
 void UIMainForm::DrawContextMenu()
 {
-    if (ImGui::BeginMenu("Edit"))
-    {
-        if (ImGui::MenuItem("Copy"))
-        {
-            ExecCommand(COMMAND_COPY);
-        }
-        if (ImGui::MenuItem("Paste"))
-        {
-            ExecCommand(COMMAND_PASTE);
-        }
+	if (ImGui::BeginMenu("Visiblity"))
+	{
+		if (ImGui::MenuItem("Hide Selected"))
+		{
+			ExecCommand(COMMAND_HIDE_SEL, FALSE);
+		}
+		if (ImGui::MenuItem("Hide Unselected"))
+		{
+			ExecCommand(COMMAND_HIDE_UNSEL);
+		}
+		if (ImGui::MenuItem("Hide All"))
+		{
+			ExecCommand(COMMAND_HIDE_ALL, FALSE);
+		}
+		ImGui::Separator();
+		if (ImGui::MenuItem("Unhide All"))
+		{
+			ExecCommand(COMMAND_HIDE_ALL, TRUE);
+		}
+		ImGui::EndMenu();
+	}
+	if(ImGui::BeginMenu("Locking"))
+	{
+		ESceneToolBase* SceneTool = Scene->GetTool(LTools->CurrentClassID());
+		ESceneToolBase::ETestResult TestOut = SceneTool->TestSelectedObjectsFlag(CCustomObject::flRT_Locked);
+		bool CanLock = TestOut != ESceneToolBase::ETestResult::All;
+		bool CanUnlock = TestOut != ESceneToolBase::ETestResult::None;
+
+		ImGui::BeginDisabled(!CanLock);
+		if(ImGui::MenuItem("Lock selection"))
+		{
+            ExecCommand(COMMAND_LOCK_SEL, TRUE);
+		}
+        if(ImGui::MenuItem("Lock unselected"))
+		{
+            ExecCommand(COMMAND_LOCK_UNSEL, TRUE);
+		}
+        if(ImGui::MenuItem("Lock all"))
+		{
+			ExecCommand(COMMAND_LOCK_ALL, TRUE);
+		}
+		ImGui::EndDisabled();
+
         ImGui::Separator();
-        if (ImGui::MenuItem("Cut"))
-        {
-            ExecCommand(COMMAND_CUT);
-        }
-        ImGui::Separator();
-        if (ImGui::MenuItem("Delete"))
-        {
-            ExecCommand(COMMAND_DELETE_SELECTION);
-        }
-        ImGui::EndMenu();
-    }
-    if (ImGui::BeginMenu("Visiblity"))
-    {
-        if (ImGui::MenuItem("Hide Selected"))
-        {
-            ExecCommand(COMMAND_HIDE_SEL, FALSE);
-        }
-        if (ImGui::MenuItem("Hide Unselected"))
-        {
-            ExecCommand(COMMAND_HIDE_UNSEL);
-        }
-        if (ImGui::MenuItem("Hide All"))
-        {
-            ExecCommand(COMMAND_HIDE_ALL, FALSE);
-        }
-        ImGui::Separator();
-        if (ImGui::MenuItem("Unhide All"))
-        {
-            ExecCommand(COMMAND_HIDE_ALL, TRUE);
-        }
-        ImGui::EndMenu();
-    }
-    ImGui::Separator();
-    if (ImGui::MenuItem("Properties"))
-    {
-        ExecCommand(COMMAND_SHOW_PROPERTIES);
-    }
-   
-   
+
+		ImGui::BeginDisabled(!CanUnlock);
+		if(ImGui::MenuItem("Unlock selection"))
+		{
+			ExecCommand(COMMAND_LOCK_SEL, FALSE);
+		}
+		if(ImGui::MenuItem("Unlock unselected"))
+		{
+			ExecCommand(COMMAND_LOCK_UNSEL, FALSE);
+		}
+		if(ImGui::MenuItem("Unlock all"))
+		{
+			ExecCommand(COMMAND_LOCK_ALL, FALSE);
+		}
+		ImGui::EndDisabled();
+		ImGui::EndMenu();
+	}
+
+	if (ImGui::BeginMenu("Edit"))
+	{
+		if (ImGui::MenuItem("Copy"))
+		{
+			ExecCommand(COMMAND_COPY);
+		}
+		if (ImGui::MenuItem("Paste"))
+		{
+			ExecCommand(COMMAND_PASTE);
+		}
+		if (ImGui::MenuItem("Duplicate"))
+		{
+			ExecCommand(COMMAND_DUPLICATE);
+		}
+		ImGui::Separator();
+		if (ImGui::MenuItem("Cut"))
+		{
+			ExecCommand(COMMAND_CUT);
+		}
+		ImGui::Separator();
+		if (ImGui::MenuItem("Delete"))
+		{
+			ExecCommand(COMMAND_DELETE_SELECTION);
+		}
+		ImGui::EndMenu();
+	}
+	ImGui::Separator();
+	if (ImGui::MenuItem("Properties"))
+	{
+		ExecCommand(COMMAND_SHOW_PROPERTIES);
+	}
 }
 
-void UIMainForm::DrawRenderToolBar(ImVec2 Size)
+void UIMainForm::DrawRenderToolBar(ImVec2 Pos, ImVec2 Size)
 {
-    {
-        ImGui::BeginGroup();
-        m_tMenu->Load();
-        {
+	// Меню
+	{
+		ImGui::BeginGroup();
+		m_tMenu->Load();
+		{
 			if (ImGui::BeginPopupContextItem("MenuScene"))
 			{
-				
 				{
 					bool selected = psDeviceFlags.test(rsDrawSafeRect);
 					if (ImGui::MenuItem("Draw Safe Rect", "", &selected))
@@ -181,6 +328,36 @@ void UIMainForm::DrawRenderToolBar(ImVec2 Size)
 					{
 						psDeviceFlags.set(rsDrawGrid, selected);
 						UI->RedrawScene();
+					}
+				}
+				{
+					if (ImGui::BeginMenu("Coordinate Axes"))
+					{
+						bool disabled = psDeviceFlags.test(rsDisableAxisCube);
+
+						if (ImGui::MenuItem("None", "", &disabled))
+						{
+							psDeviceFlags.set(rsDisableAxisCube, disabled);
+						}
+
+						ImGui::BeginDisabled(disabled);
+
+						bool selected_a = false;
+						bool selected_c = false;
+
+						(!psDeviceFlags.test(rsDrawAxis) ? selected_c : selected_a) = true;
+
+						if (ImGui::MenuItem("Axis", "", &selected_a))
+						{
+							psDeviceFlags.set(rsDrawAxis, true);
+						}
+						if (ImGui::MenuItem("Cube", "", &selected_c))
+						{
+							psDeviceFlags.set(rsDrawAxis, false);
+						}
+
+						ImGui::EndDisabled();
+						ImGui::EndMenu();
 					}
 				}
 				ImGui::Separator();
@@ -212,7 +389,6 @@ void UIMainForm::DrawRenderToolBar(ImVec2 Size)
 								UI->RedrawScene();
 							}
 						}
-
 						ImGui::EndMenu();
 					}
 				}
@@ -221,7 +397,14 @@ void UIMainForm::DrawRenderToolBar(ImVec2 Size)
 				{
 					if (ImGui::BeginMenu("Quality"))
 					{
-						static bool selected[4] = { false,false,true,false };
+						static bool selected[4] = 
+						{
+							EDevice->m_ScreenQuality < 0.3f,
+							!selected[0] && EDevice->m_ScreenQuality < 0.6f,
+							!selected[1] && EDevice->m_ScreenQuality < 1.1f,
+							!selected[2] && EDevice->m_ScreenQuality < 2.1f 
+						};
+
 						if (ImGui::MenuItem("25%", "", &selected[0]))
 						{
 							selected[1] = selected[2] = selected[3] = false;
@@ -276,18 +459,9 @@ void UIMainForm::DrawRenderToolBar(ImVec2 Size)
 							UI->RedrawScene();
 						}
 					}
-					{
-						bool selected = psDeviceFlags.test(rsLighting);;
-						if (ImGui::MenuItem("Lighting", "", &selected))
-						{
-							psDeviceFlags.set(rsLighting, selected);
-							UI->RedrawScene();
-						}
-					}
 					ImGui::EndMenu();
 				}
 				ImGui::Separator();
-				
 				{
 					bool selected = psDeviceFlags.test(rsMuteSounds);
 					if (ImGui::MenuItem("Mute Sounds", "", &selected))
@@ -310,396 +484,1036 @@ void UIMainForm::DrawRenderToolBar(ImVec2 Size)
 				}
 				ImGui::EndPopup();
 			}
-            if (ImGui::ImageButton(m_tMenu->pSurface, ImVec2(16, ImGui::GetFontSize())))
+			if (ImGui::ImageButton(m_tMenu->pSurface, ImVec2(16, ImGui::GetFontSize())))
 			{
 				ImGui::OpenPopup("MenuScene");
-            }
-        }
-        ImGui::EndGroup();
-    }
-
-	bool bIsSupportMove = false;
-	bool bIsSupportRotate = false;
-	bool bIsSupportScale = false;
-    {
-        ETAction Action = LTools->GetAction();
-
-    
-        if (Scene->GetTool(LTools->CurrentClassID())&& Scene->GetTool(LTools->CurrentClassID())->FindControl(0,etaSelect))
-        {
-          auto Control=   Scene->GetTool(LTools->CurrentClassID())->FindControl(0, etaSelect);
-		  bIsSupportMove = Control->IsSupportMove();
-          bIsSupportRotate = Control->IsSupportRotate();
-          bIsSupportScale = Control->IsSupportScale();
-        }
-		if (!bIsSupportMove&&Action == etaSelect && LTools->GetGimzo()->GetType() == Gizmo::EType::Move)
-		{
-            LTools->GetGimzo()->SetType(Gizmo::EType::None);
-        }
-		if (!bIsSupportRotate && Action == etaSelect && LTools->GetGimzo()->GetType() == Gizmo::EType::Rotate)
-		{
-			LTools->GetGimzo()->SetType(Gizmo::EType::None);
-		}
-		if (!bIsSupportScale && Action == etaSelect && LTools->GetGimzo()->GetType() == Gizmo::EType::Scale)
-		{
-			LTools->GetGimzo()->SetType(Gizmo::EType::None);
-		}
-
-        ImGui::SameLine(0, ImGui::GetFontSize() * 5);
-        ImGui::BeginGroup();
-
-
-        m_tSelect->Load();
-        {
-            bool bPushColor = false;
-            if (Action == etaSelect&&LTools->GetGimzo()->GetType() == Gizmo::EType::None)
-            {
-                bPushColor = true;
-                ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_Border));
-                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyleColorVec4(ImGuiCol_Border));
-            }
-            if (ImGui::ImageButton(m_tSelect->pSurface, ImVec2(16, ImGui::GetFontSize())))
-            {
-                LTools->SetAction(etaSelect);
-                LTools->GetGimzo()->SetType(Gizmo::EType::None);
-            }
-            if (bPushColor)
-            {
-                ImGui::PopStyleColor();
-                ImGui::PopStyleColor();
-            }
-        }
-
-        ImGui::SameLine();
-
-        {
-            bool bPushColor = false;
-            if (Action==etaAdd)
-            {
-                bPushColor = true;
-                ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_Border));
-                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyleColorVec4(ImGuiCol_Border));
-            }
-            m_tAdd->Load();
-            if (ImGui::ImageButton(m_tAdd->pSurface, ImVec2(16, ImGui::GetFontSize())))
-            {
-                LTools->SetAction(etaAdd);
-                LTools->GetGimzo()->SetType(Gizmo::EType::None);
-            }
-            if (bPushColor)
-            {
-                ImGui::PopStyleColor();
-                ImGui::PopStyleColor();
-            }
-        }
-     
-
-        ImGui::SameLine();
-        {
-
-            bool bPushColor = false;
-
-			ImGui::BeginDisabled(!bIsSupportMove);
-            if ((Action == etaSelect || Action == etaMove) && LTools->GetGimzo()->GetType() == Gizmo::EType::Move)
-            {
-                bPushColor = true;
-                ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_Border));
-                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyleColorVec4(ImGuiCol_Border));
-            }
-            m_tMove->Load();
-            if (ImGui::ImageButton(m_tMove->pSurface, ImVec2(16, ImGui::GetFontSize())))
-            {
-                LTools->SetAction(etaSelect);
-                LTools->GetGimzo()->SetType(Gizmo::EType::Move);
-            }
-
-            if (bPushColor)
-            {
-                ImGui::PopStyleColor();
-                ImGui::PopStyleColor();
 			}
-			ImGui::EndDisabled();
-        }
-        
-
-        ImGui::SameLine();
-        {
-            bool bPushColor = false;
-            ImGui::BeginDisabled(!bIsSupportScale);
-            if ((Action == etaSelect || Action == etaScale) && LTools->GetGimzo()->GetType() == Gizmo::EType::Scale)
-            {
-                bPushColor = true;
-                ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_Border));
-                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyleColorVec4(ImGuiCol_Border));
-            }
-            m_tScale->Load();
-            if (ImGui::ImageButton(m_tScale->pSurface, ImVec2(16, ImGui::GetFontSize())))
-            {
-                LTools->SetAction(etaSelect);
-                LTools->GetGimzo()->SetType(Gizmo::EType::Scale);
-            }
-            if (bPushColor)
-            {
-                ImGui::PopStyleColor();
-                ImGui::PopStyleColor();
-            }
-            ImGui::EndDisabled();
-        }
-
-        ImGui::SameLine();
-        { 
-            bool bPushColor = false;
-
-			ImGui::BeginDisabled(!bIsSupportRotate);
-            if ((Action == etaSelect || Action == etaRotate) && LTools->GetGimzo()->GetType() == Gizmo::EType::Rotate)
-            {
-                bPushColor = true;
-                ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_Border));
-                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyleColorVec4(ImGuiCol_Border));
-            }
-            m_tRotate->Load();
-            if (ImGui::ImageButton(m_tRotate->pSurface, ImVec2(16, ImGui::GetFontSize())))
-            {
-                LTools->SetAction(etaSelect);
-                LTools->GetGimzo()->SetType(Gizmo::EType::Rotate);
-            }
-            if (bPushColor)
-            {
-                ImGui::PopStyleColor();
-                ImGui::PopStyleColor();
-            }
-
-			ImGui::EndDisabled();
-        }
-
-        ImGui::EndGroup();
-    }
-    {
-        ImGui::SameLine(0, ImGui::GetFontSize() * 5);
-        ImGui::BeginGroup();
-
-        {
-            bool bPushColor = false;
-            if (Tools->GetSettings(etfNormalAlign))
-            {
-                bPushColor = true;
-                ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_Border));
-                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyleColorVec4(ImGuiCol_Border));
-            }
-            m_tNSnap->Load();
-            if (ImGui::ImageButton(m_tNSnap->pSurface, ImVec2(16, ImGui::GetFontSize()), ImVec2(0, 0), ImVec2(0.5f, 1.f)))
-            {
-                ExecCommand(COMMAND_SET_SETTINGS, etfNormalAlign, !Tools->GetSettings(etfNormalAlign));
-            }
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				ImGui::SetTooltip("Menu");
+			}
+		}
+		ImGui::EndGroup();
+	}
+	ImGui::SameLine(0, ImGui::GetFontSize() * 1.5);
+	// Action
+	{
+		ETAction Action = LTools->GetAction();
+		ImGui::BeginGroup();
+		// Select
+		{
+			bool bPushColor = false;
+			if (Action == etaSelect)
+			{
+				bPushColor = true;
+				ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+			}
+			m_tSelect->Load();
+			if (ImGui::ImageButton(m_tSelect->pSurface, ImVec2(16, ImGui::GetFontSize())))
+			{
+				LTools->SetAction(etaSelect);
+			}
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				ImGui::SetTooltip("Select");
+			}
 			if (bPushColor)
 			{
 				ImGui::PopStyleColor();
 				ImGui::PopStyleColor();
 			}
-        }
-
-        ImGui::SameLine();
-
-        m_tZoomSel->Load();
-        if (ImGui::ImageButton(m_tZoomSel->pSurface, ImVec2(16, ImGui::GetFontSize()),ImVec2(0,0), ImVec2(0.5f, 1.f)))
+		}
+		ImGui::SameLine();
+		// Add
 		{
-			ExecCommand(COMMAND_ZOOM_EXTENTS, TRUE);
-        }
-        ImGui::EndGroup();
-    }
-    {
-        string_path Temp;
-        ImGui::SameLine(0, ImGui::GetFontSize() * 5);
-        ImGui::BeginGroup();
+			bool bPushColor = false;
+			if (Action == etaAdd)
+			{
+				bPushColor = true;
+				ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+			}
+			m_tAdd->Load();
+			if (ImGui::ImageButton(m_tAdd->pSurface, ImVec2(16, ImGui::GetFontSize())))
+			{
+				LTools->SetAction(etaAdd);
+			}
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				ImGui::SetTooltip("Add");
+			}
+			if (bPushColor)
+			{
+				ImGui::PopStyleColor();
+				ImGui::PopStyleColor();
+			}
+		}
+		ImGui::SameLine();
+		// Move
+		{
+			bool bPushColor = false;
+			if (Action == etaMove)
+			{
+				bPushColor = true;
+				ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+			}
+			m_tMove->Load();
+			if (ImGui::ImageButton(m_tMove->pSurface, ImVec2(16, ImGui::GetFontSize())))
+			{
+				LTools->SetAction(etaMove);
+			}
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				ImGui::SetTooltip("Move");
+			}
+			if (bPushColor)
+			{
+				ImGui::PopStyleColor();
+				ImGui::PopStyleColor();
+			}
+		}
+		ImGui::SameLine();
+		// Scale
+		{
+			bool bPushColor = false;
+			if (Action == etaScale)
+			{
+				bPushColor = true;
+				ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+			}
+			m_tScale->Load();
+			if (ImGui::ImageButton(m_tScale->pSurface, ImVec2(16, ImGui::GetFontSize())))
+			{
+				LTools->SetAction(etaScale);
+			}
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				ImGui::SetTooltip("Scale");
+			}
+			if (bPushColor)
+			{
+				ImGui::PopStyleColor();
+				ImGui::PopStyleColor();
+			}
+		}
+		ImGui::SameLine();
+		// Rotate
+		{
+			bool bPushColor = false;
+			if (Action == etaRotate)
+			{
+				bPushColor = true;
+				ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+			}
+			m_tRotate->Load();
+			if (ImGui::ImageButton(m_tRotate->pSurface, ImVec2(16, ImGui::GetFontSize())))
+			{
+				LTools->SetAction(etaRotate);
+			}
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				ImGui::SetTooltip("Rotate");
+			}
+			if (bPushColor)
+			{
+				ImGui::PopStyleColor();
+				ImGui::PopStyleColor();
+			}
+		}
+		ImGui::EndGroup();
+	}
+	ImGui::SameLine(0, ImGui::GetFontSize() * 1.5);
+	// Привязки
+	{
+		ImGui::BeginGroup();
+		// Привязка к объектам
+		{
+			bool bPushColor = false;
+			if (Tools->GetSettings(etfOSnap))
+			{
+				bPushColor = true;
+				ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+			}
+			m_tOSnap->Load();
+			if (ImGui::ImageButton(m_tOSnap->pSurface, ImVec2(16, ImGui::GetFontSize()), ImVec2(0, 0), ImVec2(0.5f, 1.f)))
+			{
+				ExecCommand(COMMAND_SET_SETTINGS, etfOSnap, !Tools->GetSettings(etfOSnap));
+			}
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				ImGui::SetTooltip("Object Snap Toggle");
+			}
+			if (bPushColor)
+			{
+				ImGui::PopStyleColor();
+				ImGui::PopStyleColor();
+			}
+		}
+		ImGui::SameLine();
+		// Переключатель перемещения привязки к объекту
+		{
+			bool bPushColor = false;
+			if (Tools->GetSettings(etfMTSnap))
+			{
+				bPushColor = true;
+				ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+			}
+			m_tMoveToSnap->Load();
+			if (ImGui::ImageButton(m_tMoveToSnap->pSurface, ImVec2(16, ImGui::GetFontSize()), ImVec2(0, 0), ImVec2(0.5f, 1.f)))
+			{
+				ExecCommand(COMMAND_SET_SETTINGS, etfMTSnap, !Tools->GetSettings(etfMTSnap));
+			}
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				ImGui::SetTooltip("Moving Snap To Object Toggle");
+			}
+			if (bPushColor)
+			{
+				ImGui::PopStyleColor();
+				ImGui::PopStyleColor();
+			}
+		}
+		ImGui::SameLine();
+		// Привязка к Нормалям
+		{
+			bool bPushColor = false;
+			if (Tools->GetSettings(etfNormalAlign))
+			{
+				bPushColor = true;
+				ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+			}
+			m_tNSnap->Load();
+			if (ImGui::ImageButton(m_tNSnap->pSurface, ImVec2(16, ImGui::GetFontSize()), ImVec2(0, 0), ImVec2(0.5f, 1.f)))
+			{
+				ExecCommand(COMMAND_SET_SETTINGS, etfNormalAlign, !Tools->GetSettings(etfNormalAlign));
+			}
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				ImGui::SetTooltip("Normal Alignment");
+			}
+			if (bPushColor)
+			{
+				ImGui::PopStyleColor();
+				ImGui::PopStyleColor();
+			}
+		}
+		ImGui::SameLine();
+		// Привязка к сетке
+		{
+			bool bPushColor = false;
+			if (Tools->GetSettings(etfGSnap))
+			{
+				bPushColor = true;
+				ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+			}
+			m_tGSnap->Load();
+			if (ImGui::ImageButton(m_tGSnap->pSurface, ImVec2(16, ImGui::GetFontSize()), ImVec2(0, 0), ImVec2(0.5f, 1.f)))
+			{
+				ExecCommand(COMMAND_SET_SETTINGS, etfGSnap, !Tools->GetSettings(etfGSnap));
+			}
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				ImGui::SetTooltip("Grid Snap Toggle");
+			}
+			if (bPushColor)
+			{
+				ImGui::PopStyleColor();
+				ImGui::PopStyleColor();
+			}
+		}
+		ImGui::SameLine();
+		// Привязка к вершинам
+		{
+			bool bPushColor = false;
+			if (Tools->GetSettings(etfVSnap))
+			{
+				bPushColor = true;
+				ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+			}
+			m_tVSnap->Load();
+			if (ImGui::ImageButton(m_tVSnap->pSurface, ImVec2(16, ImGui::GetFontSize()), ImVec2(0, 0), ImVec2(0.5f, 1.f)))
+			{
+				ExecCommand(COMMAND_SET_SETTINGS, etfVSnap, !Tools->GetSettings(etfVSnap));
+			}
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				ImGui::SetTooltip("Vertex Snap Toggle");
+			}
+			if (bPushColor)
+			{
+				ImGui::PopStyleColor();
+				ImGui::PopStyleColor();
+			}
+		}
+		ImGui::EndGroup();
+	}
+	ImGui::SameLine(0, ImGui::GetFontSize() * 1.5);
+	// --------------------------------------------------------------------------------------------
+	// Фокусировка
+	{
+		ImGui::BeginGroup();
+		// Оптимальный вид - вся сцена
+		{
+			m_tZoom->Load();
+			if (ImGui::ImageButton(m_tZoom->pSurface, ImVec2(16, ImGui::GetFontSize()), ImVec2(0, 0), ImVec2(0.5f, 1.f)))
+			{
+				ExecCommand(COMMAND_ZOOM_EXTENTS, FALSE);
+			}
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				ImGui::SetTooltip("Focus the whole scene");
+			}
+		}
+		ImGui::SameLine();
+		// Сфокусироваться на выбранном объекте
+		{
+			m_tZoomSel->Load();
+			if (ImGui::ImageButton(m_tZoomSel->pSurface, ImVec2(16, ImGui::GetFontSize()), ImVec2(0, 0), ImVec2(0.5f, 1.f)))
+			{
+				ExecCommand(COMMAND_ZOOM_EXTENTS, TRUE);
+			}
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				ImGui::SetTooltip("Focus on the selected object");
+			}
+		}
+		ImGui::EndGroup();
+	}
+	ImGui::SameLine(0, ImGui::GetFontSize() * 1.5);
+	// --------------------------------------------------------------------------------------------
+	// Фиксации манипуляторов
+	{
+		string_path Temp;
+		ImGui::BeginGroup();
+		// Move
+		{
+			{
+				bool bPushColor = false;
+				if (Tools->GetSettings(etfMSnap))
+				{
+					bPushColor = true;
+					ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+					ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+				}
+				m_tGrid->Load();
+				if (ImGui::ImageButton(m_tGrid->pSurface, ImVec2(16, ImGui::GetFontSize())))
+				{
+					ExecCommand(COMMAND_SET_SETTINGS, etfMSnap, !Tools->GetSettings(etfMSnap));
+				}
+				if (ImGui::IsItemHovered())
+				{
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+					ImGui::SetTooltip("Fixed object movement");
+				}
+				if (bPushColor)
+				{
+					ImGui::PopStyleColor();
+					ImGui::PopStyleColor();
+				}
+			}
+			ImGui::SameLine();
+			ImGui::SetNextItemWidth(ImGui::GetFontSize() * 3.5);
+			xr_sprintf(Temp, "%.2f", Tools->m_MoveSnap);
+			if (ImGui::BeginCombo("##move", Temp, ImGuiComboFlags_None))
+			{
+				if (ImGui::Selectable("0.01", false))
+				{
+					Tools->m_MoveSnap = 0.01f;
+				}
+				if (ImGui::IsItemHovered())
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				if (ImGui::Selectable("0.05", false))
+				{
+					Tools->m_MoveSnap = 0.05f;
+				}
+				if (ImGui::IsItemHovered())
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				if (ImGui::Selectable("0.1", false))
+				{
+					Tools->m_MoveSnap = 0.1f;
+				}
+				if (ImGui::IsItemHovered())
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				if (ImGui::Selectable("0.5", false))
+				{
+					Tools->m_MoveSnap = 0.5f;
+				}
+				if (ImGui::IsItemHovered())
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				if (ImGui::Selectable("1", false))
+				{
+					Tools->m_MoveSnap = 1.f;
+				}
+				if (ImGui::IsItemHovered())
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				if (ImGui::Selectable("2", false))
+				{
+					Tools->m_MoveSnap = 2.f;
+				}
+				if (ImGui::IsItemHovered())
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				if (ImGui::Selectable("5", false))
+				{
+					Tools->m_MoveSnap = 10.f;
+				}
+				if (ImGui::IsItemHovered())
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				if (ImGui::Selectable("25", false))
+				{
+					Tools->m_MoveSnap = 25.f;
+				}
+				if (ImGui::IsItemHovered())
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				if (ImGui::Selectable("50", false))
+				{
+					Tools->m_MoveSnap = 50.f;
+				}
+				if (ImGui::IsItemHovered())
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				if (ImGui::Selectable("100", false))
+				{
+					Tools->m_MoveSnap = 100.f;
+				}
+				if (ImGui::IsItemHovered())
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				if (ImGui::Selectable("250", false))
+				{
+					Tools->m_MoveSnap = 250.f;
+				}
+				if (ImGui::IsItemHovered())
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				if (ImGui::Selectable("500", false))
+				{
+					Tools->m_MoveSnap = 500.f;
+				}
+				if (ImGui::IsItemHovered())
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				ImGui::EndCombo();
+			}
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				ImGui::SetTooltip("The choice of a fixed distance of movement of the object");
+			}
+		}
+		ImGui::SameLine(0, ImGui::GetFontSize());
+		// --------------------------------------------------------------------------------------------
+		// Scale
+		{
+			{
+				bool bPushColor = false;
+				if (Tools->GetSettings(etfScaleFixed))
+				{
+					bPushColor = true;
+					ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+					ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+				}
+				m_tScaleGrid->Load();
+				if (ImGui::ImageButton(m_tScaleGrid->pSurface, ImVec2(16, ImGui::GetFontSize())))
+				{
+					ExecCommand(COMMAND_SET_SETTINGS, etfScaleFixed, !Tools->GetSettings(etfScaleFixed));
+				}
+				if (ImGui::IsItemHovered())
+				{
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+					ImGui::SetTooltip("Fixed Object Scaling");
+				}
+				if (bPushColor)
+				{
+					ImGui::PopStyleColor();
+					ImGui::PopStyleColor();
+				}
+			}
+			ImGui::SameLine();
+			ImGui::SetNextItemWidth(ImGui::GetFontSize() * 3);
+			xr_sprintf(Temp, "%.2f", Tools->m_ScaleFixed);
+			if (ImGui::BeginCombo("##scale", Temp, ImGuiComboFlags_None))
+			{
+				if (ImGui::Selectable("0.01", false))
+				{
+					Tools->m_ScaleFixed = 0.01f;
+				}
+				if (ImGui::IsItemHovered())
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				if (ImGui::Selectable("0.05", false))
+				{
+					Tools->m_ScaleFixed = 0.05f;
+				}
+				if (ImGui::IsItemHovered())
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				if (ImGui::Selectable("0.1", false))
+				{
+					Tools->m_ScaleFixed = 0.1f;
+				}
+				if (ImGui::IsItemHovered())
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				if (ImGui::Selectable("0.25", false))
+				{
+					Tools->m_ScaleFixed = 0.25f;
+				}
+				if (ImGui::IsItemHovered())
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				if (ImGui::Selectable("0.5", false))
+				{
+					Tools->m_ScaleFixed = 0.5f;
+				}
+				if (ImGui::IsItemHovered())
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				if (ImGui::Selectable("1", false))
+				{
+					Tools->m_ScaleFixed = 1.f;
+				}
+				if (ImGui::IsItemHovered())
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				if (ImGui::Selectable("2", false))
+				{
+					Tools->m_ScaleFixed = 2.f;
+				}
+				if (ImGui::IsItemHovered())
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				if (ImGui::Selectable("5", false))
+				{
+					Tools->m_ScaleFixed = 5.f;
+				}
+				if (ImGui::IsItemHovered())
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				if (ImGui::Selectable("10", false))
+				{
+					Tools->m_ScaleFixed = 10.f;
+				}
+				if (ImGui::IsItemHovered())
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				if (ImGui::Selectable("50", false))
+				{
+					Tools->m_ScaleFixed = 50.f;
+				}
+				if (ImGui::IsItemHovered())
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				if (ImGui::Selectable("200", false))
+				{
+					Tools->m_ScaleFixed = 200.f;
+				}
+				if (ImGui::IsItemHovered())
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				if (ImGui::Selectable("1000", false))
+				{
+					Tools->m_ScaleFixed = 1000.f;
+				}
+				if (ImGui::IsItemHovered())
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				ImGui::EndCombo();
+			}
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				ImGui::SetTooltip("Setting a Fixed Object Scaling");
+			}
+		}
+		ImGui::SameLine(0, ImGui::GetFontSize());
+		// --------------------------------------------------------------------------------------------
+		// ROTATE
+		{
+			{
+				bool bPushColor = false;
+				if (Tools->GetSettings(etfASnap))
+				{
+					bPushColor = true;
+					ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+					ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+				}
+				m_tAngle->Load();
+				if (ImGui::ImageButton(m_tAngle->pSurface, ImVec2(16, ImGui::GetFontSize())))
+				{
+					ExecCommand(COMMAND_SET_SETTINGS, etfASnap, !Tools->GetSettings(etfASnap));
+				}
+				if (ImGui::IsItemHovered())
+				{
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+					ImGui::SetTooltip("Fixed object rotation angle");
+				}
+				if (bPushColor)
+				{
+					ImGui::PopStyleColor();
+					ImGui::PopStyleColor();
+				}
+			}
+			ImGui::SameLine();
+			ImGui::SetNextItemWidth(ImGui::GetFontSize() * 3);
+			xr_sprintf(Temp, "%.f", rad2deg(Tools->m_RotateSnapAngle));
+			if (ImGui::BeginCombo("##rotate", Temp, ImGuiComboFlags_None))
+			{
+				if (ImGui::Selectable("1", false))
+				{
+					Tools->m_RotateSnapAngle = deg2rad(1.f);
+				}
+				if (ImGui::IsItemHovered())
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				if (ImGui::Selectable("5", false))
+				{
+					Tools->m_RotateSnapAngle = deg2rad(5.f);
+				}
+				if (ImGui::IsItemHovered())
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				if (ImGui::Selectable("10", false))
+				{
+					Tools->m_RotateSnapAngle = deg2rad(10.f);
+				}
+				if (ImGui::IsItemHovered())
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				if (ImGui::Selectable("15", false))
+				{
+					Tools->m_RotateSnapAngle = deg2rad(15.f);
+				}
+				if (ImGui::IsItemHovered())
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				if (ImGui::Selectable("45", false))
+				{
+					Tools->m_RotateSnapAngle = deg2rad(45.f);
+				}
+				if (ImGui::IsItemHovered())
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				if (ImGui::Selectable("90", false))
+				{
+					Tools->m_RotateSnapAngle = deg2rad(90.f);
+				}
+				if (ImGui::IsItemHovered())
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				if (ImGui::Selectable("180", false))
+				{
+					Tools->m_RotateSnapAngle = deg2rad(180.f);
+				}
+				if (ImGui::IsItemHovered())
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				ImGui::EndCombo();
+			}
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				ImGui::SetTooltip("Set a fixed rotation angle of the object (in degrees)");
+			}
+		}
+		ImGui::EndGroup();
+	}
+	// --------------------------------------------------------------------------------------------
+	ImGui::NewLine();
+	// --------------------------------------------------------------------------------------------
+	// прочее...
+	{
+		ImGui::BeginGroup();
+		// Parent CS Toggle
+		{
+			bool bPushColor = false;
+			if (Tools->GetSettings(etfCSParent))
+			{
+				bPushColor = true;
+				ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+			}
+			m_tCsLocal->Load();
+			if (ImGui::ImageButton(m_tCsLocal->pSurface, ImVec2(16, ImGui::GetFontSize()), ImVec2(0, 0), ImVec2(0.5f, 1.f)))
+			{
+				ExecCommand(COMMAND_SET_SETTINGS, etfCSParent, !Tools->GetSettings(etfCSParent));
+			}
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				ImGui::SetTooltip("Parent CS Toggle");
+			}
+			if (bPushColor)
+			{
+				ImGui::PopStyleColor();
+				ImGui::PopStyleColor();
+			}
+		}
+		ImGui::Spacing();
+		// --------------------------------------------------------------------------------------------
+		// Маштабирование по осям
+		{
+			bool bPushColor = false;
+			if (Tools->GetSettings(etfNUScale))
+			{
+				bPushColor = true;
+				ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+			}
+			m_tNuScale->Load();
+			if (ImGui::ImageButton(m_tNuScale->pSurface, ImVec2(16, ImGui::GetFontSize()), ImVec2(0, 0), ImVec2(0.5f, 1.f)))
+			{
+				ExecCommand(COMMAND_SET_SETTINGS, etfNUScale, !Tools->GetSettings(etfNUScale));
+			}
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				ImGui::SetTooltip("Scaling by Axes only");
+			}
+			if (bPushColor)
+			{
+				ImGui::PopStyleColor();
+				ImGui::PopStyleColor();
+			}
+		}
+		ImGui::EndGroup();
+	}
+	ImGui::NewLine();
+	// --------------------------------------------------------------------------------------------
+	// Выбор Осей.
+	if (EPrefs->ShowAxisButtons)
+		RenderAxisButtons();
 
-        {
-            bool bPushColor = false;
+	// --------------------------------------------------------------------------------------------
+	// View
+	if (EPrefs->ShowOldCameraButtons)
+		RenderOldCameraButtons();
 
-            if (LTools->GetGimzo()->IsStepEnable(Gizmo::EType::Move))
-            {
-                bPushColor = true;
-                ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_Border));
-                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyleColorVec4(ImGuiCol_Border));
-            }
-            m_tGrid->Load();
-            if (ImGui::ImageButton(m_tGrid->pSurface, ImVec2(16, ImGui::GetFontSize())))
-            {
-                LTools->GetGimzo()->SwitchStep(Gizmo::EType::Move, !LTools->GetGimzo()->IsStepEnable(Gizmo::EType::Move));
-            }
-            if (bPushColor)
-            {
-                ImGui::PopStyleColor();
-                ImGui::PopStyleColor();
-            }
+	// Gizmo
+	if (UI->ViewID == 0)
+		imManipulator.Render(Pos.x, Pos.y, Size.x, Size.y);
+}
 
-        }
-        ImGui::SameLine();
-        ImGui::SetNextItemWidth(ImGui::GetFontSize() * 4);
-        xr_sprintf(Temp, "%.2f", LTools->GetGimzo()->GetStep(Gizmo::EType::Move));
-        if (ImGui::BeginCombo("##move", Temp, ImGuiComboFlags_None))
-        {
-            if (ImGui::Selectable("0.01", false)) 
-            {
-                LTools->GetGimzo()->SetStep(Gizmo::EType::Move, 0.01f);
-            }
-            if (ImGui::Selectable("0.05", false))
-            {
-                LTools->GetGimzo()->SetStep(Gizmo::EType::Move, 0.05f);
-            }
-            if (ImGui::Selectable("0.1", false))
-            {
-                LTools->GetGimzo()->SetStep(Gizmo::EType::Move, 0.1f);
-            }
-            if (ImGui::Selectable("1", false))
-            {
-                LTools->GetGimzo()->SetStep(Gizmo::EType::Move, 1.f);
-            }
-            if (ImGui::Selectable("2", false))
-            {
-                LTools->GetGimzo()->SetStep(Gizmo::EType::Move, 2.f);
-            }
-            if (ImGui::Selectable("5", false))
-            {
-                LTools->GetGimzo()->SetStep(Gizmo::EType::Move, 5.f);
-            }
-            if (ImGui::Selectable("50", false))
-            {
-                LTools->GetGimzo()->SetStep(Gizmo::EType::Move, 50.f);
-            }
-            if (ImGui::Selectable("200", false))
-            {
-                LTools->GetGimzo()->SetStep(Gizmo::EType::Move, 200.f);
-            }
-            if (ImGui::Selectable("1000", false))
-            {
-                LTools->GetGimzo()->SetStep(Gizmo::EType::Move, 1000.f);
-            }
-            ImGui::EndCombo();
-        }
-        ImGui::SameLine(0, ImGui::GetFontSize());
+void UIMainForm::RenderOldCameraButtons()
+{
+	{
+		ImGui::BeginGroup();
+		// Вид спереди.
+		{
+			m_tVFront->Load();
+			{
+				if (ImGui::ImageButton(m_tVFront->pSurface, ImVec2(16, ImGui::GetFontSize())))
+				{
+					UI->CurrentView().m_Camera.ViewFront();
+					UI->RedrawScene();
+				}
+			}
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				ImGui::SetTooltip("Front View");
+			}
+		}
+		ImGui::Spacing();
+		// Вид сзади.
+		{
+			m_tVBack->Load();
+			{
+				if (ImGui::ImageButton(m_tVBack->pSurface, ImVec2(16, ImGui::GetFontSize())))
+				{
+					UI->CurrentView().m_Camera.ViewBack();
+					UI->RedrawScene();
+				}
+			}
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				ImGui::SetTooltip("Back View");
+			}
+		}
+		ImGui::Spacing();
+		// Вид слева.
+		{
+			m_tVLeft->Load();
+			{
+				if (ImGui::ImageButton(m_tVLeft->pSurface, ImVec2(16, ImGui::GetFontSize())))
+				{
+					UI->CurrentView().m_Camera.ViewLeft();
+					UI->RedrawScene();
+				}
+			}
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				ImGui::SetTooltip("Left View");
+			}
+		}
+		ImGui::Spacing();
+		// Вид справа.
+		{
+			m_tVRight->Load();
+			{
+				if (ImGui::ImageButton(m_tVRight->pSurface, ImVec2(16, ImGui::GetFontSize())))
+				{
+					UI->CurrentView().m_Camera.ViewRight();
+					UI->RedrawScene();
+				}
+			}
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				ImGui::SetTooltip("Right View");
+			}
+		}
+		ImGui::Spacing();
+		// Вид сверху.
+		{
+			m_tVTop->Load();
+			{
+				if (ImGui::ImageButton(m_tVTop->pSurface, ImVec2(16, ImGui::GetFontSize())))
+				{
+					UI->CurrentView().m_Camera.ViewTop();
+					UI->RedrawScene();
+				}
+			}
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				ImGui::SetTooltip("Top View");
+			}
+		}
+		ImGui::Spacing();
+		// Вид снизу.
+		{
+			m_tVBottom->Load();
+			{
+				if (ImGui::ImageButton(m_tVBottom->pSurface, ImVec2(16, ImGui::GetFontSize())))
+				{
+					UI->CurrentView().m_Camera.ViewBottom();
+					UI->RedrawScene();
+				}
+			}
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				ImGui::SetTooltip("Bottom View");
+			}
+		}
+		ImGui::Spacing();
+		// Сбросить Вид.
+		{
+			m_tVReset->Load();
+			{
+				if (ImGui::ImageButton(m_tVReset->pSurface, ImVec2(16, ImGui::GetFontSize())))
+				{
+					UI->CurrentView().m_Camera.ViewReset();
+					UI->RedrawScene();
+				}
+			}
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				ImGui::SetTooltip("Reset View");
+			}
+		}
+		ImGui::EndGroup();
+	}
+	ImGui::NewLine();
+	// --------------------------------------------------------------------------------------------
+	// Camera
+	{
+		ImGui::BeginGroup();
+		ECameraStyle Camera = UI->CurrentView().m_Camera.GetStyle();
+		// Свободный режим камеры
+		{
+			bool bPushColor = false;
+			if (Camera == csPlaneMove)
+			{
+				bPushColor = true;
+				ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+			}
+			m_tPlaneMove->Load();
+			if (ImGui::ImageButton(m_tPlaneMove->pSurface, ImVec2(16, ImGui::GetFontSize())))
+			{
+				UI->CurrentView().m_Camera.SetStyle(csPlaneMove);
+				UI->RedrawScene();
+			}
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				ImGui::SetTooltip("Free camera mode");
+			}
+			if (bPushColor)
+			{
+				ImGui::PopStyleColor();
+				ImGui::PopStyleColor();
+			}
+		}
+		ImGui::Spacing();
+		// Привязка камеры к центру координат|сцены
+		{
+			bool bPushColor = false;
+			if (Camera == cs3DArcBall)
+			{
+				bPushColor = true;
+				ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+			}
+			m_tArcBall->Load();
+			if (ImGui::ImageButton(m_tArcBall->pSurface, ImVec2(16, ImGui::GetFontSize())))
+			{
+				UI->CurrentView().m_Camera.SetStyle(cs3DArcBall);
+				UI->RedrawScene();
+			}
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				ImGui::SetTooltip("Snap the camera to the center of coordinates|scene");
+			}
+			if (bPushColor)
+			{
+				ImGui::PopStyleColor();
+				ImGui::PopStyleColor();
+			}
+		}
+		ImGui::Spacing();
+		// Автооблёт сцены камерой
+		{
+			bool bPushColor = false;
+			if (Camera == csFreeFly)
+			{
+				bPushColor = true;
+				ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+			}
+			m_tFreeFly->Load();
+			if (ImGui::ImageButton(m_tFreeFly->pSurface, ImVec2(16, ImGui::GetFontSize())))
+			{
+				UI->CurrentView().m_Camera.SetStyle(csFreeFly);
+				UI->RedrawScene();
+			}
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				ImGui::SetTooltip("Automatic camera flyover of the scene");
+			}
+			if (bPushColor)
+			{
+				ImGui::PopStyleColor();
+				ImGui::PopStyleColor();
+			}
+		}
+		ImGui::EndGroup();
+	}
+}
 
-        {
-            bool bPushColor = false;
-            if (LTools->GetGimzo()->IsStepEnable(Gizmo::EType::Scale))
-            {
-                bPushColor = true;
-                ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_Border));
-                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyleColorVec4(ImGuiCol_Border));
-            }
-            m_tScaleGrid->Load();
-            if (ImGui::ImageButton(m_tScaleGrid->pSurface, ImVec2(16, ImGui::GetFontSize())))
-            {
-                LTools->GetGimzo()->SwitchStep(Gizmo::EType::Scale, !LTools->GetGimzo()->IsStepEnable(Gizmo::EType::Scale));
-            }
-            if (bPushColor)
-            {
-                ImGui::PopStyleColor();
-                ImGui::PopStyleColor();
-            }
-        }
-
-        ImGui::SameLine();
-        ImGui::SetNextItemWidth(ImGui::GetFontSize() * 4);
-        xr_sprintf(Temp, "%.2f", LTools->GetGimzo()->GetStep(Gizmo::EType::Scale));
-        if (ImGui::BeginCombo("##scale", Temp, ImGuiComboFlags_None))
-        {
-            if (ImGui::Selectable("0.01", false))
-            {
-                LTools->GetGimzo()->SetStep(Gizmo::EType::Scale, 0.01f);
-            }
-            if (ImGui::Selectable("0.05", false))
-            {
-                LTools->GetGimzo()->SetStep(Gizmo::EType::Scale, 0.05f);
-            }
-            if (ImGui::Selectable("0.1", false))
-            {
-                LTools->GetGimzo()->SetStep(Gizmo::EType::Scale, 0.1f);
-            }
-            if (ImGui::Selectable("1", false))
-            {
-                LTools->GetGimzo()->SetStep(Gizmo::EType::Scale, 1.f);
-            }
-            if (ImGui::Selectable("2", false))
-            {
-                LTools->GetGimzo()->SetStep(Gizmo::EType::Scale, 2.f);
-            }
-            if (ImGui::Selectable("5", false))
-            {
-                LTools->GetGimzo()->SetStep(Gizmo::EType::Scale, 5.f);
-            }
-            if (ImGui::Selectable("50", false))
-            {
-                LTools->GetGimzo()->SetStep(Gizmo::EType::Scale, 50.f);
-            }
-            if (ImGui::Selectable("200", false))
-            {
-                LTools->GetGimzo()->SetStep(Gizmo::EType::Scale, 200.f);
-            }
-            if (ImGui::Selectable("1000", false))
-            {
-                LTools->GetGimzo()->SetStep(Gizmo::EType::Scale, 1000.f);
-            }
-            ImGui::EndCombo();
-        }
-        ImGui::SameLine(0, ImGui::GetFontSize());
-
-        {
-            bool bPushColor = false;
-            if (LTools->GetGimzo()->IsStepEnable(Gizmo::EType::Rotate))
-            {
-                bPushColor = true;
-                ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_Border));
-                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyleColorVec4(ImGuiCol_Border));
-            }
-            m_tAngle->Load();
-            if (ImGui::ImageButton(m_tAngle->pSurface, ImVec2(16, ImGui::GetFontSize())))
-            {
-                LTools->GetGimzo()->SwitchStep(Gizmo::EType::Rotate, !LTools->GetGimzo()->IsStepEnable(Gizmo::EType::Rotate));
-            }
-            if (bPushColor)
-            {
-                ImGui::PopStyleColor();
-                ImGui::PopStyleColor();
-            }
-        }
-
-        ImGui::SameLine();
-        ImGui::SetNextItemWidth(ImGui::GetFontSize() * 5);
-        xr_sprintf(Temp, "%.5f", LTools->GetGimzo()->GetStep(Gizmo::EType::Rotate));
-        if (ImGui::BeginCombo("##rotate", Temp, ImGuiComboFlags_None))
-        {
-            if (ImGui::Selectable("1.40625", false))
-            {
-                LTools->GetGimzo()->SetStep(Gizmo::EType::Rotate, 1.40625f);
-            }
-            if (ImGui::Selectable("2.8125", false))
-            {
-                LTools->GetGimzo()->SetStep(Gizmo::EType::Rotate, 2.8125f);
-            }
-            if (ImGui::Selectable("5.625", false))
-            {
-                LTools->GetGimzo()->SetStep(Gizmo::EType::Rotate, 5.625f);
-            }
-            if (ImGui::Selectable("11.25", false))
-            {
-                LTools->GetGimzo()->SetStep(Gizmo::EType::Rotate, 11.25f);
-            }
-            if (ImGui::Selectable("22.5", false))
-            {
-                LTools->GetGimzo()->SetStep(Gizmo::EType::Rotate, 22.5f);
-            }
-            if (ImGui::Selectable("45", false))
-            {
-                LTools->GetGimzo()->SetStep(Gizmo::EType::Rotate, 45.f);
-            }
-            if (ImGui::Selectable("90", false))
-            {
-                LTools->GetGimzo()->SetStep(Gizmo::EType::Rotate, 90.f);
-            }
-            ImGui::EndCombo();
-        }
-        ImGui::EndGroup();
-    }
-
-
+void UIMainForm::RenderAxisButtons()
+{
+	ImGui::BeginGroup();
+	// --------------------------------------------------------------------------------------------
+	ETAxis Axis = LTools->GetAxis();
+	// Ось X
+	{
+		bool bPushColor = false;
+		if (Axis == etAxisX)
+		{
+			bPushColor = true;
+			ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+		}
+		m_tX->Load();
+		if (ImGui::ImageButton(m_tX->pSurface, ImVec2(16, ImGui::GetFontSize())))
+		{
+			ExecCommand(COMMAND_CHANGE_AXIS, etAxisX, !LTools->GetSettings(etAxisX));
+		}
+		if (ImGui::IsItemHovered())
+		{
+			ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+			ImGui::SetTooltip("Select X Axis");
+		}
+		if (bPushColor)
+		{
+			ImGui::PopStyleColor();
+			ImGui::PopStyleColor();
+		}
+	}
+	ImGui::Spacing();
+	// Ось Y
+	{
+		bool bPushColor = false;
+		if (Axis == etAxisY)
+		{
+			bPushColor = true;
+			ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+		}
+		m_tY->Load();
+		if (ImGui::ImageButton(m_tY->pSurface, ImVec2(16, ImGui::GetFontSize())))
+		{
+			ExecCommand(COMMAND_CHANGE_AXIS, etAxisY, !LTools->GetSettings(etAxisY));
+		}
+		if (ImGui::IsItemHovered())
+		{
+			ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+			ImGui::SetTooltip("Select Y Axis");
+		}
+		if (bPushColor)
+		{
+			ImGui::PopStyleColor();
+			ImGui::PopStyleColor();
+		}
+	}
+	ImGui::Spacing();
+	// Ось Z
+	{
+		bool bPushColor = false;
+		if (Axis == etAxisZ)
+		{
+			bPushColor = true;
+			ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+		}
+		m_tZ->Load();
+		if (ImGui::ImageButton(m_tZ->pSurface, ImVec2(16, ImGui::GetFontSize())))
+		{
+			ExecCommand(COMMAND_CHANGE_AXIS, etAxisZ, !LTools->GetSettings(etAxisZ));
+		}
+		if (ImGui::IsItemHovered())
+		{
+			ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+			ImGui::SetTooltip("Select Z Axis");
+		}
+		if (bPushColor)
+		{
+			ImGui::PopStyleColor();
+			ImGui::PopStyleColor();
+		}
+	}
+	ImGui::Spacing();
+	// Ось ZX
+	{
+		bool bPushColor = false;
+		if (Axis == etAxisZX)
+		{
+			bPushColor = true;
+			ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+		}
+		m_tZX->Load();
+		if (ImGui::ImageButton(m_tZX->pSurface, ImVec2(16, ImGui::GetFontSize())))
+		{
+			ExecCommand(COMMAND_CHANGE_AXIS, etAxisZX, !LTools->GetSettings(etAxisZX));
+		}
+		if (ImGui::IsItemHovered())
+		{
+			ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+			ImGui::SetTooltip("Select ZX Axis");
+		}
+		if (bPushColor)
+		{
+			ImGui::PopStyleColor();
+			ImGui::PopStyleColor();
+		}
+	}
+	ImGui::EndGroup();
+	ImGui::NewLine();
 }

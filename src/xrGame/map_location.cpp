@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "map_location.h"
 #include "map_spot.h"
 #include "map_manager.h"
@@ -9,7 +9,7 @@
 #include "game_graph.h"
 #include "xrServer.h"
 #include "xrServer_Objects_ALife_Monsters.h"
-#include "ui/UIXmlInit.h"
+#include "../../xrUI/UIXmlInit.h"
 #include "ui/UIMap.h"
 #include "alife_simulator.h"
 #include "graph_engine.h"
@@ -24,8 +24,8 @@
 #include "actor_memory.h"
 #include "visual_memory_manager.h"
 #include "location_manager.h"
-#include "gametask.h"
-#include "gametaskmanager.h"
+#include "GameTask.h"
+#include "GametaskManager.h"
 #include "ActorHelmet.h"
 #include "Inventory.h"
 //#include "CustomMonster.h"
@@ -356,8 +356,8 @@ void CMapLocation::CalcLevelName()
 
 bool CMapLocation::Update() //returns actual
 {
-	R_ASSERT(m_cached.m_updatedFrame!=Device.dwFrame);
-		
+	if (m_cached.m_updatedFrame == Device.dwFrame)
+		return true;
 
 	if(	m_flags.test(eTTL) )
 	{
@@ -483,14 +483,7 @@ void CMapLocation::UpdateSpot(CUICustomMap* map, CMapSpot* sp )
 		map_point_path.clear();
 
 		VERIFY( Actor() );
-		GraphEngineSpace::CGameVertexParams		params(Actor()->locations().vertex_types(),flt_max);
-		bool res = ai().graph_engine().search(
-			ai().game_graph(),
-			Actor()->ai_location().game_vertex_id(),
-			dest_graph_id,
-			&map_point_path,
-			params
-			);
+		bool res = ai().game_graph().Search(Actor()->ai_location().game_vertex_id(),dest_graph_id, map_point_path,&Actor()->locations().vertex_types());
 
 		if ( res )
 		{
@@ -694,7 +687,7 @@ LPCSTR CMapLocation::GetHint()
 	{
 		return nullptr;
 	}
-	return CStringTable().translate(m_hint).c_str();
+	return g_pStringTable->translate(m_hint).c_str();
 };
 
 CMapSpotPointer* CMapLocation::GetSpotPointer(CMapSpot* sp)

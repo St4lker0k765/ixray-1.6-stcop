@@ -1,5 +1,3 @@
-#ifndef IGame_PersistentH
-#define IGame_PersistentH
 #pragma once
 
 #include "../xrServerEntities/gametype_chooser.h"
@@ -46,10 +44,11 @@ public:
 		}
 	};
 	params							m_game_params;
+
 public:
-	xr_set<CPS_Instance*>			ps_active;
-	xr_vector<CPS_Instance*>		ps_destroy;
-	xr_vector<CPS_Instance*>		ps_needtoplay;
+	xr_vector<xr_shared_ptr<CPS_Instance>> ps_active;
+	xr_vector<xr_shared_ptr<CPS_Instance>> ps_active_deffer;
+	xr_vector<xr_shared_ptr<CPS_Instance>> ps_needtoplay;
 
 public:
 			void					destroy_particles	(const bool &all_particles);
@@ -76,7 +75,7 @@ public:
 	virtual void					OnAppDeactivate		();
 	virtual void		_BCL		OnFrame				();
 
-	// вызывается только когда изменяется тип игры
+	// РІС‹Р·С‹РІР°РµС‚СЃСЏ С‚РѕР»СЊРєРѕ РєРѕРіРґР° РёР·РјРµРЅСЏРµС‚СЃСЏ С‚РёРї РёРіСЂС‹
 	virtual	void					OnGameStart			(); 
 	virtual void					OnGameEnd			();
 
@@ -113,17 +112,7 @@ public:
 	virtual bool					CanBePaused			()		{ return true;}
 };
 
-class IMainMenu
-{
-public:
-	virtual			~IMainMenu						()													{};
-	virtual void	Activate						(bool bActive)										=0; 
-	virtual	bool	IsActive						()													=0; 
-	virtual	bool	CanSkipSceneRendering			()													=0; 
-	virtual void	DestroyInternal					(bool bForce)										=0;
-};
-
 extern ENGINE_API	bool g_dedicated_server;
 extern ENGINE_API	IGame_Persistent*	g_pGamePersistent;
-#endif //IGame_PersistentH
 
+#include "IGame_Menu.h"

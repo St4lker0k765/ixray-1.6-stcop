@@ -6,7 +6,7 @@
 //	Description : ALife Online Offline Group brain class
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "alife_online_offline_group_brain.h"
 #include "object_broker.h"
 #include "xrServer_Objects_ALife_Monsters.h"
@@ -24,7 +24,7 @@
 #	include "alife_smart_terrain_registry.h"
 #	include "alife_object_registry.h"
 #	include "alife_time_manager.h"
-#	include "date_time.h"
+#	include "../xrEngine/date_time.h"
 #	ifdef DEBUG
 #		include "level.h"
 #		include "map_location.h"

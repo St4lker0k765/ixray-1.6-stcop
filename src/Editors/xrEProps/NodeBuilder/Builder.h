@@ -2,7 +2,7 @@
 #include "NodeBuilder/BoneNodes.h"
 
 class XREPROPS_API CNodeViewport:
-	public XrUI
+	public IEditorWnd
 {
 	friend void RegNode(size_t NodeID, ELinkType Type);
 
@@ -18,6 +18,7 @@ public:
 
 protected:
 	bool CanCreateLink(size_t LeftID, size_t RightID);
+	int GetHoveredMode() const;
 
 public:
 	CNodeViewport();

@@ -9,9 +9,9 @@ using ImTextureID = IDirect3DBaseTexture9*;
 #define XREUI_API __declspec(dllimport)
 #endif
 
-#include "..\..\xrCore\xrCore.h"
+#include "../../xrCore/xrCore.h"
 
-#include "XrUI.h"
+#include "EditorWnd.h"
 #include "XrUIManager.h"
 
 #define IMGUI_API XREUI_API
@@ -21,3 +21,8 @@ using ImTextureID = IDirect3DBaseTexture9*;
 #define IMGUI_DEFINE_MATH_OPERATORS
 
 #include "imgui.h"
+
+namespace ImGui
+{
+	XREUI_API bool HyperLink(const char* label, const char* url, bool underlineWhenHoveredOnly = false);
+}

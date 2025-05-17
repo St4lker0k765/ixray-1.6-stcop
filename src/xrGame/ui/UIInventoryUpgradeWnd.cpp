@@ -11,12 +11,12 @@
 #include "object_broker.h"
 #include "UIInventoryUpgradeWnd.h"
 
-#include "xrUIXmlParser.h"
-#include "UIXmlInit.h"
+#include "../../xrUI/xrUIXmlParser.h"
+#include "../../xrUI/UIXmlInit.h"
 
-#include "../actor.h"
+#include "../Actor.h"
 #include "../../xrScripts/script_process.h"
-#include "../inventory.h"
+#include "../Inventory.h"
 
 #include "ai_space.h"
 #include "alife_simulator.h"
@@ -27,10 +27,10 @@
 #include "UIInventoryUtilities.h"
 #include "UIActorMenu.h"
 #include "UIItemInfo.h"
-#include "UIFrameLineWnd.h"
-#include "UI3tButton.h"
-#include "UIHelper.h"
-#include "../ui_defs.h"
+#include "../../xrUI/Widgets/UIFrameLineWnd.h"
+#include "../../xrUI/Widgets/UI3tButton.h"
+#include "../../xrUI/UIHelper.h"
+#include "../../xrUI/ui_defs.h"
 #include "../Weapon.h"
 #include "../WeaponRPG7.h"
 #include "../CustomOutfit.h"
@@ -105,7 +105,7 @@ void CUIInventoryUpgradeWnd::InitInventory( CInventoryItem* item, bool can_upgra
 {
 	m_inv_item = item;
 	bool is_shader = false;
-	// Загружаем картинку
+	// Р—Р°РіСЂСѓР¶Р°РµРј РєР°СЂС‚РёРЅРєСѓ
 	if(smart_cast<CWeapon*>(item))
 	{
 		is_shader = true;

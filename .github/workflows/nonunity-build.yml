@@ -65,8 +65,11 @@ jobs:
 
       - name: Configure engine
         run: |
-          cmake --preset ${{ matrix.preset }}-${{ matrix.platform }}-NonUnity
+          cmake `
+            --preset ${{ matrix.preset }}-${{ matrix.platform }}-NonUnity
 
       - name: Build engine
         run: |
-          cmake --build --preset ${{ matrix.preset }}-${{ matrix.platform }}-NonUnity-${{ matrix.config }}
+          cmake `
+            --build `
+            --preset ${{ matrix.preset }}-${{ matrix.platform }}-NonUnity-${{ matrix.config }}

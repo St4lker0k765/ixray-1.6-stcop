@@ -1,12 +1,12 @@
 #pragma once
-class UITopBarForm :public XrUI
+class UITopBarForm :public IEditorWnd
 {
 public:
 	UITopBarForm();
 	virtual ~UITopBarForm();
 	virtual void Draw();
-	void RefreshBar();
-	bool VerifySpaceRestrictors()const {return m_VerifySpaceRestrictors;}
+	bool VerifySpaceRestrictors()const { return m_VerifySpaceRestrictors; }
+	bool UseCameraPosForActor = false;
 private:
 
 	void ClickUndo(); ref_texture m_tUndo; u32 m_timeUndo;
@@ -28,4 +28,6 @@ private:
 	void ClickPlayPC();  ref_texture m_tPlayPC;
 	void ClickPlayCleanGame();  ref_texture m_tPlayCleanGame;
 	bool m_VerifySpaceRestrictors;
+
+	void ClickPreferences(); ref_texture	m_PreferencesIcon;
 };

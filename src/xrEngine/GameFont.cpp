@@ -1,4 +1,4 @@
-﻿﻿
+
 #include "stdafx.h"
 #include "GameFont.h"
 #include "string_table.h"
@@ -100,8 +100,8 @@ xr_vector<xr_string> split(const xr_string& s, char delim)
 }
 #include <freetype/ftfntfmt.h>
 
-constexpr u32 TextureDimension = 2048 * 2;
-static u32 FontBitmap[TextureDimension * TextureDimension] = {};
+extern u32 TextureDimension;
+extern xr_vector<u32> FontBitmap;
 
 void CGameFont::Initialize2(const char* name, const char* shader, const char* style, u32 size)
 {
@@ -138,7 +138,7 @@ void CGameFont::Initialize2(const char* name, const char* shader, const char* st
 			}
 		}
 	}
-	ZeroMemory(FontBitmap, sizeof(FontBitmap));
+	ZeroMemory(FontBitmap.data(), sizeof(u32) * (TextureDimension * TextureDimension));
 
 	// есть кучу способов высчитать размер шрифта для скейлинга
 	// 1. основываясь на DPI(PPI), однако, как не вычисляй его он всегда считается исходя из разрешения моника(системы) и 23 дюймов(мб с дровами на моник - из реальных дюймов)
@@ -193,7 +193,7 @@ void CGameFont::Initialize2(const char* name, const char* shader, const char* st
 	u32 TargetY2 = 0;
 
 	FT_Size_RequestRec req;
-	req.type = FT_SIZE_REQUEST_TYPE_NOMINAL;
+	req.type = FT_SIZE_REQUEST_TYPE_CELL;
 	req.width = 0;
 	req.height = (uint32_t)fHeight * 64;
 	req.horiResolution = 0;
@@ -342,7 +342,7 @@ void CGameFont::Initialize2(const char* name, const char* shader, const char* st
 #endif
 	R_ASSERT2(TargetDemensionY <= TextureDimension, "Font too large, or dimension texture is too small");
 
-	pFontRender->CreateFontAtlas(TextureDimension, TargetDemensionY, textureName, FontBitmap);
+	pFontRender->CreateFontAtlas(TextureDimension, TargetDemensionY, textureName, FontBitmap.data());
 
 	FS.r_close(FontFile);
 	pFontRender->Initialize(shader, textureName);
@@ -361,6 +361,8 @@ void CGameFont::OutSetI(float x, float y)
 
 void CGameFont::OnRender()
 {
+	PROF_EVENT("Render Font");
+
 	pFontRender->OnRender(*this);
 	if (!strings.empty())
 		strings.resize(0);

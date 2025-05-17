@@ -7,7 +7,7 @@
 ////////////////////////////////////////////////////////////////////////////
 
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "damage_manager.h"
 #include "../xrEngine/xr_object.h"
 #include "../Include/xrRender/Kinematics.h"
@@ -35,7 +35,7 @@ void CDamageManager::reload				(LPCSTR section, CInifile const * ini)
 
 	bool section_exist		= ini && ini->section_exist(section);
 	
-	// прочитать дефолтные параметры
+	// РїСЂРѕС‡РёС‚Р°С‚СЊ РґРµС„РѕР»С‚РЅС‹Рµ РїР°СЂР°РјРµС‚СЂС‹
 	if (section_exist) {
 		string32 buffer;
 		if (ini->line_exist(section,"default")) {
@@ -45,10 +45,10 @@ void CDamageManager::reload				(LPCSTR section, CInifile const * ini)
 		}
 	}
 
-	//инициализировать default параметрами
+	//РёРЅРёС†РёР°Р»РёР·РёСЂРѕРІР°С‚СЊ default РїР°СЂР°РјРµС‚СЂР°РјРё
 	init_bones		(section,ini);
 
-	// записать поверху прописанные параметры
+	// Р·Р°РїРёСЃР°С‚СЊ РїРѕРІРµСЂС…Сѓ РїСЂРѕРїРёСЃР°РЅРЅС‹Рµ РїР°СЂР°РјРµС‚СЂС‹
 	if (section_exist) {
 		load_section	(section,ini);
 	}
@@ -65,7 +65,14 @@ void CDamageManager::reload(LPCSTR section, LPCSTR line, CInifile const * ini)
 void CDamageManager::init_bones(LPCSTR section, CInifile const * ini)
 {
 	IKinematics				*kinematics = smart_cast<IKinematics*>(m_object->Visual());
-	VERIFY					(kinematics);
+
+	if (Device.IsEditorMode() && kinematics == nullptr)
+	{
+		Msg("! Not found kinematic!");
+		return;
+	}
+	VERIFY(kinematics);
+
 	for(u16 i = 0; i<kinematics->LL_BoneCount(); i++)
 	{
 		CBoneInstance			&bone_instance = kinematics->LL_GetBoneInstance(i);
@@ -110,7 +117,7 @@ void  CDamageManager::HitScale			(const int element, float& hit_scale, float& wo
 {
 	if(BI_NONE == u16(element))
 	{
-		//считаем что параметры для BI_NONE заданы как 1.f 
+		//СЃС‡РёС‚Р°РµРј С‡С‚Рѕ РїР°СЂР°РјРµС‚СЂС‹ РґР»СЏ BI_NONE Р·Р°РґР°РЅС‹ РєР°Рє 1.f 
 		hit_scale = 1.f * m_default_hit_factor;
 		wound_scale = 1.f * m_default_wound_factor;
 		return;

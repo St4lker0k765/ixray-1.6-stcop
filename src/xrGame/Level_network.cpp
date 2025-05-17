@@ -1,12 +1,12 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 #include "Level.h"
 #include "Level_Bullet_Manager.h"
-#include "xrserver.h"
+#include "xrServer.h"
 #include "xrMessages.h"
 #include "game_cl_base.h"
 #include "PHCommander.h"
-#include "net_queue.h"
+#include "NET_Queue.h"
 #include "MainMenu.h"
 #include "space_restriction_manager.h"
 #include "ai_space.h"
@@ -17,11 +17,11 @@
 #include "UIGameCustom.h"
 #include "../xrEngine/string_table.h"
 #include "file_transfer.h"
-#include "UI/UIGameTutorial.h"
+#include "ui/UIGameTutorial.h"
 #include "ui/UIPdaWnd.h"
 #include "../xrNetServer/NET_AuthCheck.h"
 
-#include "../xrPhysics/physicscommon.h"
+#include "../xrPhysics/PhysicsCommon.h"
 ENGINE_API bool g_dedicated_server;
 
 const int max_objects_size			= 2*1024;
@@ -231,58 +231,40 @@ void CLevel::ClientSend()
 	}
 }
 
-u32	CLevel::Objects_net_Save	(NET_Packet* _Packet, u32 start, u32 max_object_size)
+void CLevel::ClientSave()
 {
-	NET_Packet& Packet	= *_Packet;
-	u32			position;
-	for (; start<Objects.o_count(); start++)	{
-		CObject		*_P = Objects.o_get_by_iterator(start);
-		CGameObject *P = smart_cast<CGameObject*>(_P);
-//		Msg			("save:iterating:%d:%s, size[%d]",P->ID(),*P->cName(), Packet.w_tell() );
-		if (P && !P->getDestroy() && P->net_SaveRelevant())	{
-			Packet.w_u16			(u16(P->ID())	);
-			Packet.w_chunk_open16	(position);
-//			Msg						("save:saving:%d:%s",P->ID(),*P->cName());
-			P->net_Save				(Packet);
-#ifdef DEBUG
-			u32 size				= u32		(Packet.w_tell()-position)-sizeof(u16);
-//			Msg						("save:saved:%d bytes:%d:%s",size,P->ID(),*P->cName());
-			if				(size>=65536)			{
-				Debug.fatal	(DEBUG_INFO,"Object [%s][%d] exceed network-data limit\n size=%d, Pend=%d, Pstart=%d",
-					*P->cName(), P->ID(), size, Packet.w_tell(), position);
-			}
-#endif
-			Packet.w_chunk_close16	(position);
-//			if (0==(--count))		
-//				break;
-			if (max_object_size >= (NET_PacketSizeLimit - Packet.w_tell()))
-				break;
+	u32 Iter = 0;
+	u32 ChunkID = 0;
+
+	while (Iter < Objects.o_count())
+	{
+		NET_Packet Packet;
+
+		Packet.w_begin(M_SAVE_PACKET);
+		CObject* O = Objects.o_get_by_iterator(Iter);
+		Iter++;
+		if (!O || O->getDestroy())
+			continue;
+
+		CGameObject* GO = smart_cast<CGameObject*>(O);
+		if (!GO || !GO->net_SaveRelevant())
+			continue;
+
+		Packet.w_u16(u16(GO->ID()));
+		Packet.w_chunk_open16(ChunkID);
+		GO->net_Save(Packet);
+		Packet.w_chunk_close16(ChunkID);
+
+		if (Packet.B.count > 2)
+		{
+			Send(Packet, net_flags(FALSE));
 		}
 	}
-	return	++start;
 }
 
-void CLevel::ClientSave	()
-{
-	NET_Packet		P;
-	u32				start	= 0;
+extern BOOL g_SV_Disable_Auth_Check;
 
-	for (;;) {
-		P.w_begin	(M_SAVE_PACKET);
-		
-		start		= Objects_net_Save(&P, start, max_objects_size_in_save);
-
-		if (P.B.count>2)
-			Send	(P, net_flags(FALSE));
-		else
-			break;
-	}
-}
-
-//extern	XRPHYSICS_API	float		phTimefactor;
-extern					BOOL		g_SV_Disable_Auth_Check;
-
-void CLevel::Send		(NET_Packet& P, u32 dwFlags, u32 dwTimeout)
+void CLevel::Send(NET_Packet& P, u32 dwFlags, u32 dwTimeout)
 {
 	if (IsDemoPlayStarted() || IsDemoPlayFinished()) return;
 	// optimize the case when server located in our memory
@@ -490,12 +472,12 @@ void CLevel::OnConnectResult(NET_Packet*	P)
 				if (!xr_strlen(ResultStr))
 				{
 					MainMenu()->OnSessionTerminate(
-						CStringTable().translate("st_you_have_been_banned").c_str()
+						g_pStringTable->translate("st_you_have_been_banned").c_str()
 					);
 				} else
 				{
 					MainMenu()->OnSessionTerminate(
-						CStringTable().translate(ResultStr).c_str()
+						g_pStringTable->translate(ResultStr).c_str()
 					);
 				}
 			}break;
@@ -504,12 +486,12 @@ void CLevel::OnConnectResult(NET_Packet*	P)
 				if (!xr_strlen(ResultStr))
 				{
 					MainMenu()->OnSessionTerminate(
-						CStringTable().translate("st_profile_error").c_str()
+						g_pStringTable->translate("st_profile_error").c_str()
 					);
 				} else
 				{
 					MainMenu()->OnSessionTerminate(
-						CStringTable().translate(ResultStr).c_str()
+						g_pStringTable->translate(ResultStr).c_str()
 					);
 				}
 			}

@@ -6,11 +6,11 @@
 //	Description : Hit memory manager
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 #include "hit_memory_manager.h"
 #include "memory_space_impl.h"
-#include "custommonster.h"
+#include "CustomMonster.h"
 #include "ai_object_location.h"
 #include "level_graph.h"
 #include "script_game_object.h"
@@ -18,7 +18,6 @@
 #include "agent_member_manager.h"
 #include "ai/stalker/ai_stalker.h"
 #include "game_object_space.h"
-#include "profiler.h"
 #include "client_spawn_manager.h"
 #include "memory_manager.h"
 #include "../xrEngine/IGame_Persistent.h"
@@ -104,6 +103,8 @@ void CHitMemoryManager::add					(float amount, const Fvector &vLocalDir, const C
 
 	if (who && (m_object->ID() == who->ID()))
 		return;
+
+	PROF_EVENT("HitMemory::add");
 
 	if (who && !fis_zero(amount)) {
 		m_last_hit_object_id	= who->ID();

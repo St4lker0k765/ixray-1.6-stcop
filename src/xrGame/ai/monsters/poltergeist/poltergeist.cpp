@@ -1,20 +1,20 @@
 #include "stdafx.h"
 #include "poltergeist.h"
 #include "poltergeist_state_manager.h"
-#include "../../../characterphysicssupport.h"
+#include "../../../CharacterPhysicsSupport.h"
 #include "../../../PHMovementControl.h"
 #include "../../../PhysicsShellHolder.h"
 #include "../../../ai_debug.h"
 #include "poltergeist_movement.h"
 #include "../../../detail_path_manager.h"
 #include "../monster_velocity_space.h"
-#include "../../../level.h"
+#include "../../../Level.h"
 #include "../../../level_debug.h"
 #include "../control_animation_base.h"
 #include "../control_movement_base.h"
 #include "../control_path_builder_base.h"
 #include "../../../../xrPhysics/PhysicsShell.h"
-#include "../../../actor.h"
+#include "../../../Actor.h"
 #include "../../../actor_memory.h"
 #include "../../../visual_memory_manager.h"
 #include "ActorEffector.h"
@@ -217,7 +217,7 @@ void   CPoltergeist::update_detection ()
 					++m_detection_pp_type_index ) { ; }
 	
 			AddEffector						(Actor(), m_detection_pp_type_index, m_detection_pp_effector_name, 
-											GET_KOEFF_FUNC(this, &CPoltergeist::get_post_process_factor));
+											xr_make_delegate(this, &CPoltergeist::get_post_process_factor));
 		}
 	}
 	else if ( m_detection_pp_type_index != 0 )
@@ -351,7 +351,7 @@ BOOL CPoltergeist::net_Spawn (CSE_Abstract* DC)
 	VERIFY(character_physics_support());
 	VERIFY(character_physics_support()->movement());
 	character_physics_support()->movement()->DestroyCharacter();
-	// ñïàóíèòñÿ íèâèäèìûì
+	// ÑÐ¿Ð°ÑƒÐ½Ð¸Ñ‚ÑÑ Ð½Ð¸Ð²Ð¸Ð´Ð¸Ð¼Ñ‹Ð¼
 	setVisible		(false);
 	ability()->on_hide();
 	

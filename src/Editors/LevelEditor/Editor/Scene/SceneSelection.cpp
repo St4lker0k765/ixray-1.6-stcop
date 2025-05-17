@@ -106,7 +106,7 @@ int EScene::ObjCount()
     SceneToolsMapPairIt _I = m_SceneTools.begin();
     SceneToolsMapPairIt _E = m_SceneTools.end();
     for (; _I!=_E; _I++){
-    	ESceneCustomOTool* mt = dynamic_cast<ESceneCustomOTool*>(_I->second);
+    	ESceneCustomOTool* mt = smart_cast<ESceneCustomOTool*>(_I->second);
 		if (mt)
         	cnt+=mt->ObjCount();
     }
@@ -126,6 +126,25 @@ void EScene::ShowObjects( bool flag, ObjClassID classfilter, bool bAllowSelectio
         	mt->ShowObjects(flag, bAllowSelectionFlag, bSelFlag);
     }
     UI->RedrawScene();
+}
+
+int EScene::LockObjects( bool flag, ObjClassID classfilter, bool bAllowSelectionFlag, bool bSelFlag )
+{
+	int count = 0;
+    if (classfilter==OBJCLASS_DUMMY){
+        SceneToolsMapPairIt _I = m_SceneTools.begin();
+        SceneToolsMapPairIt _E = m_SceneTools.end();
+        for (; _I!=_E; _I++)
+            if (_I->second){
+		        ESceneCustomOTool* mt = smart_cast<ESceneCustomOTool*>(_I->second);
+                if (mt)				count+=mt->LockObjects(flag, bAllowSelectionFlag, bSelFlag);
+            }
+    }else{
+        ESceneCustomOTool* mt 		= GetOTool(classfilter);
+        if (mt) 					count+=mt->LockObjects(flag, bAllowSelectionFlag, bSelFlag);
+    }
+    UI->RedrawScene();
+	return count;
 }
 
 void EScene::SynchronizeObjects()
@@ -152,7 +171,7 @@ void EScene::ZoomExtents( ObjClassID cls, BOOL bSel )
         ESceneToolBase* mt = GetTool(cls);
         if (mt) 			mt->GetBBox(BB,bSel);
     }
-    if (BB.is_valid()) EDevice->m_Camera.ZoomExtents(BB);
+    if (BB.is_valid()) UI->CurrentView().m_Camera.ZoomExtents(BB);
     else ELog.Msg(mtError,"Can't calculate bounding box. Nothing selected or some object unsupported this function.");
 }
 

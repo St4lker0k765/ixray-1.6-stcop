@@ -2,20 +2,38 @@
 #include "AsureXML.h"
 #include <magic_enum/magic_enum.hpp>
 
+static xr_string_map<xr_string, FS_FileSet> HashDataAddons;
+
+CXMLOverride::EOverrideMode CXMLOverride::GetOverrideMode(tinyxml2::XMLElement* Element) const
+{
+	if (Element->Attribute("override"))
+	{
+		xr_string Copy = Element->Attribute("override");
+		std::transform(Copy.begin(), Copy.end(), Copy.begin(), [](unsigned char c) { return std::tolower(c); });
+
+		return magic_enum::enum_cast<EOverrideMode>(Copy).value_or(EOverrideMode::none);
+	}
+
+	return EOverrideMode::none;
+}
+
 IC void CXMLOverride::IterateElement(tinyxml2::XMLElement* Start, std::function<void(tinyxml2::XMLElement*, EOverrideMode)> Callback)
 {
+	if (Start == nullptr)
+		return;
+
 	tinyxml2::XMLElement* ModifElement = Start;
 	while (ModifElement != nullptr)
 	{
 		tinyxml2::XMLElement* TestChild = ModifElement->FirstChildElement();
-		IterateElement(TestChild, Callback);
-
-		if (ModifElement->Attribute("override"))
+		if (TestChild != nullptr)
 		{
-			xr_string Copy = ModifElement->Attribute("override");
-			std::transform(Copy.begin(), Copy.end(), Copy.begin(), [](unsigned char c) { return std::tolower(c); });
+			IterateElement(TestChild, Callback);
+		}
 
-			EOverrideMode Mode = magic_enum::enum_cast<EOverrideMode>(Copy).value_or(EOverrideMode::none);
+		EOverrideMode Mode = GetOverrideMode(ModifElement);
+		if (Mode != EOverrideMode::none)
+		{
 			Callback(ModifElement, Mode);
 		}
 
@@ -57,10 +75,35 @@ void CXMLOverride::ApplyNewNode(tinyxml2::XMLNode* Parent, tinyxml2::XMLElement*
 	}
 }
 
-void CXMLOverride::GenerateNewDoc(tinyxml2::XMLDocument& Original, tinyxml2::XMLDocument& Modif)
-{
+void CXMLOverride::GenerateNewDoc(tinyxml2::XMLDocument& Original, tinyxml2::XMLDocument& Modif) {
 	tinyxml2::XMLElement* ModifElement = Modif.FirstChildElement();
 	xr_vector<tinyxml2::XMLElement*> ParentList;
+
+	// Обработка корневого элемента отдельно
+	tinyxml2::XMLElement* OriginalRoot = Original.RootElement();
+	if (ModifElement != nullptr && OriginalRoot != nullptr)
+	{
+		EOverrideMode OverrideMode = GetOverrideMode(ModifElement); // Получение режима переопределения для корневого элемента
+		if (OverrideMode != EOverrideMode::none)
+		{
+			if (OverrideMode == EOverrideMode::remove)
+			{
+				Original.DeleteChild(OriginalRoot);
+			}
+			else if (OverrideMode == EOverrideMode::replace)
+			{
+				Original.DeleteChild(OriginalRoot);
+				tinyxml2::XMLElement* NewRoot = Original.NewElement(ModifElement->Value());
+				Original.InsertFirstChild(NewRoot);
+				CopyAttributes(NewRoot, ModifElement);
+				CopyChildren(NewRoot, ModifElement);
+			}
+			else if (OverrideMode == EOverrideMode::add)
+			{
+				// Корневой элемент не может быть добавлен в существующий XML, пропускаем
+			}
+		}
+	}
 
 	IterateElement
 	(
@@ -77,7 +120,6 @@ void CXMLOverride::GenerateNewDoc(tinyxml2::XMLDocument& Original, tinyxml2::XML
 			{
 				if (Parent->ToElement() != nullptr)
 				{
-					// Root element is null
 					ParentList.insert(ParentList.begin(), Parent->ToElement());
 				}
 				Parent = Parent->Parent();
@@ -91,6 +133,9 @@ void CXMLOverride::GenerateNewDoc(tinyxml2::XMLDocument& Original, tinyxml2::XML
 
 			for (auto Element : ParentList)
 			{
+				if (IterateElement == nullptr)
+					break;
+
 				xr_string ElValue = Element->Value();
 				if (ElValue == "string")
 				{
@@ -113,25 +158,43 @@ void CXMLOverride::GenerateNewDoc(tinyxml2::XMLDocument& Original, tinyxml2::XML
 					{
 						IterateElement = TestChild;
 					}
+					else
+					{
+						IterateElement = nullptr;
+					}
 				}
 			}
 
-			MyParent = IterateElement->Parent();
-
-			if (OverrideMode == EOverrideMode::remove || OverrideMode == EOverrideMode::replace)
+			if (IterateElement != nullptr)
 			{
-				size_t NodeCount = MyParent->ChildElementCount();
-				MyParent->DeleteChild(IterateElement);
+				MyParent = IterateElement->Parent();
+			}
 
-				if (OverrideMode == EOverrideMode::replace)
+			if (MyParent != nullptr)
+			{
+				if (OverrideMode == EOverrideMode::remove || OverrideMode == EOverrideMode::replace)
 				{
-					ApplyNewNode(MyParent, ChildElement);
-					VERIFY(NodeCount == MyParent->ChildElementCount());
+					size_t NodeCount = MyParent->ChildElementCount();
+					MyParent->DeleteChild(IterateElement);
+
+					if (OverrideMode == EOverrideMode::replace)
+					{
+						ApplyNewNode(MyParent, ChildElement);
+						VERIFY(NodeCount == MyParent->ChildElementCount());
+					}
 				}
-			}
-			else if (OverrideMode == EOverrideMode::add)
-			{
-				ApplyNewNode(MyParent, ChildElement);
+				else if (OverrideMode == EOverrideMode::add)
+				{
+					if (IterateElement != nullptr)
+					{
+						tinyxml2::XMLElement* ChildToAdd = ChildElement->FirstChildElement();
+						while (ChildToAdd != nullptr)
+						{
+							ApplyNewNode(IterateElement, ChildToAdd);
+							ChildToAdd = ChildToAdd->NextSiblingElement();
+						}
+					}
+				}
 			}
 		}
 	);
@@ -139,8 +202,8 @@ void CXMLOverride::GenerateNewDoc(tinyxml2::XMLDocument& Original, tinyxml2::XML
 
 FS_FileSet CXMLOverride::GetModifFiles(const char* Path, const char* File)
 {
-	std::filesystem::path OrigXML = File;
-	xr_string ValidFileName = OrigXML.filename().generic_string().c_str();
+	xr_path OrigXML = File;
+	xr_string ValidFileName = OrigXML.xfilename();
 	ValidFileName = ValidFileName.substr(0, ValidFileName.length() - OrigXML.extension().generic_string().length());
 
 	xr_string AddPath = OrigXML.parent_path().generic_string().c_str();
@@ -149,8 +212,34 @@ FS_FileSet CXMLOverride::GetModifFiles(const char* Path, const char* File)
 	xr_string ModifPathMask = xr_string("mod_") + ValidFileName + "_*" + OrigXML.extension().generic_string().c_str();
 	ModifPathMask = AddPath + "\\" + ModifPathMask;
 
-	FS_FileSet ModifyList;
+	if (HashDataAddons.contains(ModifPathMask))
+	{
+		return HashDataAddons[ModifPathMask];
+	}
+
+	FS_FileSet& ModifyList = HashDataAddons[ModifPathMask];
 	FS.file_list(ModifyList, "$game_config$", FS_ListFiles, ModifPathMask.c_str());
 
-	return std::move(ModifyList);
+	return ModifyList;
+}
+
+void CXMLOverride::CopyAttributes(tinyxml2::XMLElement* Dest, tinyxml2::XMLElement* Src)
+{
+	const tinyxml2::XMLAttribute* attr = Src->FirstAttribute();
+	while (attr != nullptr)
+	{
+		Dest->SetAttribute(attr->Name(), attr->Value());
+		attr = attr->Next();
+	}
+}
+
+void CXMLOverride::CopyChildren(tinyxml2::XMLElement* Dest, tinyxml2::XMLElement* Src)
+{
+	for (tinyxml2::XMLElement* child = Src->FirstChildElement(); child != nullptr; child = child->NextSiblingElement())
+	{
+		tinyxml2::XMLElement* newChild = Dest->GetDocument()->NewElement(child->Value());
+		Dest->InsertEndChild(newChild);
+		CopyAttributes(newChild, child);
+		CopyChildren(newChild, child);
+	}
 }

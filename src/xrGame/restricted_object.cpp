@@ -6,7 +6,7 @@
 //	Description : Restricted object
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "restricted_object.h"
 #include "space_restriction_manager.h"
 #include "xrServer_Objects_ALife_Monsters.h"
@@ -16,11 +16,10 @@
 #include "space_restriction.h"
 #include "space_restriction_bridge.h"
 #include "space_restriction_base.h"
-#include "profiler.h"
 #include "alife_simulator.h"
 #include "alife_object_registry.h"
 #include "game_graph.h"
-#include "custommonster.h"
+#include "CustomMonster.h"
 
 CRestrictedObject::~CRestrictedObject		()
 {
@@ -148,7 +147,10 @@ bool CRestrictedObject::accessible			(u32 level_vertex_id) const
 	if (!ai().level_graph().valid_vertex_id(level_vertex_id))
 	{
 #ifndef MASTER_GOLD
-		Msg("~[WARNING] Invalid level vertex: ID[%u]", level_vertex_id);
+		if (level_vertex_id != u32(-1))
+		{
+			Msg("~[WARNING] Invalid level vertex: ID[%u]", level_vertex_id);
+		}
 #endif
 		return false;
 	}
@@ -164,7 +166,10 @@ bool CRestrictedObject::accessible			(u32 level_vertex_id, float radius) const
 	if (!ai().level_graph().valid_vertex_id(level_vertex_id))
 	{
 #ifndef MASTER_GOLD
-		Msg("~[WARNING] Invalid level vertex: ID[%u]", level_vertex_id);
+		if (level_vertex_id != u32(-1))
+		{
+			Msg("~[WARNING] Invalid level vertex: ID[%u]", level_vertex_id);
+		}
 #endif
 		return false;
 	}

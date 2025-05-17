@@ -2,10 +2,10 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
-#include "spectator.h"
-#include "effectorfall.h"
-#include "CameraLook.h"
+#include "StdAfx.h"
+#include "Spectator.h"
+#include "EffectorFall.h"
+#include "cameralook.h"
 #include "spectator_camera_first_eye.h"
 #include "Actor.h"
 #include "xrServer_Objects.h"
@@ -18,7 +18,7 @@
 #include "group_hierarchy_holder.h"
 #include "../xrEngine/CameraManager.h"
 #include "Inventory.h"
-#include "huditem.h"
+#include "HudItem.h"
 #include "game_cl_mp.h"
 #include "../xrEngine/string_table.h"
 #include "map_manager.h"
@@ -595,20 +595,19 @@ void CSpectator::GetSpectatorString		(string1024& pStr)
 	if (IsGameTypeSingle()) return;
 	
 	xr_string	SpectatorMsg;
-	CStringTable st;
 	switch (cam_active)
 	{
 	case eacFreeFly:
 		{
-			SpectatorMsg = *st.translate("mp_spectator");
+			SpectatorMsg = *g_pStringTable->translate("mp_spectator");
 			SpectatorMsg += " ";
-			SpectatorMsg += *st.translate("mp_free_fly");
+			SpectatorMsg += *g_pStringTable->translate("mp_free_fly");
 		}break;
 	case eacFirstEye:
 		{
-			SpectatorMsg = *st.translate("mp_spectator");
+			SpectatorMsg = *g_pStringTable->translate("mp_spectator");
 			SpectatorMsg += " ";
-			SpectatorMsg += *st.translate("mp_first_eye");
+			SpectatorMsg += *g_pStringTable->translate("mp_first_eye");
 			SpectatorMsg += " ";
 //			SpectatorMsg = "SPECTATOR (First-Eye): ";
 			SpectatorMsg += m_pActorToLookAt ? m_pActorToLookAt->Name() : "";
@@ -616,18 +615,18 @@ void CSpectator::GetSpectatorString		(string1024& pStr)
 		}break;
 	case eacFreeLook:
 		{
-			SpectatorMsg = *st.translate("mp_spectator");
+			SpectatorMsg = *g_pStringTable->translate("mp_spectator");
 			SpectatorMsg += " ";
-			SpectatorMsg += *st.translate("mp_free_look");
+			SpectatorMsg += *g_pStringTable->translate("mp_free_look");
 			SpectatorMsg += " ";
 //			SpectatorMsg = "SPECTATOR (Free-Look):";
 			SpectatorMsg += m_pActorToLookAt ? m_pActorToLookAt->Name() : "";
 		}break;
 	case eacLookAt:
 		{
-			SpectatorMsg = *st.translate("mp_spectator");
+			SpectatorMsg = *g_pStringTable->translate("mp_spectator");
 			SpectatorMsg += " ";
-			SpectatorMsg += *st.translate("mp_look_at");
+			SpectatorMsg += *g_pStringTable->translate("mp_look_at");
 			SpectatorMsg += " ";
 //			SpectatorMsg = "SPECTATOR (Look-At):";
 			SpectatorMsg += m_pActorToLookAt ? m_pActorToLookAt->Name() : "";

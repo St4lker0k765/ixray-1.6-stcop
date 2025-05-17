@@ -6,7 +6,7 @@
 //	Description : Eatable item
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "eatable_item.h"
 #include "xrMessages.h"
 #include "physic_item.h"
@@ -17,6 +17,8 @@
 #include "UIGameCustom.h"
 #include "ui/UIActorMenu.h"
 #include "HUDAnimItem.h"
+#include "Inventory.h"
+#include "Actor.h"
 
 CEatableItem::CEatableItem()
 {
@@ -62,6 +64,7 @@ void CEatableItem::Load(LPCSTR section)
 	m_iPortionsMarker = m_iMaxUses;
 
 	m_bRemoveAfterUse = READ_IF_EXISTS( pSettings, r_bool, section, "remove_after_use", TRUE );
+	m_eat_condition = READ_IF_EXISTS(pSettings, r_float, section, "eat_condition", 1);
 	m_bConsumeChargeOnUse = READ_IF_EXISTS(pSettings, r_bool, section, "consume_charge_on_use", TRUE);
 	m_fWeightFull = m_weight;
 	m_fWeightEmpty = READ_IF_EXISTS(pSettings, r_float, section, "empty_weight", 0.0f);
@@ -90,7 +93,7 @@ bool CEatableItem::Useful() const
 {
 	if(!inherited::Useful()) return false;
 
-	//проверить не все ли еще съедено
+	//РїСЂРѕРІРµСЂРёС‚СЊ РЅРµ РІСЃРµ Р»Рё РµС‰Рµ СЃСЉРµРґРµРЅРѕ
 	if (GetRemainingUses() == 0 && CanDelete()) return false;
 
 	return true;
@@ -118,6 +121,12 @@ void CEatableItem::OnH_B_Independent(bool just_before_destroy)
 
 bool CEatableItem::UseBy (CEntityAlive* entity_alive)
 {
+	CActor* parent = smart_cast<CActor*>(entity_alive);
+	if (parent != nullptr && m_pInventory != nullptr && (smart_cast<CHUDAnimItem*>(m_pInventory->ActiveItem()) != nullptr || m_pInventory->GetNextActiveSlot() == ANIM_SLOT))
+	{
+		return false;
+	}
+
 	SMedicineInfluenceValues	V;
 	V.Load						(m_physic_item->cNameSect());
 
@@ -139,13 +148,13 @@ bool CEatableItem::UseBy (CEntityAlive* entity_alive)
 	}
 
 	if (m_iPortionsMarker > 0)
-		--m_iPortionsMarker;
+		m_iPortionsMarker -= m_eat_condition;
 	else
 		m_iPortionsMarker = 0;
 
 	if (bUseHUDAnim)
 	{
-		CHUDAnimItem::PlayHudAnim(m_section_id.c_str(), "anm_use");
+		CHUDAnimItem::PlayHudAnim(m_section_id.c_str(), "anm_use", true);
 	}
 
 	return true;

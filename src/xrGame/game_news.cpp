@@ -1,9 +1,9 @@
 ///////////////////////////////////////////////////////////////
 // game_news.cpp
-// реестр новостей: новости симуляции + сюжетные
+// СЂРµРµСЃС‚СЂ РЅРѕРІРѕСЃС‚РµР№: РЅРѕРІРѕСЃС‚Рё СЃРёРјСѓР»в‚¬С†РёРё + СЃСЋР¶РµС‚РЅС‹Рµ
 ///////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "game_news.h"
 #include "object_broker.h"
 
@@ -12,7 +12,7 @@
 #include "alife_object_registry.h"
 #include "game_graph.h"
 
-#include "date_time.h"
+#include "../xrEngine/date_time.h"
 #include "xrServer_Objects_ALife_Monsters.h"
 
 #include "specific_character.h"

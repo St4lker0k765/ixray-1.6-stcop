@@ -1,12 +1,12 @@
 #include "stdafx.h"
 #include "burer.h"
 #include "../../../../xrPhysics/PhysicsShell.h"
-#include "../../../characterphysicssupport.h"
-#include "../../../actor.h"
+#include "../../../CharacterPhysicsSupport.h"
+#include "../../../Actor.h"
 #include "burer_state_manager.h"
 #include "../../../../Include/xrRender/KinematicsAnimated.h"
 #include "../../../sound_player.h"
-#include "../../../level.h"
+#include "../../../Level.h"
 #include "../../../ai_monster_space.h"
 #include "../../../level_debug.h"
 #include "../monster_velocity_space.h"
@@ -20,7 +20,7 @@
 #include "../../../Inventory.h"
 #include "../../../ActorCondition.h"
 #include "../../../../xrEngine/xr_level_controller.h"
-#include "../../../weapon.h"
+#include "../../../Weapon.h"
 
 #include "../../../../xrCore/_vector3d_ext.h"
 #include "../control_direction_base.h"
@@ -340,7 +340,7 @@ void CBurer::UpdateGraviObject()
 
 	// ---------------------------------------------------------------------
 	// draw particle
-	CParticlesObject* ps = CParticlesObject::Create(particle_gravi_wave,TRUE);
+	CParticlesObject* ps = Particles::Details::Create(particle_gravi_wave,TRUE).get();
 
 	// вычислить позицию и направленность партикла
 	Fmatrix pos; 
@@ -431,7 +431,7 @@ void	CBurer::Hit								(SHit* pHDS)
 		CParticlesPlayer::MakeXFORM					(this,pHDS->bone(),pHDS->dir,pHDS->p_in_bone_space,pos);
 
 		// установить particles
-		CParticlesObject* ps					=	CParticlesObject::Create(particle_fire_shield,TRUE);
+		xr_shared_ptr<CParticlesObject> ps = Particles::Details::Create(particle_fire_shield,TRUE);
 		
 		ps->UpdateParent							(pos,Fvector().set(0.f,0.f,0.f));
 		GamePersistent().ps_needtoplay.push_back	(ps);

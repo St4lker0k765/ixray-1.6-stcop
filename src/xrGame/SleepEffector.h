@@ -1,14 +1,14 @@
 //////////////////////////////////////////////////////////////////////
-// SleepEffector.h:		эффектор, который запускается во время сна
-//						актера                           
+// SleepEffector.h:		СЌС„С„РµРєС‚РѕСЂ, РєРѕС‚РѕСЂС‹Р№ Р·Р°РїСѓСЃРєР°РµС‚СЃСЏ РІРѕ РІСЂРµРјСЏ СЃРЅР°
+//						Р°РєС‚РµСЂР°                           
 //////////////////////////////////////////////////////////////////////
 
 
 #pragma once
 
-#include "../xrEngine/effectorPP.h"
-#include "../xrEngine/effector.h"
-#include "../xrEngine/cameramanager.h"
+#include "../xrEngine/EffectorPP.h"
+#include "../xrEngine/Effector.h"
+#include "../xrEngine/CameraManager.h"
 
 
 #define SLEEP_EFFECTOR_TYPE_ID 8
@@ -28,7 +28,7 @@ public:
 	virtual	BOOL	Process		(SPPInfo& pp);
 
 	
-	//текущий статус сна
+	//С‚РµРєСѓС‰РёР№ СЃС‚Р°С‚СѓСЃ СЃРЅР°
 	enum SLEEP_STATE { BEGIN_SLEEP,
 					   BEFORE_SLEEPING,
 					   SLEEPING,

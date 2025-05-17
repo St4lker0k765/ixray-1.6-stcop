@@ -3,20 +3,20 @@
 #include "SpaceUtils.h"
 //#include "GameObject.h"
 #include "IPhysicsShellHolder.h"
-#include "phcharacter.h"
+#include "PHCharacter.h"
 #include "iclimableobject.h"
 
 #include "../Include/xrRender/Kinematics.h"
 #include "PHCollideValidator.h"
-#include "../xrengine/xr_object.h"
-#include "../xrengine/bone.h"
+#include "../xrEngine/xr_object.h"
+#include "../xrEngine/bone.h"
 
 //#include "game_object_space.h"
 
 void CPHStaticGeomShell::get_spatial_params()
 {
 	Fvector					AABB_;
-	spatialParsFromDGeom	(dSpacedGeometry(),spatial.sphere.P,AABB_,spatial.sphere.R);
+	spatialParsFromDGeom	(dSpacedGeometry(), SpatialComponent->spatial.sphere.P,AABB_, SpatialComponent->spatial.sphere.R);
 }
 
 void	CPHStaticGeomShell::PhDataUpdate		(dReal step)
@@ -43,7 +43,7 @@ void CPHStaticGeomShell::Deactivate()
 
 CPHStaticGeomShell::CPHStaticGeomShell()
 {
-		spatial.type|=STYPE_PHYSIC;
+	SpatialComponent->spatial.type|=STYPE_PHYSIC;
 }
 
 void _BCL	cb(CBoneInstance* B)

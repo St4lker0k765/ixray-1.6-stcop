@@ -1,8 +1,10 @@
 #include "stdafx.h"
 #pragma hdrstop
 
-#include "../xrRender/hwcaps.h"
-#include "../xrRender/hw.h"
+#include "../xrRender/HWCaps.h"
+#include "../xrRender/HW.h"
+
+ECORE_API CHWCaps Caps;
 
 extern u32 GetGpuNum();
 

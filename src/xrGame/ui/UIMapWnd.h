@@ -1,7 +1,7 @@
 #pragma once
 
-#include "UIWindow.h"
-#include "UIWndCallback.h"
+#include "../../xrUI/Widgets/UIWindow.h"
+#include "../../xrUI/Widgets/UIWndCallback.h"
 
 
 class CUICustomMap;
@@ -9,7 +9,7 @@ class CUIGlobalMap;
 class CUIFrameWindow;
 class CUIFixedScrollBar;
 class CUIFrameLineWnd;
-class CMapActionPlanner;
+class FRbmkMapActionPlanner;
 class CUITabControl;
 class CUIStatic;
 class CUI3tButton;
@@ -45,7 +45,7 @@ private:
 	CUIFixedScrollBar*				m_UIMainScrollV;
 	CUIFixedScrollBar*				m_UIMainScrollH;
 	CUIWindow*					m_UILevelFrame;
-	CMapActionPlanner*			m_ActionPlanner;
+	FRbmkMapActionPlanner*		m_ActionPlanner;
 
 	CUIMapLocationHint*			m_map_location_hint;
 	CUIPdaSpot*					m_UserSpotWnd;

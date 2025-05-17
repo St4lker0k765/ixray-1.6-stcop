@@ -3,8 +3,10 @@
 #include "stdafx.h"
 #pragma hdrstop
 
+#include <FlexibleVertexFormat.h>
+
 #include "../xrEngine/GameFont.h"
-#include "d3dutils.h"
+#include "D3DUtils.h"
 #include "du_box.h"
 #include "du_sphere.h"
 #include "du_sphere_part.h"
@@ -16,7 +18,7 @@
 
 ECORE_API CDrawUtilities DU_impl;
 
-#define LINE_DIVISION  32  // не меньше 6!!!!!
+#define LINE_DIVISION  32  // РЅРµ РјРµРЅСЊС€Рµ 6!!!!!
 // for drawing sphere
 static Fvector circledef1[LINE_DIVISION];
 static Fvector circledef2[LINE_DIVISION];
@@ -102,7 +104,7 @@ void SPrimitiveBuffer::CreateFromData(D3DPRIMITIVETYPE _pt, u32 _p_cnt, u32 FVF,
 	p_type				= _pt;
 	v_cnt				= _v_cnt;
 	i_cnt				= _i_cnt;
-	u32 stride			= D3DXGetFVFVertexSize(FVF);
+	u32 stride = FVF::ComputeVertexSize(FVF);
 	R_CHK(REDevice->CreateVertexBuffer(v_cnt*stride, D3DUSAGE_WRITEONLY, 0, D3DPOOL_MANAGED, &pVB, 0));
 	u8* 				bytes;
 	R_CHK				(pVB->Lock(0,0,(LPVOID*)&bytes,0));
@@ -223,20 +225,20 @@ void CDrawUtilities::OnDeviceCreate()
     vs_TL.create	(FVF::F_TL,RCache.Vertex.Buffer(),RCache.Index.Buffer());
     vs_LIT.create	(FVF::F_LIT,RCache.Vertex.Buffer(),RCache.Index.Buffer());
 
-	//m_Font						= xr_new<CGameFont>("hud_font_small");
+    m_Font = g_FontManager->GetFont("stat_font");
 
-   // m_axis_object = NULL;
+    m_axis_object = NULL;
 }
 
-//void CDrawUtilities::DestroyObjects()
-//{
-//    Lib.RemoveEditObject(m_axis_object);
-//}
+void CDrawUtilities::DestroyObjects()
+{
+    Lib.RemoveEditObject(m_axis_object);
+}
 
 void CDrawUtilities::OnDeviceDestroy()
 {
 	EDevice->seqRender.Remove		(this);
-	//xr_delete					(m_Font);
+
     m_SolidBox.Destroy			();
 	m_SolidCone.Destroy			();
 	m_SolidSphere.Destroy		();
@@ -596,14 +598,11 @@ void CDrawUtilities::dbgDrawPlacement(const Fvector& p, int sz, u32 clr, LPCSTR 
 
 	// Render it as line strip
     DU_DRAW_DP		(D3DPT_LINESTRIP,vs_TL,vBase,4);
+
     if (caption)
     {
-        TUI::DrawDebugString StringData;
-        StringData.Pos = { c.x, c.y + s };
-        StringData.Text = caption;
-        StringData.Color = clr_font;
-
-        UI->ViewportLines.push_back(std::move(StringData));
+        m_Font->SetColor(clr_font);
+        m_Font->Out(c.x, c.y + s, "%s", caption);
     }
 }
 
@@ -1007,10 +1006,10 @@ void CDrawUtilities::DrawPivot(const Fvector& pos, float sz){
 
 void CDrawUtilities::DrawAxis(const Fmatrix& T)
 {
-    //if(!m_axis_object)
-    //	m_axis_object = Lib.CreateEditObject("editor\\axis");
-    //R_ASSERT(m_axis_object);
-    //
+    if(!m_axis_object)
+    	m_axis_object = Lib.CreateEditObject("editor\\axis");
+    R_ASSERT(m_axis_object);
+    
     Fmatrix	M 				= Fidentity;
     Fmatrix	S;
     S.scale					(0.04f,0.04f,0.04f);
@@ -1025,9 +1024,10 @@ void CDrawUtilities::DrawAxis(const Fmatrix& T)
 	pt.x  = _wh;
 	pt.y  = iFloor(UI->GetRenderHeight()-_wh);
 
-    EDevice->m_Camera.MouseRayFromPoint(M.c, dir, pt);
+    UI->CurrentView().m_Camera.MouseRayFromPoint(M.c, dir, pt);
+
     M.c.mad(dir, _kl);
-    //m_axis_object->Render	(M, 2, false);
+    m_axis_object->Render	(M, 2, false);
 }
 
 void CDrawUtilities::DrawObjectAxis(const Fmatrix& T, float sz, BOOL sel)
@@ -1083,21 +1083,14 @@ void CDrawUtilities::DrawObjectAxis(const Fmatrix& T, float sz, BOOL sel)
     DU_DRAW_DP	(D3DPT_LINELIST,vs_TL,vBase,3);
 	DU_DRAW_RS	(D3DRS_SHADEMODE,SHADE_MODE);
 
-    TUI::DrawDebugString StringData;
-    StringData.Pos = { r.x, r.y };
-    StringData.Text = "x";
-    StringData.Color = sel ? 0xFF000000 : 0xFF909090;
-
-    UI->ViewportLines.push_back(StringData);
-
-    StringData.Pos = { n.x, n.y };
-    StringData.Text = "y";
-    UI->ViewportLines.push_back(StringData);
-
-    StringData.Pos = { d.x, d.y };
-    StringData.Text = "z";
-    UI->ViewportLines.push_back(StringData);
-
+    m_Font->SetColor(sel ? 0xFF000000 : 0xFF909090);
+    m_Font->Out(r.x, r.y, "x");
+    m_Font->Out(n.x, n.y, "y");
+    m_Font->Out(d.x, d.y, "z");
+    m_Font->SetColor(sel ? 0xFFFFFFFF : 0xFF000000);
+    m_Font->Out(r.x - 1, r.y - 1, "x");
+    m_Font->Out(n.x - 1, n.y - 1, "y");
+    m_Font->Out(d.x - 1, d.y - 1, "z");
 }
 
 void CDrawUtilities::DrawGrid()
@@ -1244,26 +1237,22 @@ void CDrawUtilities::DrawJoint(const Fvector& p, float radius, u32 clr)
 
 void CDrawUtilities::OnRender()
 {
-	//m_Font->OnRender();
+    //m_Font->OnRender();
 }
 
 void CDrawUtilities::OutText(const Fvector& pos, LPCSTR text, u32 color, u32 shadow_color)
 {
-	Fvector p;
-	float w	= pos.x*EDevice->mFullTransform._14 + pos.y*EDevice->mFullTransform._24 + pos.z*EDevice->mFullTransform._34 + EDevice->mFullTransform._44;
-
-	if (w>=0)
+    Fvector p;
+    float   w = pos.x * Device.mFullTransform._14 + pos.y * Device.mFullTransform._24 + pos.z * Device.mFullTransform._34 + Device.mFullTransform._44;
+    if (w >= 0)
     {
-		EDevice->mFullTransform.transform(p,pos);
-		p.x = (float)iFloor(_x2real(p.x)); p.y = (float)iFloor(_y2real(-p.y));
+        Device.mFullTransform.transform(p, pos);
+        p.x = (float)iFloor(_x2real(p.x));
+        p.y = (float)iFloor(_y2real(-p.y));
 
-        const float DeltaQuality = EDevice->m_ScreenQuality;
-
-        TUI::DrawDebugString StringData;
-        StringData.Pos = { p.x / DeltaQuality, p.y / DeltaQuality };
-        StringData.Text = text;
-        StringData.Color = color;
-
-        UI->ViewportLines.push_back(std::move(StringData));
-	}
+        m_Font->SetColor(shadow_color);
+        m_Font->Out(p.x, p.y, (LPSTR)text);
+        m_Font->SetColor(color);
+        m_Font->Out(p.x - 1, p.y - 1, (LPSTR)text);
+    }
 }

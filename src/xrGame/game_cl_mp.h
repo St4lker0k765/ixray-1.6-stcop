@@ -1,14 +1,16 @@
 #pragma once
 
 #include "game_cl_base.h"
-#include "ui_defs.h"
+#include "../../xrUI/ui_defs.h"
 #include "Spectator.h"
 #include "file_transfer.h"
-#include "screenshot_manager.h"
 #include "configs_dumper.h"
 #include "configs_dump_verifyer.h"
 #include "screenshot_server.h"
-#include "../xrCore/fastdelegate.h"
+
+#ifdef XR_MP_BUILD
+#include "screenshot_manager.h"
+#endif //  XR_MP_BUILD
 
 class CUIWindow;
 class CUISpeechMenu;
@@ -43,7 +45,7 @@ struct SND_Message{
 
 struct cl_TeamStruct
 {
-	shared_str			caSection;		// имя секции комманды
+	shared_str			caSection;		// РёРјСЏ СЃРµРєС†РёРё РєРѕРјРјР°РЅРґС‹
 	//-----------------------------------
 	ui_shader			IndicatorShader;
 	ui_shader			InvincibleShader;
@@ -268,8 +270,10 @@ public:
 				void				SendPlayerStarted();
 	virtual		void				OnConnected				();
 	virtual		LPCSTR				GetGameScore			(string32&	score_dest) = 0;
-				
+#ifdef XR_MP_BUILD
 	screenshot_manager				ss_manager;
+#endif //  XR_MP_BUILD
+
 	mp_anticheat::configs_dumper	cd_manager;
 	mp_anticheat::configs_verifyer	cd_verifyer;
 	
@@ -279,7 +283,7 @@ public:
 
 				void				AddSoundMessage		(LPCSTR sound_name, u32 const sound_priority, u32 const soundID);
 				void				PlaySndMessage		(u32 ID);
-				typedef fastdelegate::FastDelegate<void (u32 const)> player_info_reply_cb_t;
+				typedef xr_delegate<void (u32 const)> player_info_reply_cb_t;
 				bool				RequestPlayersInfo	(player_info_reply_cb_t const pinfo_repl_cb);
 private:
 				u8*					buffer_for_compress;

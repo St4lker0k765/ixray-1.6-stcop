@@ -1,14 +1,14 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
-#include "actorcondition.h"
+#include "ActorCondition.h"
 #include "Actor.h"
-#include "actorEffector.h"
+#include "ActorEffector.h"
 #include "Inventory.h"
 #include "Level.h"
-#include "sleepeffector.h"
+#include "SleepEffector.h"
 #include "game_base_space.h"
 #include "autosave_manager.h"
-#include "xrserver.h"
+#include "xrServer.h"
 #include "ai_space.h"
 #include "script_game_object.h"
 #include "game_object_space.h"
@@ -19,7 +19,7 @@
 #include "ai/monsters/basemonster/base_monster.h"
 #include "UIGameCustom.h"
 #include "ui/UIMainIngameWnd.h"
-#include "ui/UIStatic.h"
+#include "../../xrUI/Widgets/UIStatic.h"
 
 #define MAX_SATIETY					1.0f
 #define START_SATIETY				0.5f
@@ -130,7 +130,8 @@ void CActorCondition::LoadCondition(LPCSTR entity_section)
 	
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Thirst
-	if (EngineExternal()[EEngineExternalGame::EnableThirst])
+	const static bool enableThirst = EngineExternal()[EEngineExternalGame::EnableThirst];
+	if (enableThirst)
 	{
 		Thirst.Critical = pSettings->r_float(section,"thirst_critical");
 		clamp(Thirst.Critical, 0.0f, 1.0f);
@@ -142,7 +143,8 @@ void CActorCondition::LoadCondition(LPCSTR entity_section)
 
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Sleepiness
-	if (EngineExternal()[EEngineExternalGame::EnableSleepiness])
+	const static bool enableSleepiness = EngineExternal()[EEngineExternalGame::EnableSleepiness];
+	if (enableSleepiness)
 	{
 		Sleepiness.Critical = pSettings->r_float(section,"sleepiness_critical");
 		clamp(Sleepiness.Critical, 0.0f, 1.0f);
@@ -227,23 +229,30 @@ void CActorCondition::UpdateCondition()
 	float base_weight			= object().MaxCarryWeight();
 	float cur_weight			= object().inventory().TotalWeight();
 
-	if ((object().mstate_real&mcAnyMove))
+	if (m_object->Holder() == nullptr)
 	{
-		ConditionWalk( cur_weight / base_weight,
-			isActorAccelerated( object().mstate_real,object().IsZoomAimingMode() ),
-			(object().mstate_real&mcSprint) != 0 );
+		if ((object().mstate_real & mcAnyMove))
+		{
+			ConditionWalk(cur_weight / base_weight,
+				isActorAccelerated(object().mstate_real, object().IsZoomAimingMode()),
+				(object().mstate_real & mcSprint) != 0);
+		}
+		else
+		{
+			ConditionStand(cur_weight / base_weight);
+		}
+
+		if (IsGameTypeSingle())
+		{
+			float k_max_power = 1.0f + _min(cur_weight, base_weight) / base_weight
+				+ _max(0.0f, (cur_weight - base_weight) / 10.0f);
+
+			SetMaxPower(GetMaxPower() - m_fPowerLeakSpeed * m_fDeltaTime * k_max_power);
+		}
 	}
 	else
 	{
-		ConditionStand( cur_weight / base_weight );
-	}
-	
-	if (IsGameTypeSingle())
-	{
-		float k_max_power = 1.0f + _min(cur_weight, base_weight) / base_weight
-			+ _max(0.0f, (cur_weight - base_weight) / 10.0f);
-
-		SetMaxPower(GetMaxPower() - m_fPowerLeakSpeed * m_fDeltaTime * k_max_power);
+		SetMaxPower(1.f);
 	}
 
 	if (IsGameTypeSingle())
@@ -346,22 +355,18 @@ void CActorCondition::AffectDamage_InjuriousMaterialAndMonstersInfluence()
 	float radiation_influence			=	GetInjuriousMaterialDamage(); // Get Radiation from Material
 
 	// Add Radiation and Psy Level from Monsters
-	CPda* const pda						=	m_object->GetPDA();
-
-	if ( pda )
+	if (m_object && m_object->g_Alive())
 	{
-		typedef xr_vector<CObject*>				monsters;
+		typedef xr_vector<CObject*> monsters;
 
-		for ( monsters::const_iterator	it	=	pda->feel_touch.begin();
-										it	!=	pda->feel_touch.end();
-										++it )
+		for (const CObject* Object : m_object->feel_touch)
 		{
-			CBaseMonster* const	monster		=	smart_cast<CBaseMonster*>(*it);
-			if ( !monster || !monster->g_Alive() ) continue;
+			const CBaseMonster* monster = smart_cast<CBaseMonster*>(Object);
+			if (!monster || !monster->g_Alive()) continue;
 
-			psy_influence					+=	monster->get_psy_influence();
-			radiation_influence				+=	monster->get_radiation_influence();
-			fire_influence					+=	monster->get_fire_influence();
+			psy_influence += monster->get_psy_influence();
+			radiation_influence += monster->get_radiation_influence();
+			fire_influence += monster->get_fire_influence();
 		}
 	}
 
@@ -408,7 +413,7 @@ void CActorCondition::AffectDamage_InjuriousMaterialAndMonstersInfluence()
 	}//while
 }
 
-#include "characterphysicssupport.h"
+#include "CharacterPhysicsSupport.h"
 float CActorCondition::GetInjuriousMaterialDamage()
 {
 	u16 mat_injurios = m_object->character_physics_support()->movement()->injurious_material_idx();
@@ -469,10 +474,11 @@ void CActorCondition::UpdateSatiety()
 
 void CActorCondition::UpdateThirst()
 {
-	if (!EngineExternal()[EEngineExternalGame::EnableThirst])
+	const static bool enableThirst = EngineExternal()[EEngineExternalGame::EnableThirst];
+	if (!enableThirst)
 		return;
 
-	if (Thirst.Current > 0)
+	if (Thirst.Current < 1)
 	{
 		Thirst.Current += Thirst.Variability * m_fDeltaTime;
 		clamp(Thirst.Current, 0.0f, 1.0f);
@@ -488,7 +494,8 @@ void CActorCondition::UpdateThirst()
 
 void CActorCondition::UpdateSleepiness()
 {
-	if (!EngineExternal()[EEngineExternalGame::EnableSleepiness])
+	const static bool enableSleepiness = EngineExternal()[EEngineExternalGame::EnableSleepiness];
+	if (!enableSleepiness)
 		return;
 
 	if (Sleepiness.Current > 0)
@@ -591,6 +598,9 @@ void CActorCondition::save(NET_Packet &output_packet)
 	save_data			(m_condition_flags, output_packet);
 	save_data			(Satiety.Current, output_packet);
 
+	save_data(Thirst.Current, output_packet);
+	save_data(Sleepiness.Current, output_packet);
+
 	save_data			(m_curr_medicine_influence.fHealth, output_packet);
 	save_data			(m_curr_medicine_influence.fPower, output_packet);
 	save_data			(m_curr_medicine_influence.fSatiety, output_packet);
@@ -617,6 +627,9 @@ void CActorCondition::load(IReader &input_packet)
 	load_data			(Alcohol.Current, input_packet);
 	load_data			(m_condition_flags, input_packet);
 	load_data			(Satiety.Current, input_packet);
+
+	load_data(Thirst.Current, input_packet);
+	load_data(Sleepiness.Current, input_packet);
 
 	load_data			(m_curr_medicine_influence.fHealth, input_packet);
 	load_data			(m_curr_medicine_influence.fPower, input_packet);

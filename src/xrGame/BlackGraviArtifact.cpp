@@ -1,17 +1,17 @@
 ///////////////////////////////////////////////////////////////
 // BlackGraviArtifact.cpp
-// BlackGraviArtefact - гравитационный артефакт, 
-// такой же как и обычный, но при получении хита
+// BlackGraviArtefact - РіСЂР°РІРёС‚Р°С†РёРѕРЅРЅС‹Р№ Р°СЂС‚РµС„Р°РєС‚, 
+// С‚Р°РєРѕР№ Р¶Рµ РєР°Рє Рё РѕР±С‹С‡РЅС‹Р№, РЅРѕ РїСЂРё РїРѕР»СѓС‡РµРЅРёРё С…РёС‚Р°
 ///////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "BlackGraviArtifact.h"
 #include "../xrPhysics/PhysicsShell.h"
 #include "entity_alive.h"
-#include "phmovementcontrol.h"
+#include "PHMovementControl.h"
 #include "xrMessages.h"
-#include "physicsshellholder.h"
-#include "explosive.h"
+#include "PhysicsShellHolder.h"
+#include "Explosive.h"
 #include "../xrPhysics/IPHWorld.h"
 #include "CharacterPhysicsSupport.h"
 //extern CPHWorld*	ph_world;
@@ -45,10 +45,7 @@ BOOL CBlackGraviArtefact::net_Spawn(CSE_Abstract* DC)
 {
 	if(!inherited::net_Spawn(DC)) return FALSE;
 
-
-
-	CParticlesObject* pStaticPG;
-	pStaticPG = CParticlesObject::Create("anomaly\\galantine",FALSE);
+	CParticlesObject* pStaticPG = Particles::Details::Create("anomaly\\galantine",FALSE).get();
 	Fmatrix pos;
 	//pos.rotateY(1.57);
 	//pos.mulA(pos);
@@ -98,8 +95,7 @@ void CBlackGraviArtefact::UpdateCLChild()
 
 			GraviStrike();
 
-			CParticlesObject* pStaticPG;
-			pStaticPG = CParticlesObject::Create(*m_sParticleName,TRUE);
+			CParticlesObject* pStaticPG = Particles::Details::Create(*m_sParticleName,TRUE).get();
 			Fmatrix pos; 
 			pos.set(XFORM()); 
 			Fvector vel; 
@@ -125,7 +121,7 @@ void	CBlackGraviArtefact::Hit					(SHit* pHDS)
 	if(HDS.impulse>m_fImpulseThreshold)
 	{
 		m_bStrike = true;
-		//чтоб выстрел не повлиял на траекторию полета артефакта
+		//С‡С‚РѕР± РІС‹СЃС‚СЂРµР» РЅРµ РїРѕРІР»РёСЏР» РЅР° С‚СЂР°РµРєС‚РѕСЂРёСЋ РїРѕР»РµС‚Р° Р°СЂС‚РµС„Р°РєС‚Р°
 		HDS.impulse = 0;
 	}
 	

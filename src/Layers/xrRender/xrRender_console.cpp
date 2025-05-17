@@ -11,6 +11,7 @@ xr_token							qpreset_token							[ ]={
 	{ "Default",					2											},
 	{ "High",						3											},
 	{ "Extreme",					4											},
+	{ "Ultra",						5											},
 	{ 0,							0											}
 };
 
@@ -23,13 +24,12 @@ xr_token qsmapsize_token[] = {
 	{ nullptr, 0   }
 };
 
-u32			ps_r_ssao_mode			=	2;
+u32			ps_r_ssao_mode			=	1;
 xr_token							qssao_mode_token						[ ]={
 	{ "st_opt_off",					0											},
 	{ "ui_mm_ssao",					1											},
-	{ "ui_mm_hdao",					2											},
 #ifdef USE_DX11
-	{ "ui_mm_gtao",					3											},
+	{ "ui_mm_gtao",					2											},
 #endif
 	{ 0,							0											}
 };
@@ -40,18 +40,6 @@ xr_token							qsun_shafts_token							[ ]={
 	{ "st_opt_low",					1												},
 	{ "st_opt_medium",				2												},
 	{ "st_opt_high",				3												},
-	{ 0,							0												}
-};
-
-u32			ps_r_ssao				=	3;
-xr_token							qssao_token									[ ]={
-	{ "st_opt_off",					0												},
-	{ "st_opt_low",					1												},
-	{ "st_opt_medium",				2												},
-	{ "st_opt_high",				3												},
-#ifdef USE_DX11
-	{ "st_opt_ultra",				4												},
-#endif //USE_DX11
 	{ 0,							0												}
 };
 
@@ -124,23 +112,19 @@ Fvector3	ps_r_taa_jitter = { 0,0,0 };
 Fvector3	ps_r_taa_jitter_scale = { 1,1,0 };
 
 // R2-specific
-Flags32		ps_r2_ls_flags				= { R2FLAG_SUN 
-	| R2FLAG_EXP_DONT_TEST_UNSHADOWED 
-	| R2FLAG_USE_NVSTENCIL | R2FLAG_EXP_SPLIT_SCENE 
+Flags32		ps_r2_ls_flags = {
+	R2FLAG_SUN
+	| R2FLAG_EXP_DONT_TEST_UNSHADOWED
+	| R2FLAG_USE_NVSTENCIL | R2FLAG_EXP_SPLIT_SCENE
 	| R2FLAG_EXP_MT_CALC | R3FLAG_DYN_WET_SURF
 	| R3FLAG_VOLUMETRIC_SMOKE
-	|R2FLAG_DETAIL_BUMP
-	|R2FLAG_SOFT_PARTICLES
-	|R2FLAG_SOFT_WATER
-	|R2FLAG_STEEP_PARALLAX
-	|R2FLAG_TONEMAP
-	|R2FLAG_VOLUMETRIC_LIGHTS
-	};	// r2-only
-
-Flags16 ps_r2_ls_flags_ssao = 
-{
-	ESSAO_DATA::SSAO_HALF_DATA
-};
+	| R2FLAG_DETAIL_BUMP
+	| R2FLAG_SOFT_PARTICLES
+	| R2FLAG_SOFT_WATER
+	| R2FLAG_STEEP_PARALLAX
+	| R2FLAG_TONEMAP
+	| R2FLAG_VOLUMETRIC_LIGHTS
+};	// r2-only
 
 Flags32 ps_r2_ls_flags_ext =
 {
@@ -214,7 +198,7 @@ float		ps_r__test_exp_to_shaders_4	= 1.0f;
 BOOL		ps_r2_particle_dt			= FALSE;
 
 #ifndef _EDITOR
-#include	"../../xrEngine/xr_ioconsole.h"
+#include "../../xrEngine/XR_IOConsole.h"
 #include	"../../xrEngine/xr_ioc_cmd.h"
 
 #ifdef USE_DX11
@@ -332,61 +316,6 @@ public:
 	}
 };
 
-class	CCC_SSAO_Mode		: public CCC_Token
-{
-public:
-	CCC_SSAO_Mode(LPCSTR N, u32* V, xr_token* T) : CCC_Token(N,V,T)	{}	;
-
-	virtual void	Execute	(LPCSTR args)	{
-		CCC_Token::Execute	(args);
-				
-		switch	(*value)
-		{
-			case 0:
-			{
-				ps_r_ssao = 0;
-				ps_r2_ls_flags_ssao.set(SSAO_GTAO, 0);
-				ps_r2_ls_flags_ssao.set(SSAO_HDAO, 0);
-				break;
-			}
-			case 1:
-			{
-				if (ps_r_ssao==0)
-				{
-					ps_r_ssao = 1;
-				}
-				ps_r2_ls_flags_ssao.set(SSAO_GTAO, 0);
-				ps_r2_ls_flags_ssao.set(SSAO_HDAO, 0);
-				ps_r2_ls_flags_ssao.set(SSAO_HALF_DATA, 0);
-				break;
-			}
-			case 2:
-			{
-				if (ps_r_ssao==0)
-				{
-					ps_r_ssao = 1;
-				}
-				ps_r2_ls_flags_ssao.set(SSAO_GTAO, 0);
-				ps_r2_ls_flags_ssao.set(SSAO_HDAO, 1);
-				ps_r2_ls_flags_ssao.set(SSAO_OPT_DATA, 0);
-				ps_r2_ls_flags_ssao.set(SSAO_HALF_DATA, 0);
-				break;
-			}
-			case 3:
-			{
-				if (ps_r_ssao==0)
-				{
-					ps_r_ssao = 1;
-				}
-				ps_r2_ls_flags_ssao.set(SSAO_GTAO, 1);
-				ps_r2_ls_flags_ssao.set(SSAO_HDAO, 0);
-				ps_r2_ls_flags_ssao.set(SSAO_OPT_DATA, 1);
-				break;
-			}
-		}
-	}
-};
-
 //-----------------------------------------------------------------------
 class	CCC_Preset		: public CCC_Token
 {
@@ -397,13 +326,27 @@ public:
 		CCC_Token::Execute	(args);
 		string_path		_cfg;
 		string_path		cmd;
-		
+
+		auto setConfig = [&](const char* basePath)
+		{
+			xr_string path = xr_string("ixray_settings\\") + basePath;
+			if (FS.exist("$game_config$", path.c_str()))
+			{
+				xr_strcpy(_cfg, path.c_str());
+			}
+			else
+			{
+				xr_strcpy(_cfg, basePath);
+			}
+		};
+
 		switch	(*value)	{
-			case 0:		xr_strcpy(_cfg, "rspec_minimum.ltx");	break;
-			case 1:		xr_strcpy(_cfg, "rspec_low.ltx");		break;
-			case 2:		xr_strcpy(_cfg, "rspec_default.ltx");	break;
-			case 3:		xr_strcpy(_cfg, "rspec_high.ltx");		break;
-			case 4:		xr_strcpy(_cfg, "rspec_extreme.ltx");	break;
+			case 0: setConfig("rspec_minimum.ltx"); break;
+			case 1: setConfig("rspec_low.ltx"); break;
+			case 2: setConfig("rspec_default.ltx"); break;
+			case 3: setConfig("rspec_high.ltx"); break;
+			case 4: setConfig("rspec_extreme.ltx"); break;
+			case 5: setConfig("rspec_ultra.ltx"); break;
 		}
 		FS.update_path			(_cfg,"$game_config$",_cfg);
 		xr_strconcat(cmd,"cfg_load", " ", _cfg);
@@ -646,11 +589,22 @@ public:
 	virtual void Execute(LPCSTR args) {
 		CCC_Integer::Execute(args);
 
-		dm_current_size = iFloor((float)ps_r__detail_radius / 4) * 2;
-		dm_current_cache1_line = dm_current_size * 2 / 4;		// assuming cache1_count = 4
-		dm_current_cache_line = dm_current_size + 1 + dm_current_size;
-		dm_current_cache_size = dm_current_cache_line * dm_current_cache_line;
-		dm_current_fade = float(2 * dm_current_size) - .5f;
+		dm_current_size				= iFloor((float)ps_r__detail_radius/4)*2;
+		dm_current_cache1_line		= dm_current_size*2/4;		// assuming cache1_count = 4
+		dm_current_cache_line		= dm_current_size+1+dm_current_size;
+		dm_current_cache_size		= dm_current_cache_line*dm_current_cache_line;
+		dm_current_fade				= float(2*dm_current_size)-.5f;
+
+		if (RImplementation.b_loaded && (dm_current_size != dm_size))
+		{
+			Device.details_task.wait();
+
+			RImplementation.Details->cache_task.clear();
+
+			RImplementation.Details->cache_Free();
+			RImplementation.Details->cache_Alloc();
+			RImplementation.Details->cache_Initialize();
+		}
 	}
 	
 	virtual void Status(TStatus& S) {
@@ -728,6 +682,7 @@ void		xrRender_initconsole	()
 
 	CMD3(CCC_Mask,		"r2_sun",				&ps_r2_ls_flags,			R2FLAG_SUN		);
 	CMD3(CCC_Mask,		"r2_sun_details",		&ps_r2_ls_flags,			R2FLAG_SUN_DETAILS);
+	CMD3(CCC_Mask,		"r2_lights_details",	&ps_r2_ls_flags,			R2FLAG_LIGHTS_DETAILS);
 	CMD3(CCC_Mask,		"r2_exp_donttest_shad",	&ps_r2_ls_flags,			R2FLAG_EXP_DONT_TEST_SHADOWED);
 	
 	CMD4(CCC_Float,		"r2_sun_bias",			&ps_r2_sun_bias,			-0.5,	+0.5	);
@@ -762,19 +717,8 @@ void		xrRender_initconsole	()
 
 	CMD3(CCC_Mask,		"r2_volumetric_lights",			&ps_r2_ls_flags,			R2FLAG_VOLUMETRIC_LIGHTS);
 	CMD3(CCC_Token,		"r2_sun_shafts",				&ps_r_sun_shafts,			qsun_shafts_token);
-	CMD3(CCC_SSAO_Mode,	"r2_ssao_mode",					&ps_r_ssao_mode,			qssao_mode_token);
+	CMD3(CCC_Token,		"r2_ssao_mode",					&ps_r_ssao_mode,			qssao_mode_token);
 
-#ifdef DEBUG_DRAW
-	CMD3(CCC_Token,		"r2_ssao",						&ps_r_ssao,					qssao_token);
-#elif USE_DX11
-	ps_r_ssao = 4;
-#endif
-
-	CMD3(CCC_Mask16,	"r2_ssao_blur",                 &ps_r2_ls_flags_ssao,		SSAO_BLUR);//Need restart
-	//CMD3(CCC_Mask16,	"r2_ssao_opt_data",				&ps_r2_ls_flags_ssao,		SSAO_OPT_DATA);//Need restart
-	CMD3(CCC_Mask16,	"r2_ssao_half_data",			&ps_r2_ls_flags_ssao,		SSAO_HALF_DATA);//Need restart
-	CMD3(CCC_Mask16,	"r2_ssao_gtao",					&ps_r2_ls_flags_ssao,		SSAO_GTAO);//Need restart
-	CMD3(CCC_Mask16,	"r2_ssao_hdao",					&ps_r2_ls_flags_ssao,		SSAO_HDAO);//Need restart
 	CMD3(CCC_Mask,		"r2_steep_parallax",			&ps_r2_ls_flags,			R2FLAG_STEEP_PARALLAX);
 	CMD3(CCC_Mask,		"r2_detail_bump",				&ps_r2_ls_flags,			R2FLAG_DETAIL_BUMP);
 
@@ -793,7 +737,8 @@ void		xrRender_initconsole	()
 	CMD3(CCC_Mask, "r4_enable_tessellation", &ps_r2_ls_flags_ext, R2FLAGEXT_ENABLE_TESSELLATION);//Need restart
 
 	// IX-Ray
-	CMD4(CCC_DetailRadius, "r__detail_radius", &ps_r__detail_radius, 49, 250);
+	CMD3(CCC_Mask, "r__fast_details_update",&ps_r2_ls_flags, R2FLAG_FAST_DETAILS_UPDATE);
+	CMD4(CCC_DetailRadius, "r__detail_radius", &ps_r__detail_radius, 10, 120);
 	CMD3(CCC_Mask, "r__no_ram_textures", &ps_r__common_flags, RFLAG_NO_RAM_TEXTURES);
 	CMD3(CCC_Mask, "r__mt_texture_load", &ps_r__common_flags, RFLAG_MT_TEX_LOAD);
 	CMD3(CCC_Token, "r_aa", &ps_r2_aa_type, aa_type_token);
@@ -816,6 +761,8 @@ void		xrRender_initconsole	()
 	CMD3(CCC_Mask, "r4_hashed_alpha_test", &ps_r2_ls_flags_ext, R4FLAG_HASHED_ALPHA_TEST);
 	CMD3(CCC_Mask, "r4_sslr_water", &ps_r2_ls_flags_ext, R4FLAG_SSLR_ON_WATER);
 	CMD4(CCC_Float, "r4_cas_sharpening", &ps_r4_cas_sharpening, 0.0f, 1.0f);
+
+	CMD3(CCC_Mask, "r4_puddles", &ps_r2_ls_flags_ext, R4FLAG_PUDDLES);
 
 #ifdef DEBUG_DRAW
 #if RENDER!=R_R1

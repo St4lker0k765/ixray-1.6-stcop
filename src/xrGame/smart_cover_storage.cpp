@@ -5,7 +5,7 @@
 //	Description : Smart cover storage class
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 #include "smart_cover_storage.h"
 #include "smart_cover_description.h"
@@ -49,7 +49,7 @@ DescriptionPtr storage::description(shared_str const &table_id)
 	if (found != m_descriptions.end())
 		return				(*found);
 
-	::description			*description = xr_new<::description>(table_id);
+	::description			*description = new ::description(table_id);
 	m_descriptions.push_back(description);
 	return					(description);
 }

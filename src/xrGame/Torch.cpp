@@ -1,6 +1,6 @@
-#include "stdafx.h"
-#include "torch.h"
-#include "entity.h"
+#include "StdAfx.h"
+#include "Torch.h"
+#include "Entity.h"
 #include "Actor.h"
 #include "../xrEngine/LightAnimLibrary.h"
 #include "../xrPhysics/PhysicsShell.h"
@@ -9,13 +9,13 @@
 
 #include "Level.h"
 #include "../Include/xrRender/Kinematics.h"
-#include "../xrEngine/camerabase.h"
-#include "../xrengine/xr_collide_form.h"
+#include "../xrEngine/CameraBase.h"
+#include "../xrEngine/xr_collide_form.h"
 #include "Inventory.h"
 #include "game_base_space.h"
 
 #include "UIGameCustom.h"
-#include "actorEffector.h"
+#include "ActorEffector.h"
 #include "CustomOutfit.h"
 #include "ActorHelmet.h"
 
@@ -37,7 +37,7 @@ CTorch::CTorch(void)
 	light_render->set_shadow	(true);
 	light_omni					= ::Render->light_create();
 	light_omni->set_type		(IRender_Light::POINT);
-	light_omni->set_shadow		(false);
+	light_omni->set_shadow		(!!psDeviceFlags.test(rsR4));
 
 	m_switched_on				= false;
 	glow_render					= ::Render->glow_create();
@@ -85,8 +85,11 @@ void CTorch::Load(LPCSTR section)
 
 	m_bNightVisionEnabled = !!pSettings->r_bool(section,"night_vision");
 
-	const char* SoundName = pSettings->r_string(section, "snd_click");
-	m_switch_sound.create(SoundName, st_Effect, sg_SourceType);
+	if (pSettings->line_exist(section, "snd_click"))
+	{
+		const char* SoundName = pSettings->r_string(section, "snd_click");
+		m_switch_sound.create(SoundName, st_Effect, sg_SourceType);
+	}
 }
 
 void CTorch::SwitchNightVision()
@@ -189,6 +192,7 @@ void CTorch::Switch(bool light_on)
 		
 		// CActor *pA = smart_cast<CActor *>(H_Parent());
 		//if(!pA)
+			light_omni->set_decor_object(H_Parent());
 			light_omni->set_active(light_on);
 	}
 	glow_render->set_active					(light_on);
@@ -226,38 +230,42 @@ BOOL CTorch::net_Spawn(CSE_Abstract* DC)
 
 	IKinematics* K			= smart_cast<IKinematics*>(Visual());
 	CInifile* pUserData		= K->LL_UserData(); 
-	R_ASSERT3				(pUserData,"Empty Torch user data!",torch->get_visual());
-	lanim					= LALib.FindItem(pUserData->r_string("torch_definition","color_animator"));
-	guid_bone				= K->LL_BoneID	(pUserData->r_string("torch_definition","guide_bone"));	VERIFY(guid_bone!=BI_NONE);
 
-	Fcolor clr				= pUserData->r_fcolor				("torch_definition",(b_r2)?"color_r2":"color");
-	fBrightness				= clr.intensity();
-	float range				= pUserData->r_float				("torch_definition",(b_r2)?"range_r2":"range");
-	light_render->set_color	(clr);
-	light_render->set_range	(range);
+	if (pUserData != nullptr)
+	{
+		R_ASSERT3(pUserData, "Empty Torch user data!", torch->get_visual());
+		lanim = LALib.FindItem(pUserData->r_string("torch_definition", "color_animator"));
+		guid_bone = K->LL_BoneID(pUserData->r_string("torch_definition", "guide_bone"));	VERIFY(guid_bone != BI_NONE);
 
-	Fcolor clr_o			= pUserData->r_fcolor				("torch_definition",(b_r2)?"omni_color_r2":"omni_color");
-	float range_o			= pUserData->r_float				("torch_definition",(b_r2)?"omni_range_r2":"omni_range");
-	light_omni->set_color	(clr_o);
-	light_omni->set_range	(range_o);
+		Fcolor clr = pUserData->r_fcolor("torch_definition", (b_r2) ? "color_r2" : "color");
+		fBrightness = clr.intensity();
+		float range = pUserData->r_float("torch_definition", (b_r2) ? "range_r2" : "range");
+		light_render->set_color(clr);
+		light_render->set_range(range);
 
-	light_render->set_cone	(deg2rad(pUserData->r_float			("torch_definition","spot_angle")));
-	light_render->set_texture(pUserData->r_string				("torch_definition","spot_texture"));
+		Fcolor clr_o = pUserData->r_fcolor("torch_definition", (b_r2) ? "omni_color_r2" : "omni_color");
+		float range_o = pUserData->r_float("torch_definition", (b_r2) ? "omni_range_r2" : "omni_range");
+		light_omni->set_color(clr_o);
+		light_omni->set_range(range_o);
 
-	glow_render->set_texture(pUserData->r_string				("torch_definition","glow_texture"));
-	glow_render->set_color	(clr);
-	glow_render->set_radius	(pUserData->r_float					("torch_definition","glow_radius"));
+		light_render->set_cone(deg2rad(pUserData->r_float("torch_definition", "spot_angle")));
+		light_render->set_texture(pUserData->r_string("torch_definition", "spot_texture"));
 
-	//включить/выключить фонарик
-	Switch					(torch->m_active);
-	VERIFY					(!torch->m_active || (torch->ID_Parent != 0xffff));
-	
-	if(torch->ID_Parent == 0)		
-		SwitchNightVision	(torch->m_nightvision_active, false);
-	//else
-	//	SwitchNightVision	(false, false);
+		glow_render->set_texture(pUserData->r_string("torch_definition", "glow_texture"));
+		glow_render->set_color(clr);
+		glow_render->set_radius(pUserData->r_float("torch_definition", "glow_radius"));
 
-	m_delta_h				= PI_DIV_2-atan((range*0.5f)/_abs(TORCH_OFFSET.x));
+		//включить/выключить фонарик
+		Switch(torch->m_active);
+		VERIFY(!torch->m_active || (torch->ID_Parent != 0xffff));
+
+		if (torch->ID_Parent == 0)
+			SwitchNightVision(torch->m_nightvision_active, false);
+		//else
+		//	SwitchNightVision	(false, false);
+
+		m_delta_h = PI_DIV_2 - atan((range * 0.5f) / _abs(TORCH_OFFSET.x));
+	}
 
 	return					(TRUE);
 }
@@ -288,6 +296,7 @@ void CTorch::OnH_B_Independent(bool just_before_destroy)
 
 void CTorch::UpdateCL() 
 {
+	PROF_EVENT("CTorch::UpdateCL")
 	inherited::UpdateCL			();
 	
 	if (!m_switched_on)			return;
@@ -300,11 +309,19 @@ void CTorch::UpdateCL()
 		CActor*			actor = smart_cast<CActor*>(H_Parent());
 		if (actor)		PKinematics(H_Parent()->Visual())->CalculateBones_Invalidate	();
 
-		if ((H_Parent()->XFORM().c.distance_to_sqr(Device.vCameraPosition)<_sqr(OPTIMIZATION_DISTANCE) || GameID() != eGameIDSingle)) {
+		if ((H_Parent()->XFORM().c.distance_to_sqr(Device.vCameraPosition) < _sqr(OPTIMIZATION_DISTANCE) || GameID() != eGameIDSingle))
+		{
 			// near camera
-			PKinematics(H_Parent()->Visual())->CalculateBones	(!!Render->ViewBase.testSphere_dirty(H_Parent()->spatial.sphere.P,H_Parent()->spatial.sphere.R+spatial.sphere.R+light_render->get_homdata().sphere.R));
-			M.mul_43				(XFORM(),BI.mTransform);
-		} else {
+			PKinematics(H_Parent()->Visual())->CalculateBones
+			(
+				!!Render->ViewBase.testSphere_dirty(H_Parent()->SpatialComponent->spatial.sphere.P,
+				H_Parent()->SpatialComponent->spatial.sphere.R + SpatialComponent->spatial.sphere.R + light_render->get_homdata().sphere.R)
+			);
+
+			M.mul_43(XFORM(), BI.mTransform);
+		}
+		else 
+		{
 			// approximately the same
 			M		= H_Parent()->XFORM		();
 			H_Parent()->Center				(M.c);
@@ -315,6 +332,18 @@ void CTorch::UpdateCL()
 		{
 			m_prev_hp.x = angle_inertion_var(m_prev_hp.x, -actor->cam_Active()->yaw, TORCH_INERTION_SPEED_MIN, TORCH_INERTION_SPEED_MAX, TORCH_INERTION_CLAMP, Device.fTimeDelta);
 			m_prev_hp.y = angle_inertion_var(m_prev_hp.y, -actor->cam_Active()->pitch, TORCH_INERTION_SPEED_MIN, TORCH_INERTION_SPEED_MAX, TORCH_INERTION_CLAMP, Device.fTimeDelta);
+			if(actor->active_cam()==eacFirstEye)
+			{
+				light_render->set_ignore_object(H_Parent());
+				light_omni->set_ignore_object(H_Parent());
+				light_omni->set_decor_object(nullptr);
+			}
+			else
+			{
+				light_render->set_ignore_object(nullptr);
+				light_omni->set_ignore_object(nullptr);
+				light_omni->set_decor_object(H_Parent());
+			}
 
 			Fvector			dir, right, up;
 			dir.setHP(m_prev_hp.x + m_delta_h, m_prev_hp.y);
@@ -480,7 +509,15 @@ void CTorch::afterDetach			()
 }
 void CTorch::renderable_Render()
 {
-	inherited::renderable_Render();
+	if (IsGameTypeSingle())
+	{
+		inherited::renderable_Render();
+	}
+	else
+	{
+		if (m_switched_on && smart_cast<CActor*>(H_Parent()))
+			inherited::renderable_Render();
+	}
 }
 
 void CTorch::enable(bool value)

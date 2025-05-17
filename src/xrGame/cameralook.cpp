@@ -1,8 +1,8 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #pragma hdrstop
 
-#include "CameraLook.h"
-#include "../xrEngine/Cameramanager.h"
+#include "cameralook.h"
+#include "../xrEngine/CameraManager.h"
 #include "../xrEngine/xr_level_controller.h"
 #include "Actor.h"
 #include "object_broker.h"
@@ -193,8 +193,8 @@ void CCameraLook2::UpdateDistance(Fvector& pivot, Fvector& correction)
 }
 
 #include "Actor.h"
-#include "inventory.h"
-#include "weapon.h"
+#include "Inventory.h"
+#include "Weapon.h"
 void CCameraLook2::Update(Fvector& point, Fvector& noise_dangle)
 {
 	Fmatrix mR, R;
@@ -255,13 +255,17 @@ void CCameraLook2::Load(LPCSTR section)
 {
 	CCameraLook::Load		(section);
 
-	m_cam_offset_r = pSettings->r_fvector3(section, "offset_right");
-	m_cam_offset_l = pSettings->r_fvector3(section, "offset_left");
+	Fvector defaultOffsetRight = {};
+	defaultOffsetRight.set(-0.4f, 0.2f, 0.0f);
+	Fvector defaultOffsetLeft = {};
+	defaultOffsetLeft.set(0.314f, 0.2f, 0.0f);
+
+	m_cam_offset_r = READ_IF_EXISTS(pSettings, r_fvector3, section, "offset_right", defaultOffsetRight);
+	m_cam_offset_l = READ_IF_EXISTS(pSettings, r_fvector3, section, "offset_left", defaultOffsetLeft);
 
 	dist = 1.4f;
 	prev_d = 0.0f;
 }
-
 
 void CCameraFixedLook::Load	(LPCSTR section)
 {

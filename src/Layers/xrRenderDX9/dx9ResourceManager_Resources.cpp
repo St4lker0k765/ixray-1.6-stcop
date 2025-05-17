@@ -3,14 +3,14 @@
 
 #pragma warning(disable:4995)
 #ifndef _EDITOR
-#include "../../xrEngine/render.h"
+#include "../../xrEngine/Render.h"
 #endif
 #pragma warning(default:4995)
 
 #include "../xrRender/ResourceManager.h"
 #include "../xrRender/tss.h"
-#include "../xrRender/blenders/blender.h"
-#include "../xrRender/blenders/blender_recorder.h"
+#include "../xrRender/blenders/Blender.h"
+#include "../xrRender/blenders/Blender_Recorder.h"
 
 #include <FlexibleVertexFormat.h>
 #include <d3dcompiler.h>
@@ -142,12 +142,14 @@ void		CResourceManager::_DeleteDecl		(const SDeclaration* dcl)
 	Msg	("! ERROR: Failed to find compiled vertex-declarator");
 }
 
-SVS*	CResourceManager::_CreateVS		(LPCSTR _name)
+SVS* CResourceManager::_CreateVS(LPCSTR _name)
 {
 	xr_string res_name = _name;
 
-	if(Render->m_skinning > 0) {
-		res_name += "_" + std::to_string(Render->m_skinning);
+	const int m_skinning = Engine.External.GetSkinningMode();
+	if(m_skinning > 0) 
+	{
+		res_name += "_" + std::to_string(m_skinning);
 	}
 
 	res_name += RImplementation.getShaderParams();

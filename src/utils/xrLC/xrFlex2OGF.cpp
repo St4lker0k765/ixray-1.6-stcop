@@ -1,10 +1,10 @@
-#include "stdafx.h"
-#include "build.h"
+#include "StdAfx.h"
+#include "Build.h"
 #include "OGF_Face.h"
 #include "vbm.h"
 //#include "std_classes.h"
-#include "../xrlc_light/lightmap.h"
-#include "../xrlc_light/xrface.h"
+#include "../xrLC_Light/Lightmap.h"
+#include "../xrLC_Light/xrFace.h"
 
 #define	TRY(a) try { a; } catch (...) { clMsg("* E: %s", #a); }
 
@@ -76,7 +76,7 @@ void CBuild::Flex2OGF()
 		
 		u32 MODEL_ID		= u32(it-g_XSplit.begin());
 		
-		OGF*		pOGF	= xr_new<OGF> ();
+		OGF*		pOGF	= new OGF ();
 		Face*		F		= *((*it)->begin());			// first face
 		b_material*	M		= &(materials()[F->dwMaterial]);	// and it's material
 		R_ASSERT	(F && M);

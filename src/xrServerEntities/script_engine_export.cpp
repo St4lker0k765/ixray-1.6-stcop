@@ -23,8 +23,9 @@
 #	include "ZoneCampfire.h"
 #	include "alife_online_offline_group_brain.h"
 #	include "ui/FractionState.h"
-#	include "ui/UIListBox.h"
+#	include "../../xrUI/Widgets/UIListBox.h"
 #	include "ai/crow/ai_crow.h"
+#	include "ui/UIActorMenu.h"
 #endif
 
 void export_classes	(lua_State *L)
@@ -260,5 +261,6 @@ void export_classes	(lua_State *L)
 	CALifeMonsterBrain::script_register(L);
 	CALifeHumanBrain::script_register(L);
 	CGameGraph::script_register(L);
+	CUIActorMenu::script_register(L);
 #endif
 }

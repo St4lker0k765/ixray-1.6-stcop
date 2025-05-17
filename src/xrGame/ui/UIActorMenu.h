@@ -1,9 +1,9 @@
 #pragma once
 
-#include "UIDialogWnd.h"
-#include "UIWndCallback.h"
+#include "../../xrUI/Widgets/UIDialogWnd.h"
+#include "../../xrUI/Widgets/UIWndCallback.h"
 #include "../../xrServerEntities/inventory_space.h"
-#include "UIHint.h"
+#include "../../xrUI/Widgets/UIHint.h"
 
 class CUICharacterInfo;
 class CUIDragDropListEx;
@@ -184,6 +184,7 @@ public:
 	CInventoryOwner*			GetPartner					() {return m_pPartnerInvOwner;};
 	void						SetInvBox					(CInventoryBox* box);
 	CInventoryBox*				GetInvBox					() {return m_pInvBox;};
+
 private:
 	void						PropertiesBoxForSlots		(PIItem item, bool& b_show);
 	void						PropertiesBoxForWeapon		(CUICellItem* cell_item, PIItem item, bool& b_show);
@@ -269,7 +270,8 @@ protected:
 	bool						TryUseItem					(CUICellItem* cell_itm);
 	bool						ToQuickSlot					(CUICellItem* itm);
 
-	void						UpdateActorMP				();
+	void						SetActorInfoMP();
+	void						UpdateActorMoneyMP();
 	void						UpdateOutfit				();
 	void						MoveArtefactsToBag			();
 	bool						TryActiveSlot				(CUICellItem* itm);
@@ -340,5 +342,5 @@ public:
 	void						UpdateConditionProgressBars	();
 
 	IC	UIHint*					get_hint_wnd				() { return m_hint_wnd; }
-
+	DECLARE_SCRIPT_REGISTER_FUNCTION
 }; // class CUIActorMenu

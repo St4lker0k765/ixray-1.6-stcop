@@ -2,12 +2,12 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 
-#include "explosive.h"
+#include "Explosive.h"
 
 #include "../xrPhysics/PhysicsShell.h"
-#include "entity.h"
+#include "Entity.h"
 #include "../xrParticles/stdafx.h"
 #include "../xrParticles/ParticlesObject.h"
 
@@ -15,24 +15,21 @@
 #include "Weapon.h"
 
 #include "Actor.h"
-#include "actoreffector.h"
+#include "ActorEffector.h"
 #include "Level.h"
-#include "level_bullet_manager.h"
+#include "Level_Bullet_Manager.h"
 #include "xrMessages.h"
-#include "../xrEngine/gamemtllib.h"
+#include "../xrEngine/GameMtlLib.h"
 
 #ifdef DEBUG
 #	include "../xrEngine/StatGraph.h"
 #	include "PHDebug.h"
 #endif
 
-//#include "Physics.h"
 #include "../xrPhysics/MathUtils.h"
-//#include "../xrPhysics/phvalidevalues.h"
-#include "../xrPhysics/iActivationShape.h"
-#include "../xrPhysics/iphworld.h"
+#include "../xrPhysics/IActivationShape.h"
+#include "../xrPhysics/IPHWorld.h"
 #include "game_base_space.h"
-#include "profiler.h"
 
 #include "../Include/xrRender/Kinematics.h"
 #define EFFECTOR_RADIUS 30.f
@@ -84,7 +81,6 @@ void CExplosive::LightDestroy()
 
 CExplosive::~CExplosive(void) 
 {
-	sndExplode.destroy		();
 }
 
 void CExplosive::Load(LPCSTR section) 
@@ -121,8 +117,7 @@ void CExplosive::Load(CInifile const *ini,LPCSTR section)
 	//трассы для разлета осколков
 	m_fFragmentSpeed			= ini->r_float	(section,"fragment_speed"				);
 
-	LPCSTR	snd_name		= ini->r_string(section,"snd_explode");
-	sndExplode.create		(snd_name, st_Effect,m_eSoundExplode);
+	m_layered_sounds.LoadSound(ini, section, "snd_explode", "sndExplode", false, m_eSoundExplode);
 
 	m_fExplodeDurationMax	= ini->r_float(section, "explode_duration");
 
@@ -337,8 +332,8 @@ void CExplosive::Explode()
 	if (Initiator() != ALife::_OBJECT_ID(-1)) {
 		who = Level().Objects.net_Find(Initiator());
 	}
-	Sound->play_at_pos(sndExplode, who, pos, false);
-	
+	m_layered_sounds.PlaySound("sndExplode", pos, who, false, false, (u8)-1);
+
 	//показываем эффекты
 
 	m_wallmark_manager.PlaceWallmarks		(pos);
@@ -353,7 +348,7 @@ void CExplosive::Explode()
 	explode_matrix.c.set(pos);
 
 	CParticlesObject* pStaticPG; 
-	pStaticPG = CParticlesObject::Create(*m_sExplodeParticles,!m_bDynamicParticles); 
+	pStaticPG = Particles::Details::Create(*m_sExplodeParticles,!m_bDynamicParticles).get();
 	if (m_bDynamicParticles) m_pExpParticle = pStaticPG;
 	pStaticPG->UpdateParent(explode_matrix,vel);
 	pStaticPG->Play(false);
@@ -399,13 +394,13 @@ void CExplosive::Explode()
 	//взрывная волна
 	////////////////////////////////
 	//---------------------------------------------------------------------
-	xr_vector<ISpatial*>	ISpatialResult;
+	xr_vector<ISpatialShared> ISpatialResult;
 	g_SpatialSpace->q_sphere(ISpatialResult,0,STYPE_COLLIDEABLE,pos,m_fBlastRadius);
 
 	m_blasted_objects.clear	();
 	for (u32 o_it=0; o_it<ISpatialResult.size(); o_it++)
 	{
-		ISpatial*		spatial	= ISpatialResult[o_it];
+		ISpatial* spatial	= ISpatialResult[o_it].get();
 		//		feel_touch_new(spatial->dcast_CObject());
 
 		CPhysicsShellHolder	*pGameObject = smart_cast<CPhysicsShellHolder*>(spatial->dcast_CObject());
@@ -524,7 +519,7 @@ void CExplosive::OnAfterExplosion()
 {
 	if(m_pExpParticle){
 		m_pExpParticle->Stop();
-		CParticlesObject::Destroy(m_pExpParticle);
+		Particles::Details::Destroy(m_pExpParticle);
 		m_pExpParticle = nullptr;
 	}
 	//ликвидировать сам объект 

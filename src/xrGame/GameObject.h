@@ -43,6 +43,7 @@ class CBlend;
 class ai_obstacle;
 
 class IKinematics;
+class CAI_Trader;
 
 template <typename _return_type>
 class CScriptCallbackEx;
@@ -59,19 +60,20 @@ class CGameObject :
 	ALife::_STORY_ID				m_story_id;
 	animation_movement_controller	*m_anim_mov_ctrl;
 protected:
-	//время удаления объекта
+	//РІСЂРµРјСЏ СѓРґР°Р»РµРЅРёСЏ РѕР±СЉРµРєС‚Р°
 	bool					m_bObjectRemoved;
 public:
 	CGameObject();
 	virtual ~CGameObject();
 public:
 	//functions used for avoiding most of the smart_cast
-	virtual CAttachmentOwner*			cast_attachment_owner		()						{return NULL;}
-	virtual CInventoryOwner*			cast_inventory_owner		()						{return NULL;}
-	virtual CInventoryItem*				cast_inventory_item			()						{return NULL;}
-	virtual CEntity*					cast_entity					()						{return NULL;}
-	virtual CEntityAlive*				cast_entity_alive			()						{return NULL;}
-	virtual CActor*						cast_actor					()						{return NULL;}
+	virtual CAttachmentOwner*			cast_attachment_owner		()						{return nullptr;}
+	virtual CInventoryOwner*			cast_inventory_owner		()						{return nullptr;}
+	virtual CInventoryItem*				cast_inventory_item			()						{return nullptr;}
+	virtual CEntity*					cast_entity					()						{return nullptr;}
+	virtual CEntityAlive*				cast_entity_alive			()						{return nullptr;}
+	virtual CActor*						cast_actor					()						{return nullptr;}
+	virtual CAI_Trader*					cast_trader					()						{return nullptr;}
 	virtual CGameObject*				cast_game_object			()						{return this;}
 	virtual CCustomZone*				cast_custom_zone			()						{return nullptr;}
 	virtual CPhysicsShellHolder*		cast_physics_shell_holder	()						{return nullptr;}
@@ -129,7 +131,7 @@ public:
 	virtual	BOOL			BonePassBullet		(int boneID) { return FALSE; }
 
 
-	//игровое имя объекта
+	//РёРіСЂРѕРІРѕРµ РёРјСЏ РѕР±СЉРµРєС‚Р°
 	virtual LPCSTR			Name                () const;
 	
 	//virtual void			OnH_A_Independent	();

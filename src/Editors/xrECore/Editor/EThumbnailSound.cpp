@@ -3,7 +3,7 @@
 
 #include "EThumbnail.h"
 //#include "ImageManager.h"
-#pragma package(smart_init)
+
 
 //------------------------------------------------------------------------------
 #define THM_SOUND_VERSION				0x0014
@@ -113,7 +113,7 @@ void ESoundThumbnail::Save(int age, LPCSTR path)
 }
 //------------------------------------------------------------------------------
 
-#include "..\Engine\ai_sounds.h"
+#include "../Engine/ai_sounds.h"
 
 bool ESoundThumbnail::OnMaxAIDistAfterEdit(PropValue* sender, float& edit_val)
 {
@@ -143,7 +143,7 @@ void ESoundThumbnail::OnMaxDistChange(PropValue* sender)
     }
 	if (bChanged){ 
     	/*P->Modified		();
-        P->RefreshForm	();*//*TODO:Это теперь не нужно*/
+        P->RefreshForm	();*//*TODO:Р­С‚Рѕ С‚РµРїРµСЂСЊ РЅРµ РЅСѓР¶РЅРѕ*/
     }
 }
 

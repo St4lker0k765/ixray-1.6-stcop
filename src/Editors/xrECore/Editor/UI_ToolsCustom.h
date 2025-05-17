@@ -12,7 +12,8 @@ class PropValue;
 class TfrmKeyBar;
 class CBlend;
 
-enum ETAction{
+enum ETAction
+{
     etaSelect=0,
     etaAdd,
     etaMove,
@@ -31,16 +32,18 @@ enum ETAxis
 };
 
 
-enum ETFlags{
-	etfCSParent    	= (1<<0),
-	etfNUScale      = (1<<1),
-	etfNormalAlign  = (1<<2),
-	etfGSnap      	= (1<<3),
-	etfOSnap      	= (1<<4),
-	etfMTSnap      	= (1<<5),
-	etfVSnap      	= (1<<6),
-	etfASnap      	= (1<<7),
-	etfMSnap      	= (1<<8),
+enum ETFlags
+{
+    etfCSParent    = (1 << 0),
+    etfNUScale     = (1 << 1),
+    etfNormalAlign = (1 << 2),
+    etfGSnap       = (1 << 3),
+    etfOSnap       = (1 << 4),
+    etfMTSnap      = (1 << 5),
+    etfVSnap       = (1 << 6),
+    etfASnap       = (1 << 7),
+    etfMSnap       = (1 << 8),
+    etfScaleFixed  = (1 << 9),
 };
 
 class ECORE_API CToolCustom
@@ -50,7 +53,6 @@ protected:
     bool				m_bReady;
 
     ETAxis              m_Axis;
-    ECameraStyle        m_Style;
 
     ETAction			m_Action;
     Flags32				m_Settings;
@@ -70,9 +72,11 @@ protected:
     float				m_fRotateSnapValue;
     float				m_RotateAmount;
 public:
+    Fvector             m_fScaleFixedValue;
     float               m_MoveSnap;
     float               m_MoveSnapTo;
     float               m_RotateSnapAngle;
+    float               m_ScaleFixed;
 
 public:
     float 				fFogness;
@@ -232,9 +236,6 @@ public:
 
     const xr_string&	GetEditFileName		()	{ return m_LastFileName; }
 
-    CEditableObject*    m_pAxisMoveObject;
-	Fmatrix				m_axis_xform;
-    
     virtual bool		GetSelectionPosition	(Fmatrix& result) =0;
     virtual bool UpdateCamera() { return false; }
 
@@ -244,12 +245,6 @@ public:
     {
         return m_Axis;
     }
-
-    ECameraStyle GetStyle() const
-    {
-        return m_Style;
-    }
-
 };
 extern ECORE_API CToolCustom*	Tools;
 

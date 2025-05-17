@@ -1,4 +1,4 @@
-﻿//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 #include "stdafx.h"
 #pragma hdrstop
 #include "../Editor/UI_MainCommand.h"
@@ -63,7 +63,7 @@ XrGameMaterialLibraryEditors::~XrGameMaterialLibraryEditors()
 
 SGameMtl* XrGameMaterialLibraryEditors::AppendMaterial(SGameMtl* parent)
 {
-    SGameMtl* M = xr_new<SGameMtlEditor>();
+    SGameMtl* M = new SGameMtlEditor();
     if (parent)
         *M = *parent;//base params
 
@@ -123,7 +123,7 @@ void XrGameMaterialLibraryEditors::MtlNameToMtlPair(LPCSTR name, int& mtl0, int&
 
 SGameMtlPair* XrGameMaterialLibraryEditors::CreateMaterialPair(int m0, int m1, SGameMtlPair* parent)
 {
-    SGameMtlPairEditor* M = xr_new<SGameMtlPairEditor>(this);
+    SGameMtlPairEditor* M = new SGameMtlPairEditor(this);
     if (parent) {
         M->ID_parent = parent->ID;
         M->OwnProps.zero();
@@ -246,7 +246,7 @@ void XrGameMaterialLibraryEditors::Load()
     if (OBJ) {
         u32				count;
         for (IReader* O = OBJ->open_chunk_iterator(count); O; O = OBJ->open_chunk_iterator(count, O)) {
-            SGameMtl* M = xr_new<SGameMtlEditor>();
+            SGameMtl* M = new SGameMtlEditor();
             M->Load(*O);
             materials.push_back(M);
         }
@@ -257,7 +257,7 @@ void XrGameMaterialLibraryEditors::Load()
     if (OBJ) {
         u32				count;
         for (IReader* O = OBJ->open_chunk_iterator(count); O; O = OBJ->open_chunk_iterator(count, O)) {
-            SGameMtlPair* M = xr_new<SGameMtlPairEditor>(this);
+            SGameMtlPair* M = new SGameMtlPairEditor(this);
             M->Load(*O);
             material_pairs.push_back(M);
         }
@@ -468,7 +468,7 @@ void SGameMtlPairEditor::FillProp(PropItemVec& items)
     B->OnBtnClickEvent.bind(this, &SGameMtlPairEditor::OnParentClick);
 
     propBreakingSounds = PHelper().CreateChoose(items, "Breaking Sounds", &BreakingSounds, smSoundSource, 0, 0, GAMEMTL_SUBITEM_COUNT);
-    propStepSounds = PHelper().CreateChoose(items, "Step Sounds", &StepSounds, smSoundSource, 0, 0, GAMEMTL_SUBITEM_COUNT + 2);
+    propStepSounds = PHelper().CreateChoose(items, "Step Sounds", &StepSounds, smSoundSource, 0, 0, GAMEMTL_STEPSOUND_SUBITEM_COUNT);
     propCollideSounds = PHelper().CreateChoose(items, "Collide Sounds", &CollideSounds, smSoundSource, 0, 0, GAMEMTL_SUBITEM_COUNT);
     propCollideParticles = PHelper().CreateChoose(items, "Collide Particles", &CollideParticles, smParticles, 0, 0, GAMEMTL_SUBITEM_COUNT);
     propCollideMarks = PHelper().CreateChoose(items, "Collide Marks", &CollideMarks, smTexture, 0, 0, GAMEMTL_SUBITEM_COUNT);

@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 #include "helicopter.h"
 #include "xrServer_Objects_ALife.h"
@@ -10,7 +10,7 @@
 #include "script_game_object.h"
 #include "../xrEngine/LightAnimLibrary.h"
 //#include "physicscommon.h"
-#include "ui_base.h"
+#include "../../xrUI/ui_base.h"
 //50fps fixed
 float STEP=0.02f;
 
@@ -20,8 +20,7 @@ CHelicopter::CHelicopter()
 	m_light_render	= nullptr;
 	m_lanim			= nullptr;
 
-	ISpatial*		self				=	smart_cast<ISpatial*> (this);
-	if (self)		self->spatial.type  |=  STYPE_VISIBLEFORAI;
+	SpatialComponent->spatial.type  |=  STYPE_VISIBLEFORAI;
 
 	m_movement.parent	= this;
 	m_body.parent		= this;
@@ -255,7 +254,7 @@ void CHelicopter::net_Destroy()
 	CPHDestroyable::RespawnInit			();
 	m_engineSound.stop					();
 	m_brokenSound.stop					();
-	CParticlesObject::Destroy			(m_pParticle);
+	Particles::Details::Destroy			(m_pParticle);
 	m_light_render.destroy				();
 	m_movement.net_Destroy				();
 #ifdef DEBUG

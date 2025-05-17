@@ -3,8 +3,8 @@
 
 #include "dxRenderDeviceRender.h"
 
-#include "../../xrEngine/environment.h"
-#include "../../Layers/xrRender/ResourceManager.h"
+#include "../../xrEngine/Environment.h"
+#include "ResourceManager.h"
 
 #include "../../xrEngine/xr_efflensflare.h"
 
@@ -166,6 +166,7 @@ dxEnvironmentRender::dxEnvironmentRender() {
 }
 
 void dxEnvironmentRender::OnFrame(CEnvironment& env) {
+	PROF_EVENT("EnvironmentRender::OnFrame");
 	dxEnvDescriptorMixerRender& mixRen = *(dxEnvDescriptorMixerRender*)&*env.CurrentEnv->m_pDescriptorMixer;
 
 	//. Setup skybox textures, somewhat ugly
@@ -197,6 +198,7 @@ void dxEnvironmentRender::OnLoad() {}
 void dxEnvironmentRender::OnUnload() {}
 
 void dxEnvironmentRender::RenderSky(CEnvironment& env) {
+	PROF_EVENT("EnvironmentRender::RenderSky");
 	if(env.bNeed_re_create_env) {
 		OnDeviceDestroy();
 		OnDeviceCreate();
@@ -252,6 +254,7 @@ void dxEnvironmentRender::RenderSky(CEnvironment& env) {
 }
 
 void dxEnvironmentRender::RenderClouds(CEnvironment& env) {
+	PROF_EVENT("EnvironmentRender::RenderClouds");
 	::Render->rmFar();
 
 	Fmatrix mXFORM, mScale;

@@ -39,11 +39,11 @@ struct ECORE_API st_VertexWB:public WBVec
 protected:
 	static bool compare_by_weight(const st_WB& a, const st_WB& b)
 	{
-		return a.weight > b.weight; // отсортировать по убыванию
+		return a.weight > b.weight; // РѕС‚СЃРѕСЂС‚РёСЂРѕРІР°С‚СЊ РїРѕ СѓР±С‹РІР°РЅРёСЋ
 	}
 	static bool compare_by_bone(const st_WB& a, const st_WB& b)
 	{
-		return a.bone < b.bone; // отсортировать по возрастанию
+		return a.bone < b.bone; // РѕС‚СЃРѕСЂС‚РёСЂРѕРІР°С‚СЊ РїРѕ РІРѕР·СЂР°СЃС‚Р°РЅРёСЋ
 	}
 public:
 	void sort_by_bone()
@@ -73,13 +73,13 @@ using VWBVec = xr_vector<st_VertexWB>;
 using VWBIt = VWBVec::iterator;
 
 struct ECORE_API st_VMapPt{
-	int				vmap_index;	// ссылка на мапу
-	int				index;		// индекс в V-мапе на uv/w
+	int				vmap_index;	// СЃСЃС‹Р»РєР° РЅР° РјР°РїСѓ
+	int				index;		// РёРЅРґРµРєСЃ РІ V-РјР°РїРµ РЅР° uv/w
 	st_VMapPt(){vmap_index=-1;index=-1;}
 };
 // uv's
 class ECORE_API st_VMap{
-	FloatVec    	vm;			// u,v - координаты или weight
+	FloatVec    	vm;			// u,v - РєРѕРѕСЂРґРёРЅР°С‚С‹ РёР»Рё weight
 public:
 	shared_str		name;		// vertex uv map name
 	struct{
@@ -101,6 +101,7 @@ public:
 	IC const Fvector2& getUV	(int idx) const			{VERIFY(type==vmtUV);		return (Fvector2&)vm[idx*dim];}
 	IC Fvector2&    getUV		(int idx)				{VERIFY(type==vmtUV);		return (Fvector2&)vm[idx*dim];}
 	IC const float&	getW		(int idx) const			{VERIFY(type==vmtWeight);	return vm[idx];}
+	IC float&		getW		(int idx)				{VERIFY(type==vmtWeight);	return vm[idx];}
 	IC const FloatVec& getVM	()	const				{return vm;}
 	IC float*		getVMdata	()						{return &*vm.begin();}
 	IC float*		getVMdata	(int start)				{return &*(vm.begin()+start*dim);}
@@ -141,11 +142,11 @@ struct ECORE_API st_SVert{
 	protected:
 		static bool compare_by_weight(const bone& a, const bone& b)
 		{
-			return a.w > b.w; // отсортировать по убыванию
+			return a.w > b.w; // РѕС‚СЃРѕСЂС‚РёСЂРѕРІР°С‚СЊ РїРѕ СѓР±С‹РІР°РЅРёСЋ
 		}
 		static bool compare_by_bone(const bone& a, const bone& b)
 		{
-			return a.id < b.id; // отсортировать по возрастанию
+			return a.id < b.id; // РѕС‚СЃРѕСЂС‚РёСЂРѕРІР°С‚СЊ РїРѕ РІРѕР·СЂР°СЃС‚Р°РЅРёСЋ
 		}
 	public:
 		void		sort_by_weight	()	{std::sort(bones.begin(),bones.end(),compare_by_weight);}
@@ -226,15 +227,17 @@ class ECORE_API CEditableMesh
 	CEditableObject*	m_Parent;
 
 	void            GenerateCFModel		();
-	void 			GenerateRenderBuffers();
 	void			UnloadCForm     	();
-#if 1
-	void 			UnloadRenderBuffers	();
-#endif
+
 public:
 	static 			BOOL m_bDraftMeshMode;
+
+	void 			GenerateRenderBuffers();
+	void 			UnloadRenderBuffers();
+
 	void 			GenerateFNormals	();
 	void 			GenerateVNormals	(const Fmatrix* parent_xform, bool force = false);
+	void			AssignMesh			(shared_str to_bone);
 	void            GenerateSVertices	(u32 influence);
 	void 			GenerateAdjacency	();
 

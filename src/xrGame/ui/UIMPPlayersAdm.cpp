@@ -1,17 +1,17 @@
 #include "stdafx.h"
 #include "UIMPPlayersAdm.h"
-#include "UIXmlInit.h"
-#include "UIListBox.h"
-#include "UIListBoxItem.h"
-#include "UIStatic.h"
-#include "UI3tButton.h"
-#include "UITrackBar.h"
-#include "UIComboBox.h"
+#include "../../xrUI/UIXmlInit.h"
+#include "../../xrUI/Widgets/UIListBox.h"
+#include "../../xrUI/Widgets/UIListBoxItem.h"
+#include "../../xrUI/Widgets/UIStatic.h"
+#include "../../xrUI/Widgets/UI3tButton.h"
+#include "../../xrUI/Widgets/UITrackBar.h"
+#include "../../xrUI/Widgets/UIComboBox.h"
 #include "../Level.h"
 #include "../xrServer.h"
 #include "../game_cl_base.h"
 #include "../game_cl_mp.h"
-#include "../../xrEngine/xr_ioconsole.h"
+#include "../../xrEngine/XR_IOConsole.h"
 #include "../../xrEngine/string_table.h"
 
 extern int g_sv_adm_menu_ping_limit;
@@ -146,7 +146,7 @@ void CUIMpPlayersAdm::RefreshPlayersList()
 	if (!tmp_game)
 		return;
 
-	tmp_game->RequestPlayersInfo(fastdelegate::FastDelegate<void (u32 const)>(this,&CUIMpPlayersAdm::FillPlayersList));
+	tmp_game->RequestPlayersInfo(xr_delegate<void (u32 const)>(this,&CUIMpPlayersAdm::FillPlayersList));
 }
 
 void CUIMpPlayersAdm::SendMessage(CUIWindow* pWnd, s16 msg, void* pData)

@@ -1,8 +1,8 @@
-﻿//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 #include "stdafx.h"
 #pragma hdrstop
-#include "..\..\Layers\xrRender\KinematicAnimatedDefs.h"
-#include "..\..\Layers\xrRender\SkeletonAnimated.h"
+#include "../../Layers/xrRender/KinematicAnimatedDefs.h"
+#include "../../Layers/xrRender/SkeletonAnimated.h"
 //------------------------------------------------------------------------------
 
 void  CActorTools::OnObjectItemsFocused(xr_vector<ListItem*>& items)
@@ -170,7 +170,7 @@ void CActorTools::OnMotionEditClick(ButtonValue* V, bool& bModif, bool& bSafe)
 							OnMotionKeysModified();
 						};
 
-						UI->CommandList.push_back(DeleteCallback);
+						UI->CommandList[TUI::ECommandListID::CurrentFrame].push_back(DeleteCallback);
 						bModif = true;
 					}
 					else
@@ -182,7 +182,7 @@ void CActorTools::OnMotionEditClick(ButtonValue* V, bool& bModif, bool& bSafe)
 					ELog.DlgMsg(mtInformation, "Select at least one motion.");
 	}break;
 	case 2:{ // save
-	 int mr=ELog.DlgMsg(mtConfirmation, "Save selected motions only?");
+	 int mr=ELog.DlgMsg(mtConfirmation, mbYes|mbNo,"Save selected motions only?");
 		if (mr!=mrCancel){
 			if (EFS.GetSaveName(_smotion_,fn,0,1)){
 				switch (mr){
@@ -797,7 +797,7 @@ void CActorTools::FillBoneProperties(PropItemVec& items, LPCSTR pref, ListItem* 
 			PHelper().CreateVector	(items, PrepareKey(pref,"Bone\\Shape\\Box\\Half Size"),  	&BONE->shape.box.m_halfsize, 0.f, 1000.f);
 		break;
 		case SBoneShape::stSphere:
-			PHelper().CreateVector	(items, PrepareKey(pref,"Bone\\Shape\\Sphere\\Position"),	&BONE->shape.sphere.P, -10000.f, 10000.f);
+			PHelper().CreateVector	(items, PrepareKey(pref,"Bone\\Shape\\Sphere\\Position"),	&BONE->shape.sphere.P, -100000.f, 100000.f);
 			PHelper().CreateFloat  	(items, PrepareKey(pref,"Bone\\Shape\\Sphere\\Radius"),  	&BONE->shape.sphere.R, 0.f, 1000.f);
 		break;
 		case SBoneShape::stCylinder:
@@ -927,6 +927,7 @@ void CActorTools::FillObjectProperties(PropItemVec& items, LPCSTR pref, ListItem
 	if (m_pEditObjectType & CEditableObject::eoDynamic)
 	{
 		PHelper().CreateFlag32(items, "Object\\Flags\\Make Progressive", &m_pEditObject->m_objectFlags, CEditableObject::eoProgressive);
+		PHelper().CreateFlag32(items, "Object\\Flags\\Disable Mesh Optimization", &m_pEditObject->m_objectFlags, CEditableObject::eoSkipOpt);
 		PHelper().CreateFlag32(items, "Object\\Flags\\HQ Geometry", &m_pEditObject->m_objectFlags, CEditableObject::eoHQExport);
 	}
 	else if (m_pEditObjectType & CEditableObject::eoMultipleUsage)
@@ -934,7 +935,7 @@ void CActorTools::FillObjectProperties(PropItemVec& items, LPCSTR pref, ListItem
 		PHelper().CreateFlag32(items, "Object\\Flags\\Using LOD", &m_pEditObject->m_objectFlags, CEditableObject::eoUsingLOD)->OnChangeEvent.bind(this, &CActorTools::OnUsingLodFlagChange);
 	}
 
-	V = PHelper().CreateVector(items, "Object\\Transform\\Position", &m_pEditObject->a_vPosition, -10000, 10000, 0.01, 2);
+	V = PHelper().CreateVector(items, "Object\\Transform\\Position", &m_pEditObject->a_vPosition, -100000, 100000, 0.01, 2);
 	V->OnChangeEvent.bind(this, &CActorTools::OnChangeTransform);
 	V = PHelper().CreateAngle3(items, "Object\\Transform\\Rotation", &m_pEditObject->a_vRotate, -10000, 10000, 0.1, 1);
 	V->OnChangeEvent.bind(this, &CActorTools::OnChangeTransform);

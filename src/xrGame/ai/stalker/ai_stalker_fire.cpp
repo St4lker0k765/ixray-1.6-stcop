@@ -11,48 +11,51 @@
 #include "ai_stalker.h"
 #include "ai_stalker_impl.h"
 #include "../../script_entity_action.h"
-#include "../../inventory.h"
+#include "../../Inventory.h"
 #include "../../ef_storage.h"
-#include "../../stalker_decision_space.h"
 #include "../../script_game_object.h"
-#include "../../customzone.h"
+#include "../../CustomZone.h"
 #include "../../../Include/xrRender/KinematicsAnimated.h"
 #include "../../agent_manager.h"
 #include "../../stalker_animation_manager.h"
-#include "../../stalker_planner.h"
 #include "../../ef_pattern.h"
 #include "../../memory_manager.h"
 #include "../../hit_memory_manager.h"
 #include "../../enemy_manager.h"
 #include "../../item_manager.h"
 #include "../../stalker_movement_manager_smart_cover.h"
-#include "../../entitycondition.h"
+#include "../../EntityCondition.h"
 #include "../../sound_player.h"
 #include "../../cover_point.h"
 #include "../../agent_member_manager.h"
 #include "../../agent_location_manager.h"
 #include "../../danger_cover_location.h"
-#include "../../object_handler_planner.h"
-#include "../../object_handler_space.h"
+#include "../../ObjectHandlerSpace.h"
 #include "../../visual_memory_manager.h"
-#include "../../weapon.h"
+#include "../../Weapon.h"
 #include "ai_stalker_space.h"
-#include "../../effectorshot.h"
+#include "../../EffectorShot.h"
 #include "../../BoneProtections.h"
 #include "../../RadioactiveZone.h"
 #include "../../restricted_object.h"
 #include "../../ai_object_location.h"
-#include "../../missile.h"
-#include "../../../xrPhysics/iphworld.h"
+#include "../../Missile.h"
+#include "../../../xrPhysics/IPHWorld.h"
 #include "../../stalker_animation_names.h"
 #include "../../agent_corpse_manager.h"
 #include "../../CharacterPhysicsSupport.h"
-#include "../../stalker_planner.h"
-#include "../../stalker_decision_space.h"
 #include "../../script_game_object.h"
-#include "../../inventory.h"
+#include "../../Inventory.h"
 
+#include "Legacy/StalkerPlanner/stalker_planner.h"
 #include "../../trajectories.h"
+
+#if USE_OLD_OBJECT_PLANNER
+#include "Legacy/object_handler_planner.h"
+#else
+#include "GOAP/RbmkGoapPlanner.h"
+#include "../../RbmkObjectHandlerPlanner.h"
+#endif
 
 using namespace StalkerSpace;
 
@@ -70,7 +73,7 @@ float CAI_Stalker::GetWeaponAccuracy	() const
 {
 	float				base = PI/180.f;
 	
-	//âëèÿíèå ðàíãà íà ìåòêîñòü
+	//Ð²Ð»Ð¸ÑÐ½Ð¸Ðµ Ñ€Ð°Ð½Ð³Ð° Ð½Ð° Ð¼ÐµÑ‚ÐºÐ¾ÑÑ‚ÑŒ
 	base				*= m_fRankDisperison;
 
 	if (!movement().path_completed()) {
@@ -212,7 +215,7 @@ void CAI_Stalker::g_WeaponBones	(int &L, int &R1, int &R2)
 
 void CAI_Stalker::Hit(SHit* pHDS)
 {
-	//õèò ìîæåò ìåíÿòüñÿ â çàâèñèìîñòè îò ðàíãà (íîâè÷êè ïîëó÷àþò áîëüøå õèòà, ÷åì âåòåðàíû)
+	//Ñ…Ð¸Ñ‚ Ð¼Ð¾Ð¶ÐµÑ‚ Ð¼ÐµÐ½ÑÑ‚ÑŒÑÑ Ð² Ð·Ð°Ð²Ð¸ÑÐ¸Ð¼Ð¾ÑÑ‚Ð¸ Ð¾Ñ‚ Ñ€Ð°Ð½Ð³Ð° (Ð½Ð¾Ð²Ð¸Ñ‡ÐºÐ¸ Ð¿Ð¾Ð»ÑƒÑ‡Ð°ÑŽÑ‚ Ð±Ð¾Ð»ÑŒÑˆÐµ Ñ…Ð¸Ñ‚Ð°, Ñ‡ÐµÐ¼ Ð²ÐµÑ‚ÐµÑ€Ð°Ð½Ñ‹)
 	SHit HDS = *pHDS;
 	HDS.add_wound = true;
 	
@@ -240,7 +243,7 @@ void CAI_Stalker::Hit(SHit* pHDS)
 			}
 		}
 
-		if ( wounded() ) //óæå ëåæèò => äîáèâàíèå
+		if ( wounded() ) //ÑƒÐ¶Ðµ Ð»ÐµÐ¶Ð¸Ñ‚ => Ð´Ð¾Ð±Ð¸Ð²Ð°Ð½Ð¸Ðµ
 		{
 			hit_power = 1000.f;
 		}
@@ -349,6 +352,16 @@ void CAI_Stalker::Hit(SHit* pHDS)
 
 void CAI_Stalker::HitSignal				(float amount, Fvector& vLocalDir, CObject* who, s16 element)
 {
+}
+
+bool CAI_Stalker::CanPutInSlot(PIItem item, u32 slot)
+{
+	if (slot == INV_SLOT_2 || slot == INV_SLOT_3)
+	{
+		return !!g_Alive();
+	}
+
+	return(slot != OUTFIT_SLOT) && (slot != PDA_SLOT);
 }
 
 void CAI_Stalker::OnItemTake			(CInventoryItem *inventory_item)
@@ -736,8 +749,8 @@ bool CAI_Stalker::zoom_state			() const
 
 	if ((movement().movement_type() != eMovementTypeStand) && (movement().body_state() != eBodyStateCrouch) && !movement().path_completed())
 		return				(false);
-
-	switch (CObjectHandler::planner().current_action_state_id()) {
+#if USE_OLD_OBJECT_PLANNER
+		switch (CObjectHandler::planner().current_action_state_id()) {
 		case ObjectHandlerSpace::eWorldOperatorAim1 :
 		case ObjectHandlerSpace::eWorldOperatorAim2 :
 		case ObjectHandlerSpace::eWorldOperatorAimingReady1 :
@@ -752,7 +765,37 @@ bool CAI_Stalker::zoom_state			() const
 		case ObjectHandlerSpace::eWorldOperatorForceReload2 :
 			return			(true);
 	}
-
+#else
+	static shared_str NAME_Fire1 = "Fire1";
+	static shared_str NAME_Fire2 = "Fire2";
+	static shared_str NAME_Aim1 = "Aim1";
+	static shared_str NAME_Aim2 = "Aim2";
+	static shared_str NAME_AimingReady1 = "AimingReady1";
+	static shared_str NAME_AimingReady2 = "AimingReady2";
+	static shared_str NAME_AimQueue1 = "AimQueue1";
+	static shared_str NAME_AimQueue2 = "AimQueue2";
+	static shared_str NAME_Reload1 = "Reload1";
+	static shared_str NAME_Reload2 = "Reload2";
+	static shared_str NAME_ForceReload1 = "ForceReload1";
+	static shared_str NAME_ForceReload2 = "ForceReload2";
+	
+	shared_str CurrentStateName = m_planner->CurrentActionStateName();
+	if(
+		CurrentStateName == NAME_Aim1||
+		CurrentStateName == NAME_Aim2||
+		CurrentStateName == NAME_AimingReady1||
+		CurrentStateName == NAME_AimingReady2||
+		CurrentStateName == NAME_AimQueue1||
+		CurrentStateName == NAME_AimQueue2||
+		CurrentStateName == NAME_Fire1||
+		CurrentStateName == NAME_Reload1||
+		CurrentStateName == NAME_Reload2||
+		CurrentStateName == NAME_ForceReload1||
+		CurrentStateName == NAME_ForceReload2)
+	{
+		return (true);
+	}
+#endif
 	return					(false);
 }
 

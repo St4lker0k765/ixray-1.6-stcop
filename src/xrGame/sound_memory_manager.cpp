@@ -6,7 +6,7 @@
 //	Description : Sound memory manager
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 #include "sound_memory_manager.h"
 #include "memory_manager.h"
@@ -14,14 +14,13 @@
 #include "visual_memory_manager.h"
 #include "enemy_manager.h"
 #include "memory_space_impl.h"
-#include "custommonster.h"
+#include "CustomMonster.h"
 #include "ai_object_location.h"
 #include "level_graph.h"
 #include "sound_user_data_visitor.h"
 #include "agent_manager.h"
 #include "agent_member_manager.h"
 #include "ai/stalker/ai_stalker.h"
-#include "profiler.h"
 #include "client_spawn_manager.h"
 #include "memory_manager.h"
 #include "../xrEngine/IGame_Persistent.h"
@@ -42,7 +41,6 @@
 #include "visual_memory_manager.h"
 #include "stalker_movement_manager_smart_cover.h"
 #include "movement_manager_space.h"
-#include "stalker_planner.h"
 #include "enemy_manager.h"
 
 const float COMBAT_SOUND_PERCEIVE_RADIUS_SQR	= _sqr(5.f);
@@ -142,7 +140,7 @@ void CSoundMemoryManager::feel_sound_new(CObject *object, int sound_type, CSound
 	VERIFY					(_valid(sound_power));
 	if (!m_sounds)
 		return;
-
+	PROF_EVENT("SoundMemory::feel_sound_new");
 	if (user_data)
 		user_data->accept	(m_visitor);
 
@@ -228,6 +226,7 @@ void CSoundMemoryManager::add			(const CSoundObject &sound_object, bool check_fo
 
 void CSoundMemoryManager::add			(const CObject *object, int sound_type, const Fvector &position, float sound_power)
 {
+	PROF_EVENT("SoundMemory::add");
 #ifndef SAVE_OWN_SOUNDS
 	// we do not want to save our own sounds
 	if (object && (m_object->ID() == object->ID()))

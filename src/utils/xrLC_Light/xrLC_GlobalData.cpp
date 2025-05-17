@@ -1,13 +1,13 @@
 #include "stdafx.h"
 
 #include "xrLC_GlobalData.h"
-#include "xrface.h"
-#include "xrdeflector.h"
-#include "lightmap.h"
+#include "xrFace.h"
+#include "xrDeflector.h"
+#include "Lightmap.h"
 #include "mu_model_face.h"
-#include "xrmu_model.h"
-#include "xrmu_model_reference.h"
-#include "../../xrcdb/xrcdb.h"
+#include "xrMU_Model.h"
+#include "xrMU_Model_Reference.h"
+#include "../../xrCDB/xrCDB.h"
 
 bool g_using_smooth_groups = true;
 bool g_smooth_groups_by_faces = false;
@@ -23,7 +23,7 @@ xrLC_GlobalData*	lc_global_data()
 void	create_global_data()
 {
 	VERIFY( !inlc_global_data() );
-	data = xr_new<xrLC_GlobalData>();
+	data = new xrLC_GlobalData();
 }
 void	destroy_global_data()
 {
@@ -79,7 +79,7 @@ void xrLC_GlobalData::clear_build_textures_surface( const xr_vector<u32> &exept 
 void	xrLC_GlobalData	::create_rcmodel	(CDB::CollectorPacked& CL)
 {
 	VERIFY(!_cl_globs._RCAST_Model);
-	_cl_globs._RCAST_Model				= xr_new<CDB::MODEL> ();
+	_cl_globs._RCAST_Model				= new CDB::MODEL();
 	_cl_globs._RCAST_Model->build		(CL.getV(),(int)CL.getVS(),CL.getT(),(int)CL.getTS());
 }
 
@@ -89,9 +89,12 @@ void		xrLC_GlobalData	::				initialize		()
 }
 
 xr_vector<base_Face*> FacesStorage;
+xrSRWLock NaxGuard;
 
 XRLC_LIGHT_API base_Face* convert_nax(u32 dummy)
 {
+	xrSRWLockGuard guard(NaxGuard, true);
+
 	if (FacesStorage.size() < dummy) {
 		DebugBreak();
 	}
@@ -101,6 +104,8 @@ XRLC_LIGHT_API base_Face* convert_nax(u32 dummy)
 
 XRLC_LIGHT_API u32 convert_nax(base_Face* F)
 {
+	xrSRWLockGuard guard(NaxGuard);
+
 	FacesStorage.push_back(F);
 	return FacesStorage.size() - 1;
 }

@@ -1,11 +1,11 @@
 ///////////////////////////////////////////////////////////////
 // GrenadeLauncher.cpp
-// GrenadeLauncher - апгрейд оружия поствольный гранатомет
+// GrenadeLauncher - Р°РїРіСЂРµР№Рґ РѕСЂСѓР¶РёСЏ РїРѕСЃС‚РІРѕР»СЊРЅС‹Р№ РіСЂР°РЅР°С‚РѕРјРµС‚
 ///////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 
-#include "grenadelauncher.h"
+#include "GrenadeLauncher.h"
 //#include "PhysicsShell.h"
 
 CGrenadeLauncher::CGrenadeLauncher()

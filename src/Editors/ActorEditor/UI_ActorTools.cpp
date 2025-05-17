@@ -1,11 +1,11 @@
-﻿//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 
 #include "stdafx.h"
 #pragma hdrstop
 #define dSINGLE
 #include "../../Include/xrRender/animation_blend.h"
-#include "..\..\XrPhysics\Physics.h"
-#include "..\XrECore\Editor\EditMesh.h"
+#include "../../xrPhysics/Physics.h"
+#include "../xrECore/Editor/EditMesh.h"
 #include "../../Layers/xrRender/KinematicAnimatedDefs.h"
 #include "../../Layers/xrRender/SkeletonAnimated.h"
 
@@ -54,7 +54,7 @@ CActorTools::~CActorTools()
 }
 
 #include "../../xrEngine/IGame_Persistent.h"
-#include "..\xrECore\editor\d3dutils.h"
+#include "../xrECore/Editor/D3DUtils.h"
 
 const u32 color_bone_sel_color = 0xFFFFFFFF;
 const u32 color_bone_norm_color = 0xFFFFFF00;
@@ -208,9 +208,9 @@ void CActorTools::OnFrame()
 bool CActorTools::OnCreate()
 {
 	inherited::OnCreate();
-	m_ObjectItems = xr_new<UIItemListForm>();
+	m_ObjectItems = new UIItemListForm();
 	m_ObjectItems->m_Flags.set(UIItemListForm::fMultiSelect, true);
-	m_Props = xr_new<UIPropertiesForm>();
+	m_Props = new UIPropertiesForm();
 	m_ObjectItems->SetOnItemsFocusedEvent(TOnILItemsFocused(this, &CActorTools::OnObjectItemsFocused));
 	m_PreviewObject.OnCreate();
 
@@ -316,14 +316,14 @@ void CActorTools::ZoomObject(BOOL bSelOnly)
 		default:
 			BB = m_pEditObject->GetBox();
 		}
-		EDevice->m_Camera.ZoomExtents(BB);
+		UI->CurrentView().m_Camera.ZoomExtents(BB);
 	}
 }
 
 bool CActorTools::Load(LPCSTR obj_name)
 {
 	VERIFY(m_bReady);
-	CEditableObject* O = xr_new<CEditableObject>(obj_name);
+	CEditableObject* O = new CEditableObject(obj_name);
 
 	xr_string Str = obj_name;
 	xr_strlwr(Str);
@@ -339,6 +339,13 @@ bool CActorTools::Load(LPCSTR obj_name)
 		MainForm->GetLeftBarForm()->SetRenderMode(false);
 
 		UpdateProperties();
+
+		xr_string Name = "IX-Ray Actor Editor [";
+		Name += obj_name;
+		Name += "]";
+
+		SDL_SetWindowTitle(g_AppInfo.Window, Name.c_str());
+
 		return true;
 	}
 	else 
@@ -407,6 +414,7 @@ void CActorTools::Clear()
 	m_Flags.set(flUpdateGeometry | flUpdateMotionDefs | flUpdateMotionKeys | flReadOnlyMode, FALSE);
 	m_EditMode = emObject;
 
+	SDL_SetWindowTitle(g_AppInfo.Window, "IX-Ray Actor Editor");
 	UI->RedrawScene();
 }
 
@@ -452,8 +460,10 @@ bool  CActorTools::MouseStart(TShiftState Shift)
 		break;
 	case etaAdd:
 		break;
-   /* case etaMove:	break;
-	case etaRotate:	break;*/
+    case etaMove:
+        break;
+	case etaRotate:
+        break;
 	}
 	return m_bHiddenMode;
 }
@@ -467,8 +477,10 @@ bool  CActorTools::MouseEnd(TShiftState Shift)
 
 	switch (m_Action)
 	{
-	case etaSelect: 	break;
-	case etaAdd: 	break;
+	case etaSelect:
+        break;
+	case etaAdd:
+        break;
 	case etaMove:
 	{
 		switch (m_EditMode)
@@ -526,8 +538,10 @@ void  CActorTools::MouseMove(TShiftState Shift)
 
 	switch (m_Action)
 	{
-	case etaSelect: 	break;
-	case etaAdd: 	break;
+	case etaSelect:
+        break;
+	case etaAdd:
+        break;
 	case etaMove:
 	{
 		switch (m_EditMode)
@@ -738,11 +752,12 @@ bool CActorTools::Import(LPCSTR initial, LPCSTR obj_name)
 	}
 
 	VERIFY(m_bReady);
-	CEditableObject* O = xr_new<CEditableObject>(obj_name);
+	CEditableObject* O = new CEditableObject(obj_name);
 	if (O->Load(full_name))
 	{
 		O->m_objectFlags.set(CEditableObject::eoDynamic, TRUE);
 		O->m_objectFlags.set(CEditableObject::eoProgressive, TRUE);
+		O->m_objectFlags.set(CEditableObject::eoSkipOpt, FALSE);
 		xr_delete(m_pEditObject);
 		m_pEditObject = O;
 		// delete visual
@@ -1046,7 +1061,7 @@ bool CActorTools::BatchConvert(LPCSTR fn)
 			if (FS.exist(src_name))
 			{
 				Msg(".Converting '%s' <-> '%s'", it->first.c_str(), it->second.c_str());
-				CEditableObject* O = xr_new<CEditableObject>("convert");
+				CEditableObject* O = new CEditableObject("convert");
 				BOOL res = O->Load(src_name);
 				if (res) res = O->ExportOGF(tgt_name, 4);
 				Log(res ? ".OK" : "!.FAILED");
@@ -1074,7 +1089,7 @@ bool CActorTools::BatchConvert(LPCSTR fn)
 			if (FS.exist(src_name))
 			{
 				Msg(".Converting '%s' <-> '%s'", it->first.c_str(), it->second.c_str());
-				CEditableObject* O = xr_new<CEditableObject>("convert");
+				CEditableObject* O = new CEditableObject("convert");
 				BOOL res = O->Load(src_name);
 				if (res) res = O->ExportOMF(tgt_name);
 				Log(res ? ".OK" : "!.FAILED");

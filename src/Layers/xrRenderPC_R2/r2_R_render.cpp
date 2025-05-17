@@ -1,9 +1,11 @@
 #include "stdafx.h"
-#include "../../xrEngine/igame_persistent.h"
+#include "../../xrEngine/IGame_Persistent.h"
 #include "../xrRender/FBasicVisual.h"
-#include "../../xrEngine/customhud.h"
+#include "../../xrEngine/CustomHUD.h"
 #include "../../xrEngine/xr_object.h"
 #include "../xrRender/SkeletonCustom.h"
+#include "../../xrParticles/ParticlesAsyncManager.h"
+
 static	float	CalcSSADynamic				(const Fvector& C, float R)
 {
     Fvector4 v_res1, v_res2;
@@ -54,19 +56,11 @@ void CRender::render_main	(bool deffered, bool zfill)
 		{
 			// Traverse object database
 			g_SpatialSpace->q_frustum
-				(
-				lstRenderablesMain,
-				ISpatial_DB::O_ORDERED,
-				STYPE_RENDERABLE + STYPE_RENDERABLESHADOW + STYPE_PARTICLE + STYPE_LIGHTSOURCE,
-				ViewBase
-				);
-
-			// (almost) Exact sorting order (front-to-back)
-			std::sort(lstRenderablesMain.begin(), lstRenderablesMain.end(), [](ISpatial* _1, ISpatial* _2) {
-			float d1 = _1->spatial.sphere.P.distance_to_sqr(Device.vCameraPosition);
-			float d2 = _2->spatial.sphere.P.distance_to_sqr(Device.vCameraPosition);
-			return d1 < d2;
-			});
+			(
+			lstRenderablesMain,
+			ISpatial_DB::O_ORDERED,
+			STYPE_RENDERABLE + STYPE_RENDERABLESHADOW + STYPE_PARTICLE + STYPE_LIGHTSOURCE,
+			ViewBase);//nearest sorting
 
 			// Determine visibility for dynamic part of scene
 			set_Object							(0);
@@ -149,21 +143,32 @@ void CRender::render_main	(bool deffered, bool zfill)
 		// Traverse frustums
 		for (u32 o_it=0; o_it<lstRenderablesMain.size(); o_it++)
 		{
-			ISpatial*	spatial	= lstRenderablesMain[o_it];
+			ISpatial* spatial = lstRenderablesMain[o_it].get();
 			if	(0==spatial) continue; spatial->spatial_updatesector();
 			CSector* sector = (CSector*)spatial->spatial.sector;
 			if	(0==sector) continue;
-			Fbox sp_box;
-			sp_box.setb(spatial->spatial.sphere.P,Fvector().set(spatial->spatial.sphere.R, spatial->spatial.sphere.R, spatial->spatial.sphere.R));
-			HOM.Enable();
-			if(!HOM.visible(sp_box)) continue;
+
+			if ((spatial->spatial.type & STYPE_LIGHTSOURCE) && deffered)
+			{
+				// hud lightsource
+				if(light* L = (light*)(spatial->dcast_Light()))
+				{
+					if(L->flags.bHudMode)
+					{
+						Lights.add_light(L);
+						continue;
+					}
+				}
+			}
+
+			if(!HOM.visible(spatial->spatial.sphere)) continue;
 
 			if ((spatial->spatial.type & STYPE_LIGHTSOURCE) && deffered)
 			{
 				// lightsource
 				if(light* L = (light*)(spatial->dcast_Light()))
 				{
-					if (L->get_LOD()>EPS_L)
+					if (L->get_LOD()>EPS_L&&!L->flags.bHudMode)
 					{
 						
 						if(dont_test_sectors)
@@ -175,7 +180,7 @@ void CRender::render_main	(bool deffered, bool zfill)
 							for (u32 s_it = 0; s_it < L->m_sectors.size(); s_it++)
 							{
 								CSector* sector_ = (CSector*)L->m_sectors[s_it];
-								if(PortalTraverser.i_marker == sector_->r_marker)
+								if(sector_ != nullptr && PortalTraverser.i_marker == sector_->r_marker)
 								{
 									Lights.add_light(L);
 									break;
@@ -195,7 +200,7 @@ void CRender::render_main	(bool deffered, bool zfill)
 					{
 						if(Device.vCameraPosition.distance_to_sqr(spatial->spatial.sphere.P)<_sqr(g_pGamePersistent->Environment().CurrentEnv->fog_distance))
 						{
-							if(CalcSSADynamic(spatial->spatial.sphere.P,spatial->spatial.sphere.R)>0.002f&&GetDistFromCamera(spatial->spatial.sphere.P)<220.f)
+							if(CalcSSADynamic(spatial->spatial.sphere.P,spatial->spatial.sphere.R)>spatial->spatial.ssa_dyn_factor&&GetDistFromCamera(spatial->spatial.sphere.P)<spatial->spatial.ssa_d_cam)
 							{
 								if(deffered)
 								{
@@ -253,7 +258,7 @@ void CRender::render_main	(bool deffered, bool zfill)
 						{
 							if(Device.vCameraPosition.distance_to_sqr(spatial->spatial.sphere.P)<_sqr(g_pGamePersistent->Environment().CurrentEnv->fog_distance))
 							{
-								if(CalcSSADynamic(spatial->spatial.sphere.P,spatial->spatial.sphere.R)>0.002f&&GetDistFromCamera(spatial->spatial.sphere.P)<220.f)
+								if(CalcSSADynamic(spatial->spatial.sphere.P,spatial->spatial.sphere.R)>spatial->spatial.ssa_dyn_factor&&GetDistFromCamera(spatial->spatial.sphere.P)<spatial->spatial.ssa_d_cam)
 								{
 									if(deffered)
 									{
@@ -351,7 +356,7 @@ void CRender::render_menu	()
 }
 
 extern u32 g_r;
-void CRender::Render		()
+void CRender::Render()
 {
 	g_r						= 1;
 	VERIFY					(0==mapDistort.size());
@@ -396,7 +401,6 @@ void CRender::Render		()
 	if (ps_r2_ls_flags.test(R2FLAG_ZFILL))		{
 		Device.Statistic->RenderCALC.Begin			();
 		r_pmask										(true,false);	// enable priority "0"
-		set_Recorder								(nullptr)		;
 		phase										= PHASE_SMAP;
 		render_main									(false,true)	;
 		r_pmask										(true,false);	// disable priority "1"
@@ -411,35 +415,17 @@ void CRender::Render		()
 		Target->phase_scene_prepare					();
 	}
 
-	//*******
-	// Sync point
-	Device.Statistic->RenderDUMP_Wait_S.Begin	();
-	if (1)
-	{
-		CTimer	T;							T.Start	();
-		BOOL	result						= FALSE;
-		HRESULT	hr							= S_FALSE;
-		while	((hr=q_sync_point[q_sync_count]->GetData	(&result,sizeof(result),D3DGETDATA_FLUSH))==S_FALSE) {
-			if (!SwitchToThread())			Sleep(ps_r2_wait_sleep);
-			if (T.GetElapsed_ms() > 500)	{
-				result	= FALSE;
-				break;
-			}
-		}
-	}
-	Device.Statistic->RenderDUMP_Wait_S.End		();
-	q_sync_count								= (q_sync_count+1)%Caps.iGPUNum;
-	CHK_DX										(q_sync_point[q_sync_count]->Issue(D3DISSUE_END));
-
 	//******* Main calc - DEFERRER RENDERER
 	// Main calc
 	Device.Statistic->RenderCALC.Begin			();
 	r_pmask										(true,false,true);	// enable priority "0",+ capture wmarks
-	if (bSUN)									set_Recorder	(&main_coarse_structure);
-	else										set_Recorder	(nullptr);
 	phase										= PHASE_NORMAL;
+	{
+		PROF_EVENT("lights_spatial_move");
+		for (light* L : v_all_lights)
+			L->spatial_move();
+	}
 	render_main									(true);
-	set_Recorder								(nullptr);
 	r_pmask										(true,false);	// disable priority "1"
 	Device.Statistic->RenderCALC.End			();
 
@@ -464,50 +450,69 @@ void CRender::Render		()
 	}
 
 	//******* Occlusion testing of volume-limited light-sources
-	Target->phase_occq							();
-	LP_normal.clear								();
-	LP_pending.clear							();
+	if (Lights.package.v_point.empty() && Lights.package.v_spot.empty() && Lights.package.v_shadowed.empty())
 	{
-		// perform tests
-		size_t count = 0;
-		light_Package& LP = Lights.package;
+		HWOCC.occq_refresh();
+	}
+	else
+	{
+		Target->phase_occq();
+		LP_normal.clear();
+		LP_pending.clear();
+		{
+			// perform tests
+			size_t count = 0;
+			light_Package& LP = Lights.package;
 
-		// stats
-		stats.l_shadowed = (u32)LP.v_shadowed.size();
-		stats.l_unshadowed = (u32)LP.v_point.size() + (u32)LP.v_spot.size();
-		stats.l_total = stats.l_shadowed + stats.l_unshadowed;
+			// stats
+			stats.l_shadowed = (u32)LP.v_shadowed.size();
+			stats.l_unshadowed = (u32)LP.v_point.size() + (u32)LP.v_spot.size();
+			stats.l_total = stats.l_shadowed + stats.l_unshadowed;
 
-		// perform tests
-		count = std::max(count, LP.v_point.size());
-		count = std::max(count, LP.v_spot.size());
-		count = std::max(count, LP.v_shadowed.size());
+			// perform tests
+			count = std::max(count, LP.v_point.size());
+			count = std::max(count, LP.v_spot.size());
+			count = std::max(count, LP.v_shadowed.size());
 
-		for (size_t it = 0; it < count; it++) {
-			if (it < LP.v_point.size()) {
-				light* L = LP.v_point[it];
-				L->vis_prepare();
-				if (L->vis.pending)	LP_pending.v_point.push_back(L);
-				else				LP_normal.v_point.push_back(L);
-			}
-
-			if (it < LP.v_spot.size()) {
-				light* L = LP.v_spot[it];
-				L->vis_prepare();
-				if (L->vis.pending)	LP_pending.v_spot.push_back(L);
-				else				LP_normal.v_spot.push_back(L);
-			}
-
-			if (it < LP.v_shadowed.size()) {
-				light* L = LP.v_shadowed[it];
-				L->vis_prepare();
-				if (L->vis.pending)	LP_pending.v_shadowed.push_back(L);
-				else				LP_normal.v_shadowed.push_back(L);
+			for (size_t it = 0; it < count; it++) {
+				if (it < LP.v_point.size()) {
+					light* L = LP.v_point[it];
+					if (L->flags.bOccq && !L->flags.bHudMode)
+					{
+						L->vis_prepare();
+						if (L->vis.pending)	LP_pending.v_point.push_back(L);
+						else				LP_normal.v_point.push_back(L);
+					}
+					else
+						LP_normal.v_point.push_back(L);
+				}
+				if (it < LP.v_spot.size()) {
+					light* L = LP.v_spot[it];
+					if (L->flags.bOccq && !L->flags.bHudMode)
+					{
+						L->vis_prepare();
+						if (L->vis.pending)	LP_pending.v_spot.push_back(L);
+						else				LP_normal.v_spot.push_back(L);
+					}
+					else
+						LP_normal.v_spot.push_back(L);
+				}
+				if (it < LP.v_shadowed.size()) {
+					light* L = LP.v_shadowed[it];
+					if (L->flags.bOccq && !L->flags.bHudMode)
+					{
+						L->vis_prepare();
+						if (L->vis.pending)	LP_pending.v_shadowed.push_back(L);
+						else				LP_normal.v_shadowed.push_back(L);
+					}
+					else
+						LP_normal.v_shadowed.push_back(L);
+				}
 			}
 		}
+		LP_normal.sort();
+		LP_pending.sort();
 	}
-	LP_normal.sort							();
-	LP_pending.sort							();
-
 	//******* Main render :: PART-1 (second)
 	if(split_the_scene_to_minimize_wait) {
 		// level
@@ -573,7 +578,6 @@ void CRender::Render		()
 
 	// Lighting, non dependant on OCCQ
 	Target->phase_accumulator				();
-	HOM.Disable								();
 	render_lights							(LP_normal);
 	
 	// Lighting, dependant on OCCQ
@@ -599,6 +603,7 @@ void CRender::render_forward				()
 		render_main								(false);//
 		//	Igor: we don't want to render old lods on next frame.
 		mapLOD.clear							();
+		CParticlesAsync::Wait();
 		r_dsgraph_render_graph					(1)	;					// normal level, secondary priority
 		PortalTraverser.fade_render				()	;					// faded-portals
 		r_dsgraph_render_sorted					()	;					// strict-sorted geoms

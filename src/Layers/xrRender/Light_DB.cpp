@@ -1,10 +1,10 @@
 #include "StdAfx.h"
 #include "../../xrEngine/_d3d_extensions.h"
 #include "../../xrEngine/xrLevel.h"
-#include "../../xrEngine/igame_persistent.h"
-#include "../../xrEngine/environment.h"
+#include "../../xrEngine/IGame_Persistent.h"
+#include "../../xrEngine/Environment.h"
 #include "../../utils/xrLC_Light/R_light.h"
-#include "light_db.h"
+#include "Light_DB.h"
 
 CLight_DB::CLight_DB()
 {
@@ -141,7 +141,7 @@ void	CLight_DB::LoadHemi	()
 						L->set_color		(Ldata.diffuse.x, Ldata.diffuse.y, Ldata.diffuse.z);
 						L->set_active		(true				);
 						L->set_attenuation_params(Ldata.attenuation0, Ldata.attenuation1, Ldata.attenuation2, Ldata.falloff);
-						L->spatial.type = STYPE_LIGHTSOURCEHEMI;
+						L->SpatialComponent->spatial.type = STYPE_LIGHTSOURCEHEMI;
 					}
 				}
 
@@ -188,7 +188,7 @@ void			CLight_DB::add_light		(light* L)
 	L->frame_render							=	Device.dwFrame		;
 	if (RImplementation.o.noshadows)		L->flags.bShadow		= FALSE;
 	if (L->flags.bStatic && !ps_r2_ls_flags.test(R2FLAG_R1LIGHTS))	return;
-	if(Device.vCameraPosition.distance_to_sqr(L->spatial.sphere.P)>_sqr(g_pGamePersistent->Environment().CurrentEnv->fog_distance))	return;
+	if(Device.vCameraPosition.distance_to_sqr(L->SpatialComponent->spatial.sphere.P)>_sqr(g_pGamePersistent->Environment().CurrentEnv->fog_distance))	return;
 
 	L->export_(package);
 }

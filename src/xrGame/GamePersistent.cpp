@@ -1,13 +1,12 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
-#include "gamepersistent.h"
-#include "../xrEngine/fmesh.h"
-#include "../xrEngine/xr_ioconsole.h"
-#include "../xrEngine/gamemtllib.h"
+#include "GamePersistent.h"
+#include "../xrEngine/Fmesh.h"
+#include "../xrEngine/XR_IOConsole.h"
+#include "../xrEngine/GameMtlLib.h"
 #include "../Include/xrRender/Kinematics.h"
-#include "profiler.h"
 #include "MainMenu.h"
-#include "UICursor.h"
+#include "../../xrUI/UICursor.h"
 #include "game_base_space.h"
 #include "Level.h"
 #include "game_base_space.h"
@@ -16,9 +15,9 @@
 
 #include "ActorEffector.h"
 #include "Actor.h"
-#include "spectator.h"
+#include "Spectator.h"
 
-#include "UI/UItextureMaster.h"
+#include "../../xrUI/UItextureMaster.h"
 
 #include "ai_space.h"
 #include "../xrScripts/script_engine.h"
@@ -27,7 +26,7 @@
 #include "game_cl_base.h"
 #include "xrServer_Objects_ALife_Monsters.h"
 #include "../xrServerEntities/xrServer_Object_Base.h"
-#include "UI/UIGameTutorial.h"
+#include "ui/UIGameTutorial.h"
 
 #include "../xrEngine/Application.h"
 #include "ui/UILoadingScreen.h"
@@ -39,13 +38,12 @@
 #ifndef _EDITOR
 #	include "ai_debug.h"
 #endif // _EDITOR
-
+#include "../../xrUI/ui_base.h"
 #include "../xrCore/discord/discord.h"
 #include "../xrEngine/string_table.h"
 #include "Level_Bullet_Manager.h"
 
 extern int g_keypress_on_start;
-static CStringTable strTable;
 
 CGamePersistent::CGamePersistent(void)
 {
@@ -102,7 +100,7 @@ CGamePersistent::CGamePersistent(void)
 	if(DofValue)
 	SetBaseDof				(*DofValue);
 
-	g_Discord.SetStatus(strTable.translate(EngineExternal().GetTitle().c_str()).c_str());
+	g_Discord.SetStatus(g_pStringTable->translate(EngineExternal().GetTitle().c_str()).c_str());
 }
 
 CGamePersistent::~CGamePersistent(void)
@@ -179,7 +177,7 @@ void CGamePersistent::Start		(LPCSTR op)
 void CGamePersistent::Disconnect()
 {
 	// destroy ambient particles
-	CParticlesObject::Destroy(ambient_particles);
+	Particles::Details::Destroy(ambient_particles);
 
 	inherited::Disconnect		();
 	// stop all played emitters
@@ -249,9 +247,9 @@ EGameIDs ParseStringToGameType(LPCSTR str)
 		return eGameIDNoGame; //EGameIDs
 }
 
-void CGamePersistent::UpdateGameType			()
+void CGamePersistent::UpdateGameType()
 {
-	inherited::UpdateGameType		();
+	inherited::UpdateGameType();
 
 	m_game_params.m_e_game_type = ParseStringToGameType(m_game_params.m_game_type);
 
@@ -272,9 +270,10 @@ void CGamePersistent::OnGameEnd	()
 
 void CGamePersistent::WeathersUpdate()
 {
+	PROF_EVENT("CGamePersistent WeathersUpdate");
 	if (g_pGameLevel && !g_dedicated_server)
 	{
-		BOOL bIndoor				= Render->InIndoor();
+		BOOL bIndoor = Render->InIndoor();
 
 		if(bIndoor==FALSE)
 		{
@@ -356,7 +355,7 @@ void CGamePersistent::WeathersUpdate()
 					ambient_effect_wind_out_time	= Device.fTimeGlobal + eff->life_time/1000.f + eff->wind_blast_out_time;
 					ambient_effect_wind_on			= true;
 										
-					ambient_particles				= CParticlesObject::Create(eff->particles.c_str(),FALSE,false);
+					ambient_particles				= Particles::Details::Create(eff->particles.c_str(),FALSE,false);
 					Fvector pos; pos.add			(Device.vCameraPosition,eff->offset); 
 					ambient_particles->play_at_pos	(pos);
 					if (eff->sound._handle())		eff->sound.play_at_pos(0,pos);
@@ -434,7 +433,7 @@ void CGamePersistent::WeathersUpdate()
 
 		// if particles not playing - destroy
 		if (ambient_particles&&!ambient_particles->IsPlaying())
-			CParticlesObject::Destroy(ambient_particles);
+			Particles::Details::Destroy(ambient_particles);
 	}
 }
 
@@ -544,8 +543,9 @@ void CGamePersistent::update_game_intro()
 extern CUISequencer * g_tutorial;
 extern CUISequencer * g_tutorial2;
 
-void CGamePersistent::OnFrame	()
+void CGamePersistent::OnFrame()
 {
+	PROF_EVENT("CGamePersistent OnFrame");
 	if(Device.dwPrecacheFrame==5 && m_intro_event.empty())
 	{
 		m_intro_event.bind			(this,&CGamePersistent::game_loaded);
@@ -668,37 +668,38 @@ if (!g_pGameLevel)
 
 	inherited::OnFrame			();
 
-	if(!Device.Paused())
-		Engine.Sheduler.Update		();
-
-	// update weathers ambient
-	if(!Device.Paused())
-		WeathersUpdate				();
-
-	if	(0!=pDemoFile)
+	if (!Device.Paused())
 	{
-		if	(Device.dwTimeGlobal>uTime2Change){
+		// update weathers ambient
+		WeathersUpdate();
+	}
+
+	if (0 != pDemoFile)
+	{
+		if (Device.dwTimeGlobal > uTime2Change)
+		{
 			// Change level + play demo
-			if			(pDemoFile->elapsed()<3)	pDemoFile->seek(0);		// cycle
+			if (pDemoFile->elapsed() < 3)	pDemoFile->seek(0);		// cycle
 
 			// Read params
 			string512			params;
-			pDemoFile->r_string	(params,sizeof(params));
+			pDemoFile->r_string(params, sizeof(params));
 			string256			o_server, o_client, o_demo;	u32 o_time;
-			sscanf				(params,"%[^,],%[^,],%[^,],%d",o_server,o_client,o_demo,&o_time);
+			sscanf(params, "%[^,],%[^,],%[^,],%d", o_server, o_client, o_demo, &o_time);
 
 			// Start _new level + demo
-			g_pEventManager->Event.Defer	("KERNEL:disconnect");
-			g_pEventManager->Event.Defer	("KERNEL:start",size_t(xr_strdup(_Trim(o_server))),size_t(xr_strdup(_Trim(o_client))));
-			g_pEventManager->Event.Defer	("GAME:demo",	size_t(xr_strdup(_Trim(o_demo))), u64(o_time));
-			uTime2Change		= 0xffffffff;	// Block changer until Event received
+			g_pEventManager->Event.Defer("KERNEL:disconnect");
+			g_pEventManager->Event.Defer("KERNEL:start", size_t(xr_strdup(_Trim(o_server))), size_t(xr_strdup(_Trim(o_client))));
+			g_pEventManager->Event.Defer("GAME:demo", size_t(xr_strdup(_Trim(o_demo))), u64(o_time));
+			uTime2Change = 0xffffffff;	// Block changer until Event received
 		}
 	}
 
-#ifdef DEBUG
+#if 0
 	if ((m_last_stats_frame + 1) < m_frame_counter)
 		profiler().clear		();
 #endif
+	
 	UpdateDof();
 }
 
@@ -710,51 +711,51 @@ if (!g_pGameLevel)
 
 void CGamePersistent::OnEvent(EVENT E, u64 P1, u64 P2)
 {
-	if(E==eQuickLoad)
+	if (E == eQuickLoad)
 	{
 		loading_save_timer.Start();
 		loading_save_timer_started = true;
 		Msg("* Game Loading Timer: Started from Save Reloading");
 
 		if (Device.Paused())
-			Device.Pause		(FALSE, TRUE, TRUE, "eQuickLoad");
-		
-		if(CurrentGameUI())
+			Device.Pause(FALSE, TRUE, TRUE, "eQuickLoad");
+
+		if (CurrentGameUI())
 		{
 			CurrentGameUI()->HideShownDialogs();
 			CurrentGameUI()->UIMainIngameWnd->reset_ui();
 			CurrentGameUI()->PdaMenu().Reset();
 		}
 
-		if(g_tutorial)
+		if (g_tutorial)
 			g_tutorial->Stop();
 
-		if(g_tutorial2)
+		if (g_tutorial2)
 			g_tutorial2->Stop();
 
-		LPSTR		saved_name	= (LPSTR)(P1);
+		LPSTR saved_name = (LPSTR)(P1);
 
-		Level().remove_objects	();
-		game_sv_Single			*game = smart_cast<game_sv_Single*>(Level().Server->game);
-		R_ASSERT				(game);
-		game->restart_simulator	(saved_name);
-		xr_free					(saved_name);
+		Level().remove_objects();
+		game_sv_Single* game = smart_cast<game_sv_Single*>(Level().Server->game);
+		R_ASSERT(game);
+		game->restart_simulator(saved_name);
+		xr_free(saved_name);
 		return;
-	}else
-	if(E==eDemoStart)
+	}
+	else if (E == eDemoStart)
 	{
 		string256			cmd;
-		LPCSTR				demo	= LPCSTR(P1);
-		xr_sprintf				(cmd,"demo_play %s",demo);
-		Console->Execute	(cmd);
-		xr_free				(demo);
-		uTime2Change		= Device.TimerAsync() + u32(P2)*1000;
+		LPCSTR				demo = LPCSTR(P1);
+		xr_sprintf(cmd, "demo_play %s", demo);
+		Console->Execute(cmd);
+		xr_free(demo);
+		uTime2Change = Device.TimerAsync() + u32(P2) * 1000;
 	}
 }
 
 void CGamePersistent::Statistics	(CGameFont* F)
 {
-#ifdef DEBUG
+#if 0
 #	ifndef _EDITOR
 		m_last_stats_frame		= m_frame_counter;
 		profiler().show_stats	(F,!!psAI_Flags.test(aiStats));
@@ -811,7 +812,7 @@ bool CGamePersistent::OnRenderPPUI_query()
 	// enable PP or not
 }
 
-extern void draw_wnds_rects();
+extern UI_API void draw_wnds_rects();
 void CGamePersistent::OnRenderPPUI_main()
 {
 	if (g_pGameLevel != nullptr) {
@@ -849,7 +850,7 @@ void CGamePersistent::LoadTitle(bool change_tip, shared_str map_name)
 			tip_num				= m_functor(map_name.c_str());
 		}
 //		tip_num = 83;
-		xr_sprintf				(buff, "%s%d:", CStringTable().translate("ls_tip_number").c_str(), tip_num);
+		xr_sprintf				(buff, "%s%d:", g_pStringTable->translate("ls_tip_number").c_str(), tip_num);
 		shared_str				tmp = buff;
 		
 		if(is_single)
@@ -857,7 +858,7 @@ void CGamePersistent::LoadTitle(bool change_tip, shared_str map_name)
 		else
 			xr_sprintf			(buff, "ls_mp_tip_%d", tip_num);
 
-		pApp->LoadTitleInt		(CStringTable().translate("ls_header").c_str(), tmp.c_str(), CStringTable().translate(buff).c_str());
+		pApp->LoadTitleInt		(g_pStringTable->translate("ls_header").c_str(), tmp.c_str(), g_pStringTable->translate(buff).c_str());
 	}
 }
 
@@ -895,35 +896,40 @@ void CGamePersistent::RestoreEffectorDOF()
 }
 #include "HUDManager.h"
 
-//	m_dof		[4];	// 0-dest 1-current 2-from 3-original
 void CGamePersistent::UpdateDof()
 {
-	static float diff_far	= pSettings->r_float("zone_pick_dof","far");//70.0f;
-	static float diff_near	= pSettings->r_float("zone_pick_dof","near");//-70.0f;
+	PROF_EVENT("CGamePersistent UpdateDof");
 
-	if(m_bPickableDOF)
+	static float diff_far = pSettings->r_float("zone_pick_dof", "far");//70.0f;
+	static float diff_near = pSettings->r_float("zone_pick_dof", "near");//-70.0f;
+
+	if (m_bPickableDOF)
 	{
 		Fvector pick_dof;
-		pick_dof.y	= HUD().GetCurrentRayQuery().range;
-		pick_dof.x	= pick_dof.y+diff_near;
-		pick_dof.z	= pick_dof.y+diff_far;
-		m_dof[0]	= pick_dof;
-		m_dof[2]	= m_dof[1]; //current
+		pick_dof.y = HUD().GetCurrentRayQuery().range;
+		pick_dof.x = pick_dof.y + diff_near;
+		pick_dof.z = pick_dof.y + diff_far;
+		m_dof[0] = pick_dof;
+		m_dof[2] = m_dof[1]; //current
 	}
-	if(m_dof[1].similar(m_dof[0]))
-						return;
 
-	float td			= Device.fTimeDelta;
+	if(m_dof[1].similar(m_dof[0]))
+		return;
+
+	if (m_dof[1].similar(m_dof[0]))
+		return;
+
+	float td = Device.fTimeDelta;
 	Fvector				diff;
-	diff.sub			(m_dof[0], m_dof[2]);
-	diff.mul			(td/0.2f); //0.2 sec
-	m_dof[1].add		(diff);
-	(m_dof[0].x<m_dof[2].x)?clamp(m_dof[1].x,m_dof[0].x,m_dof[2].x):clamp(m_dof[1].x,m_dof[2].x,m_dof[0].x);
-	(m_dof[0].y<m_dof[2].y)?clamp(m_dof[1].y,m_dof[0].y,m_dof[2].y):clamp(m_dof[1].y,m_dof[2].y,m_dof[0].y);
-	(m_dof[0].z<m_dof[2].z)?clamp(m_dof[1].z,m_dof[0].z,m_dof[2].z):clamp(m_dof[1].z,m_dof[2].z,m_dof[0].z);
+	diff.sub(m_dof[0], m_dof[2]);
+	diff.mul(td / 0.2f); //0.2 sec
+	m_dof[1].add(diff);
+	(m_dof[0].x < m_dof[2].x) ? clamp(m_dof[1].x, m_dof[0].x, m_dof[2].x) : clamp(m_dof[1].x, m_dof[2].x, m_dof[0].x);
+	(m_dof[0].y < m_dof[2].y) ? clamp(m_dof[1].y, m_dof[0].y, m_dof[2].y) : clamp(m_dof[1].y, m_dof[2].y, m_dof[0].y);
+	(m_dof[0].z < m_dof[2].z) ? clamp(m_dof[1].z, m_dof[0].z, m_dof[2].z) : clamp(m_dof[1].z, m_dof[2].z, m_dof[0].z);
 }
 
-#include "ui\uimainingamewnd.h"
+#include "ui/UIMainIngameWnd.h"
 void CGamePersistent::OnSectorChanged(int sector)
 {
 	if(CurrentGameUI())
@@ -933,17 +939,17 @@ void CGamePersistent::OnSectorChanged(int sector)
 void CGamePersistent::OnAssetsChanged()
 {
 	IGame_Persistent::OnAssetsChanged	();
-	CStringTable().rescan				();
+	g_pStringTable->rescan				();
 }
 
 void CGamePersistent::SetDiscordStatus() const {
 	if (g_pGameLevel != nullptr)
 	{	
 		// Get level name
-		xr_string levelName = strTable.translate("st_discord_level").c_str();
+		xr_string levelName = g_pStringTable->translate("st_discord_level").c_str();
 
 		levelName += '\t';
-		levelName += strTable.translate(Level().name().c_str()).c_str();
+		levelName += g_pStringTable->translate(Level().name().c_str()).c_str();
 
 		g_Discord.SetPhase(levelName);
 	}

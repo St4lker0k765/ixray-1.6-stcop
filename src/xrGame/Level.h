@@ -1,19 +1,21 @@
 #pragma once
 
-#include "../xrEngine/igame_level.h"
+#include "../xrEngine/IGame_Level.h"
 #include "../xrEngine/IGame_Persistent.h"
-#include "../xrNetServer/net_client.h"
+#include "../xrNetServer/NET_Client.h"
 #include "../xrScripts/script_export_space.h"
 #include "../xrEngine/StatGraph.h"
 #include "xrMessages.h"
 #include "alife_space.h"
-#include "../xrcore/xrDebug.h"
+#include "../xrCore/xrDebug.h"
 #include "xrServer.h"
 #include "GlobalFeelTouch.hpp"
 
 #include "Level_network_map_sync.h"
 #include "secure_messaging.h"
 #include "../xrEngine/xr_level_controller.h"
+
+#include "game_cl_base.h"
 
 class	CHUDManager;
 class	CParticlesObject;
@@ -38,6 +40,7 @@ class	demo_info;
 #ifdef DEBUG_DRAW
 	class	CDebugRenderer;
 #endif
+
 
 extern float g_fov;
 
@@ -177,7 +180,7 @@ public:
 public:
 	//////////////////////////////////////////////	
 	// static particles
-	using POVec = xr_vector<CParticlesObject*>;
+	using POVec = xr_vector<xr_shared_ptr<CParticlesObject>>;
 	using POIt = POVec::iterator;
 
 	POVec						m_StaticParticles;
@@ -295,7 +298,6 @@ public:
 	void						ClientSend				();
 	void						ClientSendProfileData	();
 	void						ClientSave				();
-			u32					Objects_net_Save		(NET_Packet* _Packet, u32 start, u32 count);
 	virtual	void				Send					(NET_Packet& P, u32 dwFlags=DPNSEND_GUARANTEED, u32 dwTimeout=0);
 	
 	void						g_cl_Spawn				(LPCSTR name, u8 rp, u16 flags, Fvector pos);	// only ask server
@@ -332,7 +334,7 @@ public:
 	
 	//возвращает время в милисекундах относительно начала игры
 	ALife::_TIME_ID		GetStartGameTime		();
-	ALife::_TIME_ID		GetGameTime				();
+	virtual ALife::_TIME_ID		GetGameTime				() override;
 	//возвращает время для энвайронмента в милисекундах относительно начала игры
 	ALife::_TIME_ID		GetEnvironmentGameTime	();
 	//игровое время в отформатированном виде
@@ -472,7 +474,6 @@ IC CPHCommander & CLevel::ph_commander_physics_worldstep()
 IC bool		OnServer()			{ return Level().IsServer();}
 IC bool		OnClient()			{ return Level().IsClient();}
 IC bool		IsGameTypeSingle()	{ return (g_pGamePersistent->GameType() == eGameIDSingle);};
-
 bool IsGameTypeSingleCompatible();
 
 //class  CPHWorld;

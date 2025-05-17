@@ -1,13 +1,13 @@
 #include "stdafx.h"
 #include "pch_script.h"
 #include "monster_enemy_memory.h"
-#include "BaseMonster/base_monster.h"
+#include "basemonster/base_monster.h"
 #include "../../memory_manager.h"
 #include "../../visual_memory_manager.h"
 #include "../../enemy_manager.h"
 #include "../../ai_object_location.h"
 #include "monster_home.h"
-#include "Dog/dog.h"
+#include "dog/dog.h"
 #include "ai_monster_squad.h"
 #include "ai_monster_squad_manager.h"
 #include "../../Actor.h"
@@ -120,10 +120,10 @@ void CMonsterEnemyMemory::update()
 		}
 	}
 	
-	// óäàëèòü óñòàðåâøèõ âðàãîâ
+	// ÑƒÐ´Ð°Ð»Ð¸Ñ‚ÑŒ ÑƒÑÑ‚Ð°Ñ€ÐµÐ²ÑˆÐ¸Ñ… Ð²Ñ€Ð°Ð³Ð¾Ð²
 	remove_non_actual();
 
-	// îáíîâèòü îïàñíîñòü 
+	// Ð¾Ð±Ð½Ð¾Ð²Ð¸Ñ‚ÑŒ Ð¾Ð¿Ð°ÑÐ½Ð¾ÑÑ‚ÑŒ 
 	for (ENEMIES_MAP_IT it = m_objects.begin(); it != m_objects.end(); it++) {
 		u8		relation_value = u8(monster->tfGetRelationType(it->first));
 		float	dist = monster->Position().distance_to(it->second.position);
@@ -141,10 +141,10 @@ void CMonsterEnemyMemory::add_enemy(const CEntityAlive *enemy)
 
 	ENEMIES_MAP_IT it = m_objects.find(enemy);
 	if (it != m_objects.end()) {
-		// îáíîâèòü äàííûå î âðàãå
+		// Ð¾Ð±Ð½Ð¾Ð²Ð¸Ñ‚ÑŒ Ð´Ð°Ð½Ð½Ñ‹Ðµ Ð¾ Ð²Ñ€Ð°Ð³Ðµ
 		it->second = enemy_info;
 	} else {
-		// äîáàâèòü âðàãà â ñïèñîê îáúåêòîâ
+		// Ð´Ð¾Ð±Ð°Ð²Ð¸Ñ‚ÑŒ Ð²Ñ€Ð°Ð³Ð° Ð² ÑÐ¿Ð¸ÑÐ¾Ðº Ð¾Ð±ÑŠÐµÐºÑ‚Ð¾Ð²
 		m_objects.insert(std::make_pair(enemy, enemy_info));
 	}
 }
@@ -159,10 +159,10 @@ void CMonsterEnemyMemory::add_enemy(const CEntityAlive *enemy, const Fvector &po
 
 	ENEMIES_MAP_IT it = m_objects.find(enemy);
 	if (it != m_objects.end()) {
-		// îáíîâèòü äàííûå î âðàãå
+		// Ð¾Ð±Ð½Ð¾Ð²Ð¸Ñ‚ÑŒ Ð´Ð°Ð½Ð½Ñ‹Ðµ Ð¾ Ð²Ñ€Ð°Ð³Ðµ
 		if (it->second.time < enemy_info.time) it->second = enemy_info;
 	} else {
-		// äîáàâèòü âðàãà â ñïèñîê îáúåêòîâ
+		// Ð´Ð¾Ð±Ð°Ð²Ð¸Ñ‚ÑŒ Ð²Ñ€Ð°Ð³Ð° Ð² ÑÐ¿Ð¸ÑÐ¾Ðº Ð¾Ð±ÑŠÐµÐºÑ‚Ð¾Ð²
 		m_objects.insert(std::make_pair(enemy, enemy_info));
 	}
 }
@@ -171,13 +171,13 @@ void CMonsterEnemyMemory::remove_non_actual()
 {
 	TTime cur_time = Device.dwTimeGlobal;
 
-	// óäàëèòü 'ñòàðûõ' âðàãîâ è òåõ, ðàññòîÿíèå äî êîòîðûõ > 30ì è äð.
+	// ÑƒÐ´Ð°Ð»Ð¸Ñ‚ÑŒ 'ÑÑ‚Ð°Ñ€Ñ‹Ñ…' Ð²Ñ€Ð°Ð³Ð¾Ð² Ð¸ Ñ‚ÐµÑ…, Ñ€Ð°ÑÑÑ‚Ð¾ÑÐ½Ð¸Ðµ Ð´Ð¾ ÐºÐ¾Ñ‚Ð¾Ñ€Ñ‹Ñ… > 30Ð¼ Ð¸ Ð´Ñ€.
 	for ( ENEMIES_MAP_IT	it	=	m_objects.begin(), nit; 
 							it	!=	m_objects.end(); 
 							it	=	nit	)
 	{
 		nit = it; ++nit;
-		// ïðîâåðèòü óñëîâèÿ óäàëåíèÿ
+		// Ð¿Ñ€Ð¾Ð²ÐµÑ€Ð¸Ñ‚ÑŒ ÑƒÑÐ»Ð¾Ð²Ð¸Ñ ÑƒÐ´Ð°Ð»ÐµÐ½Ð¸Ñ
 		if ( !it->first									|| 
 			 !it->first->g_Alive()						|| 
 			 it->first->getDestroy()					||

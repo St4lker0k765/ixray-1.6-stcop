@@ -2,17 +2,17 @@
 
 #include "UIInventoryUtilities.h"
 
-#include "uicharacterinfo.h"
-#include "../actor.h"
-#include "../level.h"
+#include "UICharacterInfo.h"
+#include "../Actor.h"
+#include "../Level.h"
 #include "../../xrServerEntities/character_info.h"
 #include "../relation_registry.h"
 
-#include "xrUIXmlParser.h"
-#include "UIXmlInit.h"
+#include "../../xrUI/xrUIXmlParser.h"
+#include "../../xrUI/UIXmlInit.h"
 
-#include "uistatic.h"
-#include "UIScrollView.h"
+#include "../../xrUI/Widgets/UIStatic.h"
+#include "../../xrUI/Widgets/UIScrollView.h"
 
 
 #include "../alife_simulator.h"
@@ -233,6 +233,38 @@ void CUICharacterInfo::InitCharacter(u16 id)
 	if ( m_icons[eCommunityIconOver   ] ) { m_icons[eCommunityIconOver]->Show( false ); }
 	if ( m_icons[eCommunityBigIconOver] ) { m_icons[eCommunityBigIconOver]->Show( false ); }
 */
+}
+
+void CUICharacterInfo::InitCharacterMP(CInventoryOwner* invOwner)
+{
+	ClearInfo();
+
+	if (m_icons[eName])
+	{
+		m_icons[eName]->TextItemControl()->SetText(invOwner->Name());
+		m_icons[eName]->Show(true);
+	}
+
+	m_texture_name = invOwner->IconName();
+	if (m_icons[eIcon])
+	{
+		m_icons[eIcon]->InitTexture(m_texture_name.c_str());
+		m_icons[eIcon]->Show(true);
+	}
+	if (m_icons[eIconOver])
+	{
+		m_icons[eIconOver]->Show(true);
+	}
+	if (m_icons[eCommunity])
+	{
+		m_icons[eCommunity]->TextItemControl()->SetTextST(invOwner->CharacterInfo().Community().id().c_str());
+		m_icons[eCommunity]->Show(true);
+	}
+	if (m_icons[eReputation])
+	{
+		m_icons[eReputation]->TextItemControl()->SetTextST(GetReputationAsText(invOwner->CharacterInfo().Reputation().value()));
+		m_icons[eReputation]->Show(true);
+	}
 }
 
 void CUICharacterInfo::InitCharacterMP(LPCSTR player_name, LPCSTR player_icon)

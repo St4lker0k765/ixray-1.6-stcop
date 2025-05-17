@@ -22,9 +22,7 @@ void LuaLog(LPCSTR caMessage)
 void ErrorLog(LPCSTR caMessage)
 {
 	g_pScriptEngine->error_log("%s",caMessage);
-#ifdef PRINT_CALL_STACK
 	g_pScriptEngine->print_stack();
-#endif // #ifdef PRINT_CALL_STACK
 	
 	R_ASSERT2(0, caMessage);
 }
@@ -164,8 +162,31 @@ bool CheckMP()
 #endif
 }
 
-void SemiLog(const char* Msg) {
-	Log(Msg);
+bool IsEditorMode()
+{
+	if (DevicePtr == nullptr)
+		return false;
+
+	return Device.IsEditorMode();
+}
+
+void SemiLog(const char* message)
+{
+	Msg(message);
+}
+
+namespace ixray::save
+{
+	xr_string CurrentSaveStage = "";
+	void SaveError()
+	{
+		R_ASSERT2(!"Save file is big. Chunk: ", CurrentSaveStage.c_str());
+	}
+
+	void SaveStage(const char* Name)
+	{
+		CurrentSaveStage = Name;
+	}
 }
 
 #pragma optimize("s",on)
@@ -192,7 +213,8 @@ void CScriptEngine::script_register(lua_State *L)
 		def("time_global",						&script_time_global),
 		def("SemiLog",							&SemiLog),
 		def("time_global_async",				&script_time_global_async),
-		def("IsSupportMP",						&CheckMP)
+		def("IsSupportMP",						&CheckMP),
+		def("IsEditor",							&IsEditorMode)
 
 #ifdef XRGAME_EXPORTS
 		,def("device",							&get_device),
@@ -200,11 +222,17 @@ void CScriptEngine::script_register(lua_State *L)
 #endif // #ifdef XRGAME_EXPORTS
 	];
 
-	if (Device.IsEditorMode())
+	if (DevicePtr != nullptr && Device.IsEditorMode())
 	{
 		module(L)
 		[
 			def("log", &LuaLog)
 		];
 	}
+	
+	module(L, "save")
+	[
+		def("call_error", &ixray::save::SaveError),
+		def("set_stage", &ixray::save::SaveStage)
+	];
 }

@@ -1,26 +1,26 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "Weapon.h"
 #include "entity_alive.h"
 #include "inventory_item_impl.h"
 #include "Inventory.h"
 #include "xrServer_Objects_ALife_Items.h"
 #include "Actor.h"
-#include "actoreffector.h"
+#include "ActorEffector.h"
 #include "Level.h"
 #include "../xrEngine/xr_level_controller.h"
 #include "game_cl_base.h"
 #include "../Include/xrRender/Kinematics.h"
 #include "ai_object_location.h"
-#include "../xrPhysics/mathutils.h"
+#include "../xrPhysics/MathUtils.h"
 #include "object_broker.h"
 #include "player_hud.h"
-#include "gamepersistent.h"
-#include "effectorFall.h"
+#include "GamePersistent.h"
+#include "EffectorFall.h"
 #include "debug_renderer.h"
 #include "clsid_game.h"
-#include "weaponBinocularsVision.h"
-#include "ui/UIWindow.h"
-#include "ui/UIXmlInit.h"
+#include "WeaponBinocularsVision.h"
+#include "../../xrUI/Widgets/UIWindow.h"
+#include "../../xrUI/UIXmlInit.h"
 #include "Torch.h"
 #include "CustomDetector.h"
 #include "script_game_object.h"
@@ -109,17 +109,26 @@ void CWeapon::UpdateXForm	()
 		return;
 
 	// Get access to entity and its visual
-	CEntityAlive*			E = smart_cast<CEntityAlive*>(H_Parent());
-	
-	if (!E) {
+	CGameObject* go = smart_cast<CGameObject*>(H_Parent());
+	if (go == nullptr)
+	{
+		return;
+	}
+
+	if (go->cast_trader())
+	{
+		return;
+	}
+
+	if (!go->cast_entity_alive()) {
 		if (!IsGameTypeSingle()) {
 			UpdatePosition(H_Parent()->XFORM());
 			UpdatePosition_alt(H_Parent()->XFORM());
 		}
 		return;
-	}
+	} 
 
-	const CInventoryOwner	*parent = smart_cast<const CInventoryOwner*>(E);
+	const CInventoryOwner* parent = go->cast_inventory_owner(); //smart_cast<const CInventoryOwner*>(go);
 	if (!parent || (parent && parent->use_simplified_visual()))
 		return;
 
@@ -128,7 +137,7 @@ void CWeapon::UpdateXForm	()
 			return;
 	}
 
-	IKinematics*			V = smart_cast<IKinematics*>	(E->Visual());
+	IKinematics*			V = PKinematics(go->Visual());
 	VERIFY					(V);
 
 	// Get matrices
@@ -150,7 +159,7 @@ void CWeapon::UpdateXForm	()
 			m_strapped_mode_rifle = true;
 	}
 	else {
-		E->g_WeaponBones(boneL, boneR, boneR2);
+		go->cast_entity_alive()->g_WeaponBones(boneL, boneR, boneR2);
 
 		if (m_strapped_mode_rifle)
 			m_strapped_mode_rifle = false;
@@ -158,11 +167,11 @@ void CWeapon::UpdateXForm	()
 
 	if (boneR == -1)		return;
 
-	if ((HandDependence() == hd1Hand) || (GetState() == eReload) || (!E->g_Alive()))
+	if ((HandDependence() == hd1Hand) || (GetState() == eReload) || (!go->cast_entity_alive()->g_Alive()))
 		boneL				= boneR2;
 
 	Fmatrix mL, mR;
-	if (smart_cast<CActor*>(H_Parent())) {
+	if (go->cast_actor()) {
 		V->Bone_GetAnimPos(mL, boneL, u8(-1), false);
 		V->Bone_GetAnimPos(mR, boneR, u8(-1), false);
 	}
@@ -178,7 +187,7 @@ void CWeapon::UpdateXForm	()
 	D.sub					(mL.c,mR.c);	
 
 	if(fis_zero(D.magnitude())) {
-		mRes.set			(E->XFORM());
+		mRes.set			(go->XFORM());
 		mRes.c.set			(mR.c);
 	}
 	else {		
@@ -191,7 +200,7 @@ void CWeapon::UpdateXForm	()
 		N.normalize			();
 
 		mRes.set			(R,N,D,mR.c);
-		mRes.mulA_43		(E->XFORM());
+		mRes.mulA_43		(go->XFORM());
 	}
 
 	if (CurrSlot() == INV_SLOT_2)
@@ -484,18 +493,16 @@ void CWeapon::Load		(LPCSTR section)
 	{
 		m_sSilencerName = pSettings->r_string(section,"silencer_name");
 
-		int UseHQ = EngineExternal()[EEngineExternalUI::HQIcons];
-		m_iSilencerX = pSettings->r_s32(section, "silencer_x") * (1 + UseHQ);
-		m_iSilencerY = pSettings->r_s32(section, "silencer_y") * (1 + UseHQ);
+		m_iSilencerX = pSettings->r_s32(section, "silencer_x") * (1 + isHQIcons);
+		m_iSilencerY = pSettings->r_s32(section, "silencer_y") * (1 + isHQIcons);
 	}
     
 	if ( m_eGrenadeLauncherStatus == ALife::eAddonAttachable )
 	{
 		m_sGrenadeLauncherName = pSettings->r_string(section,"grenade_launcher_name");
 
-		int UseHQ = EngineExternal()[EEngineExternalUI::HQIcons];
-		m_iGrenadeLauncherX = pSettings->r_s32(section, "grenade_launcher_x") * (1 + UseHQ);
-		m_iGrenadeLauncherY = pSettings->r_s32(section, "grenade_launcher_y") * (1 + UseHQ);
+		m_iGrenadeLauncherX = pSettings->r_s32(section, "grenade_launcher_x") * (1 + isHQIcons);
+		m_iGrenadeLauncherY = pSettings->r_s32(section, "grenade_launcher_y") * (1 + isHQIcons);
 	}
 
 	InitAddons();
@@ -781,6 +788,7 @@ void CWeapon::OnEvent(NET_Packet& P, u16 type)
 
 void CWeapon::shedule_Update	(u32 dT)
 {
+	PROF_EVENT("CWeapon::shedule_Update")
 	// Queue shrink
 //	u32	dwTimeCL		= Level().timeServer()-NET_Latency;
 //	while ((NET.size()>2) && (NET[1].dwTimeStamp<dwTimeCL)) NET.pop_front();	
@@ -1191,6 +1199,36 @@ bool CWeapon::SwitchAmmoType( u32 flags )
 	return true;
 }
 
+void CWeapon::Set_PDM_Base(float value)
+{
+	m_pdm.m_fPDM_disp_base = value;
+}
+
+void CWeapon::Set_PDM_Vel_F(float value)
+{
+	m_pdm.m_fPDM_disp_vel_factor = value;
+}
+
+void CWeapon::Set_PDM_Accel_F(float value)
+{
+	m_pdm.m_fPDM_disp_accel_factor = value;
+}
+
+void CWeapon::Set_PDM_Crouch(float value)
+{
+	m_pdm.m_fPDM_disp_crouch = value;
+}
+
+void CWeapon::Set_PDM_Crouch_NA(float value)
+{
+	m_pdm.m_fPDM_disp_crouch_no_acc = value;
+}
+
+void CWeapon::setCrosshairInertion(float value)
+{
+	m_crosshair_inertion = value;
+}
+
 void CWeapon::SpawnAmmo(u32 boxCurr, LPCSTR ammoSect, u32 ParentID) 
 {
 	if(!m_ammoTypes.size())			return;
@@ -1243,6 +1281,11 @@ void CWeapon::SpawnAmmo(u32 boxCurr, LPCSTR ammoSect, u32 ParentID)
 		}
 	}
 	F_entity_Destroy				(D);
+}
+
+void CWeapon::SetAmmoMagSize(int size)
+{
+	iMagazineSize = size;
 }
 
 int CWeapon::GetSuitableAmmoTotal( bool use_item_to_spawn ) const
@@ -1901,8 +1944,11 @@ void CWeapon::UpdateHudAdditonal		(Fmatrix& trans)
 		clamp(m_zoom_params.m_fZoomRotationFactor, 0.f, 1.f);
 	}
 
-	if (!EngineExternal()[EEngineExternalGame::EnableWeaponInertion])
+	const static bool isInertion = EngineExternal()[EEngineExternalGame::EnableWeaponInertion];
+	if (!isInertion)
+	{
 		return;
+	}
 
 	//============= Подготавливаем общие переменные =============//
 	clamp(idx, u8(0), u8(1));
@@ -2361,9 +2407,21 @@ void CWeapon::OnAnimationEnd(u32 state)
 	inherited::OnAnimationEnd(state);
 }
 
+void CWeapon::SetSilencerX(int value)
+{
+	m_iSilencerX = value;
+}
+
+void CWeapon::SetSilencerY(int value)
+{
+	m_iSilencerY = value;
+}
+
 bool CWeapon::NeedBlockSprint() const
 {
-	return GetState() == eFire || EngineExternal()[EEngineExternalGame::EnableBlockSprintInReload] && GetState() == eReload;
+	const static bool isBlockSprintInReload = EngineExternal()[EEngineExternalGame::EnableBlockSprintInReload];
+
+	return GetState() == eFire || isBlockSprintInReload && GetState() == eReload;
 }
 
 u8 CWeapon::GetCurrentHudOffsetIdx()
@@ -2450,3 +2508,14 @@ float CWeapon::GetHudFov() {
 	base += (zoom - base) * m_zoom_params.m_fZoomRotationFactor;
 	return base;
 }
+
+const CameraRecoil& CWeapon::getCameraRecoil(void) const
+{
+	return cam_recoil;
+}
+
+const CameraRecoil& CWeapon::getCameraZoomRecoil(void) const
+{
+	return zoom_cam_recoil;
+}
+ 

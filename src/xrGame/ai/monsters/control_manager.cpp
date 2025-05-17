@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "control_manager.h"
 #include "control_combase.h"
-#include "BaseMonster/base_monster.h"
+#include "basemonster/base_monster.h"
 
 // Lain: added
 #ifdef DEBUG
@@ -392,6 +392,10 @@ void CControl_Manager::dir_stop(CControl_Com *com)
 {
 	SControlDirectionData		*ctrl_dir = (SControlDirectionData*)data(com, ControlCom::eControlDir); 
 	VERIFY						(ctrl_dir);
+	if (ctrl_dir == nullptr)
+	{
+		return;
+	}
 	ctrl_dir->heading.target_speed	= 0;
 }
 

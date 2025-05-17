@@ -6,11 +6,11 @@
 //	Description : Script entity class
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 #include "script_entity.h"
 #include "CustomMonster.h"
-#include "../xrEngine/feel_vision.h"
+#include "../xrEngine/Feel_Vision.h"
 #include "../xrEngine/motion.h"
 #include "../Include/xrRender/Kinematics.h"
 #include "script_entity_action.h"
@@ -122,14 +122,7 @@ void CScriptEntity::SetScriptControl(const bool bScriptControl, shared_str caSci
 
 	m_bScriptControl	= bScriptControl;
 	m_caScriptName		= caSciptName;
-/* 
-#ifdef DEBUG
-	if (bScriptControl)
-		ai().script_engine().script_log			(ScriptStorage::eLuaMessageTypeInfo,"Script %s set object %s under its control",*caSciptName,*object().cName());
-	else
-		ai().script_engine().script_log			(ScriptStorage::eLuaMessageTypeInfo,"Script %s freed object %s from its control",*caSciptName,*object().cName());
-#endif
-*/
+
 	if (!bScriptControl)
 		ResetScriptData(this);
 }
@@ -152,8 +145,8 @@ bool CScriptEntity::CheckObjectVisibility(const CGameObject *tpObject)
 	return				(m_monster->memory().visual().visible_now(tpObject));
 }
 
-//îïðåäåëÿåò âèäèìîñòü îïðåäåëåííîãî òèïà îáúåêòîâ, 
-//çàäàííîãî ÷åðåç section_name
+//Ð¾Ð¿Ñ€ÐµÐ´ÐµÐ»ÑÐµÑ‚ Ð²Ð¸Ð´Ð¸Ð¼Ð¾ÑÑ‚ÑŒ Ð¾Ð¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð½Ð¾Ð³Ð¾ Ñ‚Ð¸Ð¿Ð° Ð¾Ð±ÑŠÐµÐºÑ‚Ð¾Ð², 
+//Ð·Ð°Ð´Ð°Ð½Ð½Ð¾Ð³Ð¾ Ñ‡ÐµÑ€ÐµÐ· section_name
 bool CScriptEntity::CheckTypeVisibility(const char* section_name)
 {
 	if (!m_monster)
@@ -210,7 +203,7 @@ void CScriptEntity::vfUpdateParticles()
 {
 	CScriptParticleAction	&l_tParticleAction = GetCurrentAction()->m_tParticleAction;
 	if (xr_strlen(l_tParticleAction.m_caBoneName)) {
-		CParticlesObject	*l_tpParticlesObject = l_tParticleAction.m_tpParticleSystem;
+		xr_shared_ptr<CParticlesObject> l_tpParticlesObject = l_tParticleAction.m_tpParticleSystem;
 		l_tpParticlesObject->UpdateParent(GetUpdatedMatrix(l_tParticleAction.m_caBoneName,l_tParticleAction.m_tParticlePosition,l_tParticleAction.m_tParticleAngles),l_tParticleAction.m_tParticleVelocity);
 	}
 }
@@ -229,23 +222,22 @@ void CScriptEntity::vfFinishAction(CScriptEntityAction *tpEntityAction)
 		xr_delete					(m_current_sound);
 	}
 	if (!tpEntityAction->m_tParticleAction.m_bAutoRemove)
-		CParticlesObject::Destroy(tpEntityAction->m_tParticleAction.m_tpParticleSystem);
+		Particles::Details::Destroy(tpEntityAction->m_tParticleAction.m_tpParticleSystem);
 }
 
 void CScriptEntity::ProcessScripts()
 {
 	CScriptEntityAction	*l_tpEntityAction = 0;
+
 #ifdef DEBUG
-	bool			empty_queue = m_tpActionQueue.empty();
+	bool empty_queue = m_tpActionQueue.empty();
 #endif
-	while (!m_tpActionQueue.empty()) {
+
+	while (!m_tpActionQueue.empty()) 
+	{
 		l_tpEntityAction= m_tpActionQueue.front();
 		VERIFY		(l_tpEntityAction);
-#ifdef _DEBUG
-//		if (!xr_strcmp("m_stalker_wounded",*object().cName()))
-//			Msg			("%6d Processing action : %s",Device.dwTimeGlobal,*l_tpEntityAction->m_tAnimationAction.m_caAnimationToPlay);
-#endif
-		
+
 		if (m_tpCurrentEntityAction != l_tpEntityAction)
 			l_tpEntityAction->initialize	();
 
@@ -254,27 +246,16 @@ void CScriptEntity::ProcessScripts()
 		if (!l_tpEntityAction->CheckIfActionCompleted())
 			break;
 
-#ifdef _DEBUG
-//		if (!xr_strcmp("m_stalker_wounded",*object().cName()))
-//			Msg			("%6d Action completed : %s",Device.dwTimeGlobal,*l_tpEntityAction->m_tAnimationAction.m_caAnimationToPlay);
-#endif
-
 		vfFinishAction(l_tpEntityAction);
 
-#ifdef DEBUG
-		if (psAI_Flags.is(aiLua))
-			Msg("Entity Action removed!!!");
-#endif
-		if (true /*psAI_Flags.is(aiLua)*/ )
-		{
-			object().callback(GameObject::eActionTypeRemoved)(object().lua_game_object(),u32(eActionTypeRemoved));
-		}
+		object().callback(GameObject::eActionTypeRemoved)(object().lua_game_object(), u32(eActionTypeRemoved));
 
 		xr_delete	(l_tpEntityAction);
 		m_tpActionQueue.erase(m_tpActionQueue.begin());
 	}
 
-	if (m_tpActionQueue.empty()) {
+	if (m_tpActionQueue.empty()) 
+	{
 #ifdef DEBUG
 		if (empty_queue)
 			ai().script_engine().script_log	(ScriptStorage::eLuaMessageTypeInfo,"Object %s has an empty script queue!",*object().cName());
@@ -313,7 +294,7 @@ void CScriptEntity::ProcessScripts()
 		if (l_tpEntityAction->m_tMovementAction.m_bCompleted && !l_bCompleted)
 			object().callback(GameObject::eActionTypeMovement)(object().lua_game_object(),u32(eActionTypeMovement), -1);
 
-		// Óñòàíîâèòü âûáðàííóþ àíèìàöèþ
+		// Ð£ÑÑ‚Ð°Ð½Ð¾Ð²Ð¸Ñ‚ÑŒ Ð²Ñ‹Ð±Ñ€Ð°Ð½Ð½ÑƒÑŽ Ð°Ð½Ð¸Ð¼Ð°Ñ†Ð¸ÑŽ
 		if (!l_tpEntityAction->m_tAnimationAction.m_bCompleted)
 			bfScriptAnimation	();
 
@@ -555,7 +536,10 @@ BOOL CScriptEntity::net_Spawn		(CSE_Abstract* DC)
 void CScriptEntity::shedule_Update	(u32 DT)
 {
 	if (m_bScriptControl)
+	{
+		PROF_EVENT("CScriptEntity::shedule_Update");
 		ProcessScripts				();
+	}
 }
 
 void ScriptCallBack(CBlend* B)
@@ -587,10 +571,6 @@ bool CScriptEntity::bfScriptAnimation()
 			if (m_tpScriptAnimation == m_tpNextAnimation)
 				return			(true);
 
-#ifdef DEBUG
-			//if (!xr_strcmp("m_stalker_wounded",*object().cName()))
-			//	Msg				("%6d Playing animation : %s , Object %s",Device.dwTimeGlobal,*GetCurrentAction()->m_tAnimationAction.m_caAnimationToPlay, *object().cName());
-#endif
 			m_tpScriptAnimation = m_tpNextAnimation;
 			IKinematicsAnimated	*skeleton_animated = smart_cast<IKinematicsAnimated*>(object().Visual());
 			LPCSTR				animation_id = *GetCurrentAction()->m_tAnimationAction.m_caAnimationToPlay;
@@ -623,6 +603,7 @@ bool CScriptEntity::bfScriptAnimation()
 
 void CScriptEntity::UpdateCL		()
 {
+	PROF_EVENT("CScriptEntity::UpdateCL")
 	bfScriptAnimation				();
 }
 
@@ -638,6 +619,7 @@ const CScriptEntityAction *CScriptEntity::GetActionByIndex	(u32 action_index) co
 
 void CScriptEntity::sound_callback	(const CObject *object, int sound_type, const Fvector &position, float sound_power)
 {
+	PROF_EVENT("IGame_Level::SoundEvent_Dispatch");
 	if (!smart_cast<const CGameObject*>(object))
 		return;
 
@@ -670,10 +652,11 @@ int CScriptEntity::get_enemy_strength()
 
 void CScriptEntity::process_sound_callbacks()
 {
+	PROF_EVENT("CScriptEntity::process_sound_callbacks")
 	xr_vector<CSavedSound>::const_iterator	I = m_saved_sounds.begin();
 	xr_vector<CSavedSound>::const_iterator	E = m_saved_sounds.end();
 	for ( ; I != E; ++I) {
-		
+		PROF_EVENT("suund_lua_call");
 		object().callback(GameObject::eSound)(
 			object().lua_game_object(),
 			(*I).m_game_object_id,

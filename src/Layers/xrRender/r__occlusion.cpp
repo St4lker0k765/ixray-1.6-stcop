@@ -1,5 +1,5 @@
 #include "StdAfx.h"
-#include ".\r__occlusion.h"
+#include "r__occlusion.h"
 
 #include "QueryHelper.h"
 
@@ -16,12 +16,12 @@ void	R_occlusion::occq_create	(u32	limit	)
 	pool.reserve	(limit);
 	used.reserve	(limit);
 	fids.reserve	(limit);
-	for (u32 it=0; it<limit; it++)	{
+	for (u32 it=0; it<limit; it++)
+	{
 		_Q	q;	q.order	= it;
 		if	(FAILED( CreateQuery(&q.Q, D3DQUERYTYPE_OCCLUSION) ))	break;
-		pool.push_back	(q);
+		pool.insert	(pool.begin(), q);
 	}
-	std::reverse	(pool.begin(), pool.end());
 }
 void	R_occlusion::occq_destroy	(				)
 {
@@ -37,16 +37,51 @@ void	R_occlusion::occq_destroy	(				)
 	pool.clear	();
 	fids.clear	();
 }
+
+void	R_occlusion::occq_refresh()
+{
+	if (!enabled)		return;
+	PROF_EVENT("R_occlusion::occq_refresh");
+	if (!used.empty())
+	{
+		while	(!used.empty())	{
+			_RELEASE(used.back().Q);
+			used.pop_back	();
+		}
+		used.clear	();
+	}
+	if (!fids.empty())
+		fids.clear	();
+}
+
+void	R_occlusion::occq_stats()
+{
+	g_FontManager->pFontSystem->SetAligment(CGameFont::alCenter);
+	g_FontManager->pFontSystem->SetColor(color_rgba(0,255,100,255));
+	g_FontManager->pFontSystem->Out(float(Device.Width)*0.5f, 40, "pool: %d fids: %d used: %d", pool.size(), fids.size(), used.size());
+}
+
 u32		R_occlusion::occq_begin		(u32&	ID		)
 {
 	if (!enabled)		return 0;
-
+	PROF_EVENT("R_occlusion::occq_begin");
 	//	Igor: prevent release crash if we issue too many queries
 	if (pool.empty())
 	{
 		if ((Device.dwFrame % 40) == 0)
 			Msg(" RENDER [Warning]: Too many occlusion queries were issued(>1536)!!!");
 		ID = iInvalidHandle;
+
+		//HACK: recreate HWOCC
+		occq_destroy();
+		occq_create(occq_size);
+
+		if (pool.empty())//error in recreating stage :(
+		{
+			occq_destroy();
+			enabled = FALSE;
+		}
+
 		return 0;
 	}
 
@@ -72,7 +107,7 @@ u32		R_occlusion::occq_begin		(u32&	ID		)
 void	R_occlusion::occq_end		(u32&	ID		)
 {
 	if (!enabled)		return;
-
+	PROF_EVENT("R_occlusion::occq_end");
 	//	Igor: prevent release crash if we issue too many queries
 	if (ID == iInvalidHandle) return;
 
@@ -84,6 +119,7 @@ R_occlusion::occq_result R_occlusion::occq_get		(u32&	ID		)
 {
 	if (!enabled)		return 0xffffffff;
 
+	PROF_EVENT("R_occlusion::occq_get");
 	//	Igor: prevent release crash if we issue too many queries
 	if (ID == iInvalidHandle) return 0xFFFFFFFF;
 
@@ -94,17 +130,20 @@ R_occlusion::occq_result R_occlusion::occq_get		(u32&	ID		)
 	CTimer	T;
 	T.Start	();
 	Device.Statistic->RenderDUMP_Wait.Begin	();
-	//while	((hr=used[ID].Q->GetData(&fragments,sizeof(fragments),D3DGETDATA_FLUSH))==S_FALSE) {
-	VERIFY2( ID<used.size(),make_string<const char*>("_Pos = %d, size() = %d ", ID, used.size()));
-	while	((hr=GetData(used[ID].Q, &fragments,sizeof(fragments)))==S_FALSE) 
 	{
-		if (!SwitchToThread())			
-			Sleep(ps_r2_wait_sleep);
-
-		if (T.GetElapsed_ms() > 500)	
+		PROF_EVENT("GPU::GetData");
+		//while	((hr=used[ID].Q->GetData(&fragments,sizeof(fragments),D3DGETDATA_FLUSH))==S_FALSE) {
+		VERIFY2( ID<used.size(),make_string<const char*>("_Pos = %d, size() = %d ", ID, used.size()));
+		while	((hr=GetData(used[ID].Q, &fragments,sizeof(fragments)))==S_FALSE) 
 		{
-			fragments	= (occq_result)-1;//0xffffffff;
-			break;
+			if (!SwitchToThread())			
+				Sleep(ps_r2_wait_sleep);
+
+			if (T.GetElapsed_ms() > 500)	
+			{
+				fragments	= (occq_result)-1;//0xffffffff;
+				break;
+			}
 		}
 	}
 	Device.Statistic->RenderDUMP_Wait.End	();

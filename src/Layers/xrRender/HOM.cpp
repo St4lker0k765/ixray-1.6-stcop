@@ -13,16 +13,16 @@ float	psOSSR		= .001f;
 
 void CHOM::MT_RENDER()
 {
-	MT.Enter					();
-	bool b_main_menu_is_active = (g_pGamePersistent->m_pMainMenu && g_pGamePersistent->m_pMainMenu->IsActive() );
-	if (MT_frame_rendered!=Device.dwFrame && !b_main_menu_is_active)
+	PROF_EVENT("Render HOM");
+
+	bool b_main_menu_is_active = (g_pGamePersistent->m_pMainMenu && g_pGamePersistent->m_pMainMenu->IsActive());
+	if (MT_frame_rendered != Device.dwFrame && !b_main_menu_is_active)
 	{
-		CFrustum					ViewBase;
-		ViewBase.CreateFromMatrix	(Device.mFullTransform, FRUSTUM_P_LRTB + FRUSTUM_P_FAR);
-		Enable						();
-		Render						(ViewBase);
+		CFrustum ViewBase;
+		ViewBase.CreateFromMatrix(Device.mFullTransform, FRUSTUM_P_LRTB + FRUSTUM_P_FAR);
+		Enable();
+		Render(ViewBase);
 	}
-	MT.Leave					();
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -34,14 +34,14 @@ CHOM::CHOM()
 	bEnabled		= FALSE;
 	m_pModel		= 0;
 	m_pTris			= 0;
-#ifdef DEBUG
+#ifdef DEBUG_DRAW
 	Device.seqRender.Add(this,REG_PRIORITY_LOW-1000);
 #endif
 }
 
 CHOM::~CHOM()
 {
-#ifdef DEBUG
+#ifdef DEBUG_DRAW
 	Device.seqRender.Remove(this);
 #endif
 }
@@ -144,13 +144,27 @@ void CHOM::Load()
 
 	S->close();
 	FS.r_close(fs);
+
+	if (ps_r2_ls_flags.test(R2FLAG_EXP_MT_CALC))
+	{
+		// MT-details (@front)
+		//Device.seqParallelRender.push_back(fastdelegate::FastDelegate0<>(Details, &CDetailManager::MT_CALC));
+
+		// MT-HOM (@front)
+		Device.seqParallelRender.push_back(xr_make_delegate(this, &CHOM::MT_RENDER));
+	}
 }
 
-void CHOM::Unload		()
+void CHOM::Unload()
 {
-	xr_delete			(m_pModel);
-	xr_free				(m_pTris);
-	bEnabled			= FALSE;
+	xr_delete(m_pModel);
+	xr_free(m_pTris);
+	bEnabled = FALSE;
+
+	auto I = std::find(Device.seqParallelRender.begin(), Device.seqParallelRender.end(), xr_make_delegate(this, &CHOM::MT_RENDER));
+
+	if (I != Device.seqParallelRender.end())
+		Device.seqParallelRender.erase(I);
 }
 
 class	pred_fb	{
@@ -302,6 +316,12 @@ BOOL CHOM::visible		(Fbox3& B)
 	if (!bEnabled)							return TRUE;
 	if (B.contains(Device.vCameraPosition))	return TRUE;
 	return _visible		(B,m_xform_01)		;
+}
+
+BOOL CHOM::visible		(Fsphere& S)
+{
+	Fbox B;B.setb(S.P,Fvector().set(S.R, S.R, S.R));
+	return visible(B);
 }
 
 BOOL CHOM::visible		(Fbox2& B, float depth)

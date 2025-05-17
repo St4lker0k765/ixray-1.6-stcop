@@ -60,64 +60,6 @@ void ESceneLightTool::AppendFrameLight(CLight* src)
 
 void ESceneLightTool::BeforeRender()
 {
-	if (psDeviceFlags.is(rsLighting)){
-		int l_cnt		= 0;
-		// set scene lights
-		for(ObjectIt _F = m_Objects.begin();_F!=m_Objects.end();_F++){
-			CLight* l 		= (CLight*)(*_F);
-			l_cnt++;
-			if (l->Visible()&&l->m_UseInD3D&&l->m_Flags.is_any(ELight::flAffectDynamic|ELight::flAffectStatic))
-				if (::Render->ViewBase.testSphere_dirty(l->GetPosition(),l->m_Range))
-					AppendFrameLight(l);
-		}
-		// set sun
-		if (m_Flags.is(flShowSun))
-		{
-			Flight L;
-			Fvector C;
-			if (psDeviceFlags.is(rsEnvironment) || UI->IsPlayInEditor())
-			{
-				C = g_pGamePersistent->Environment().CurrentEnv->sun_color;
-			}
-			else
-			{
-				C.set(1.f, 1.f, 1.f);
-			}
-			
-			if (EngineExternal()[EEngineExternalEnvironment::ReadSunConfig])
-				L.direction = g_pGamePersistent->Environment().CurrentEnv->sun_dir;
-			else
-				L.direction.setHP(m_SunShadowDir.y, m_SunShadowDir.x);
-
-//            if (psDeviceFlags.is(rsEnvironment)){
-//	            C			= g_pGamePersistent->Environment().CurrentEnv->sun_color;
-//            }else{
-				C.set		(1.f,1.f,1.f);
-//            }
-			L.direction.setHP(m_SunShadowDir.y,m_SunShadowDir.x);
-			L.diffuse.set	(C.x,C.y,C.z,1.f);
-			L.ambient.set	(0.f,0.f,0.f,0.f);
-			L.specular.set	(C.x,C.y,C.z,1.f);
-			L.type			= D3DLIGHT_DIRECTIONAL;
-			EDevice->SetLight	(frame_light.size(),L);
-			EDevice->LightEnable(frame_light.size(),TRUE);
-		}
-		// ambient
-		if (psDeviceFlags.is(rsEnvironment) || UI->IsPlayInEditor())
-		{
-			Fcolor C;
-			Fvector4& V = g_pGamePersistent->Environment().CurrentEnv->hemi_color;
-			C.set(V.x, V.y, V.z, 1.f);
-
-			EDevice->SetRS(D3DRS_AMBIENT, C.get());
-		}
-		else
-			EDevice->SetRS(D3DRS_AMBIENT, 0x00000000);
-#if 0
-		EDevice->EStatistic->dwTotalLight 	= l_cnt;
-		EDevice->EStatistic->dwLightInScene = frame_light.size();
-#endif
-	}
 }
 
 void ESceneLightTool::AfterRender()
@@ -257,10 +199,11 @@ void ESceneLightTool::RemoveLightControl(LPCSTR name)
 
 bool ESceneLightTool::Validate(bool full_test)
 {
-	if (!inherited::Validate(full_test)) return false;
-	bool bRes = !m_Objects.empty();
+	if (!inherited::Validate(full_test))
+		return false;
+	bool bRes = true;
 	for (ObjectIt it=m_Objects.begin(); it!=m_Objects.end(); it++){
-		CLight* L = dynamic_cast<CLight*>(*it);
+		CLight* L = smart_cast<CLight*>(*it);
 		if (!L->GetLControlName()){
 			bRes=false;
 			ELog.Msg(mtError,"%s: '%s' - Invalid light control.",ClassDesc(),L->GetName());
@@ -268,20 +211,14 @@ bool ESceneLightTool::Validate(bool full_test)
 	}
 	return bRes;
 }
-class TUI_ControlLightToolsSelect : public TUI_CustomControl
-{
-public:
-	TUI_ControlLightToolsSelect(int st, int act, ESceneToolBase* parent) :TUI_CustomControl(st, act, parent) {}
-	virtual bool IsSupportRotate() { return false; }
-	virtual bool IsSupportScale() { return false; }
-};
+
 void ESceneLightTool::CreateControls()
 {
 	inherited::CreateDefaultControls(estDefault);
-	AddControl(xr_new<TUI_ControlLightToolsSelect>(estDefault, etaSelect, this));
+	// AddControl(new TUI_CustomControl(estDefault, etaSelect, this));
 	// frame
-	pForm = xr_new<UILightTool>();
-   // pFrame 			= xr_new<TfraLight>((TComponent*)0);
+	pForm = new UILightTool();
+   // pFrame = new TfraLight((TComponent*)0);
 }
 
  
@@ -293,7 +230,7 @@ void ESceneLightTool::RemoveControls()
 
 CCustomObject* ESceneLightTool::CreateObject(LPVOID data, LPCSTR name)
 {
-	CCustomObject* O	= xr_new<CLight>(data,name);
+	CCustomObject* O	= new CLight(data,name);
 	O->FParentTools		= this;
 	return O;
 }

@@ -1,18 +1,18 @@
 #include "stdafx.h"
 #include "pch_script.h"
 
-#include "uiiteminfo.h"
-#include "uistatic.h"
-#include "UIXmlInit.h"
+#include "UIItemInfo.h"
+#include "../../xrUI/Widgets/UIStatic.h"
+#include "../../xrUI/UIXmlInit.h"
 
-#include "UIProgressBar.h"
-#include "UIScrollView.h"
-#include "UIFrameWindow.h"
+#include "../../xrUI/Widgets/UIProgressBar.h"
+#include "../../xrUI/Widgets/UIScrollView.h"
+#include "../../xrUI/Widgets/UIFrameWindow.h"
 
 #include "ai_space.h"
 #include "alife_simulator.h"
 #include "../../xrEngine/string_table.h"
-#include "../Inventory_Item.h"
+#include "../inventory_item.h"
 #include "UIInventoryUtilities.h"
 #include "../PhysicsShellHolder.h"
 #include "UIWpnParams.h"
@@ -333,25 +333,25 @@ void CUIItemInfo::InitItem(CUICellItem* pCellItem, CInventoryItem* pCompareItem,
 		UIItemImage->SetShader				(InventoryUtilities::GetEquipmentIconsShader());
 
 		Irect item_grid_rect				= pInvItem->GetInvGridRect();
-		Frect texture_rect;
-		texture_rect.lt.set					(item_grid_rect.x1*INV_GRID_WIDTH(EngineExternal()[EEngineExternalUI::HQIcons]),	item_grid_rect.y1*INV_GRID_HEIGHT(EngineExternal()[EEngineExternalUI::HQIcons]));
-		texture_rect.rb.set					(item_grid_rect.x2*INV_GRID_WIDTH(EngineExternal()[EEngineExternalUI::HQIcons]),	item_grid_rect.y2*INV_GRID_HEIGHT(EngineExternal()[EEngineExternalUI::HQIcons]));
-		texture_rect.rb.add					(texture_rect.lt);
+		Frect texture_rect = {};
+		texture_rect.lt.set(item_grid_rect.x1*INV_GRID_WIDTH(isHQIcons),	item_grid_rect.y1*INV_GRID_HEIGHT(isHQIcons));
+		texture_rect.rb.set(item_grid_rect.x2*INV_GRID_WIDTH(isHQIcons),	item_grid_rect.y2*INV_GRID_HEIGHT(isHQIcons));
+		texture_rect.rb.add(texture_rect.lt);
 		UIItemImage->GetUIStaticItem().SetTextureRect(texture_rect);
 		UIItemImage->TextureOn				();
 		UIItemImage->SetStretchTexture		(true);
 
-		Fvector2 v_r{};
+		Fvector2 v_r = {};
 
-		if (EngineExternal()[EEngineExternalUI::HQIcons])
+		if (isHQIcons)
 		{
-			v_r = { item_grid_rect.x2 * INV_GRID_WIDTH2(EngineExternal()[EEngineExternalUI::HQIcons]) / 2,
-				item_grid_rect.y2 * INV_GRID_HEIGHT2(EngineExternal()[EEngineExternalUI::HQIcons]) / 2 };
+			v_r = { item_grid_rect.x2 * INV_GRID_WIDTH2(isHQIcons) / 2,
+				item_grid_rect.y2 * INV_GRID_HEIGHT2(isHQIcons) / 2 };
 		}
 		else
 		{
-			v_r = { item_grid_rect.x2 * INV_GRID_WIDTH2(EngineExternal()[EEngineExternalUI::HQIcons]),
-				item_grid_rect.y2 * INV_GRID_HEIGHT2(EngineExternal()[EEngineExternalUI::HQIcons]) };
+			v_r = { item_grid_rect.x2 * INV_GRID_WIDTH2(isHQIcons),
+				item_grid_rect.y2 * INV_GRID_HEIGHT2(isHQIcons) };
 		}
 
 		v_r.x								*= UI().get_current_kx();

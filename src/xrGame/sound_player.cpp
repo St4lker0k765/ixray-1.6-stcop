@@ -6,7 +6,7 @@
 //	Description : Sound player
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "sound_player.h"
 #include "../xrScripts/script_engine.h"
 #include "ai/stalker/ai_stalker_space.h"
@@ -14,7 +14,6 @@
 #include "../xrEngine/xr_object.h"
 #include "../xrEngine/bone.h"
 #include "../Include/xrRender/Kinematics.h"
-#include "profiler.h"
 #include "sound_collection_storage.h"
 #include "object_broker.h"
 

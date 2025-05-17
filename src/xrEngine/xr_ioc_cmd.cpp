@@ -1,13 +1,13 @@
 #include "stdafx.h"
-#include "igame_level.h"
+#include "IGame_Level.h"
 
 //#include "xr_effgamma.h"
 #include "x_ray.h"
-#include "xr_ioconsole.h"
+#include "XR_IOConsole.h"
 #include "xr_ioc_cmd.h"
 //#include "fbasicvisual.h"
-#include "cameramanager.h"
-#include "environment.h"
+#include "CameraManager.h"
+#include "Environment.h"
 #include "xr_input.h"
 #include "CustomHUD.h"
 
@@ -84,7 +84,13 @@ class CCC_Quit : public IConsole_Command
 {
 public:
 	CCC_Quit(LPCSTR N) : IConsole_Command(N)  { bEmptyArgsHandled = TRUE; };
-	virtual void Execute(LPCSTR args) {
+	virtual void Execute(LPCSTR args) 
+	{
+		if (Device.IsEditorMode())
+		{
+			Msg("This command cannot be executed in Editors.");
+			return;
+		}
 		Console->Hide();
 		g_pEventManager->Event.Defer("KERNEL:disconnect");
 		g_pEventManager->Event.Defer("KERNEL:quit");
@@ -718,7 +724,7 @@ void CCC_Register()
 	CMD3(CCC_Mask,		"r_actor_shadow",		&psGameFlags,		rsActorShadow			);
 
 	CMD3(CCC_Mask,		"rs_cam_pos",			&psDeviceFlags,		rsCameraPos				);
-#ifdef DEBUG
+#ifdef DEBUG_DRAW
 	CMD3(CCC_Mask,		"rs_occ_draw",			&psDeviceFlags,		rsOcclusionDraw			);
 	CMD3(CCC_Mask,		"rs_occ_stats",			&psDeviceFlags,		rsOcclusionStats		);
 #endif // DEBUG
@@ -778,7 +784,13 @@ void CCC_Register()
 	CMD4(CCC_Float,		"cam_inert", &psCamInert, 0.0f, 0.9f);
 	CMD2(CCC_Float,		"cam_slide_inert",		&psCamSlideInert);
 
-	CMD1(CCC_r2,		"renderer"				);
+	if(!Device.IsEditorMode()) {
+		CMD1(CCC_r2, "renderer");
+	}
+	else {
+		psDeviceFlags.set(rsR2, TRUE);
+		psDeviceFlags.set(rsR4, FALSE);
+	}
 
 	CMD1(CCC_soundDevice, "snd_device"			);
 

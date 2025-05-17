@@ -1,6 +1,6 @@
 /* resample.c: see resample.h for interesting stuff */
 
-#include "stdafx.h"
+#include "StdAfx.h"
 
 #include <math.h>
 #include <stdlib.h>
@@ -178,7 +178,7 @@ int res_init(res_state *state, int channels, int outfreq, int infreq, res_parame
 				assert(beta > 2.0);
 				break;
 			default:
-				assert("arglist" == "valid");
+				assert(false && "Invalid res_parameter value");
 				return -1;
 			}
 			op1 = va_arg(argp, res_parameter);

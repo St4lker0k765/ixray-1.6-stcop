@@ -2,7 +2,7 @@
 
 #include "../../../alife_simulator.h"
 #include "../../../alife_object_registry.h"
-#include "../../../../xrServerEntities/xrserver_objects_alife_monsters.h"
+#include "../../../../xrServerEntities/xrServer_Objects_ALife_Monsters.h"
 #include "../../../../xrServerEntities/alife_monster_brain.h"
 
 #include "state_move_to_point.h"
@@ -18,9 +18,9 @@
 TEMPLATE_SPECIALIZATION
 CStateMonsterSmartTerrainTaskAbstract::CStateMonsterSmartTerrainTask(_Object *obj) : inherited(obj)
 {
-	this->add_state(eStateSmartTerrainTaskGamePathWalk,	xr_new<CStateMonsterSmartTerrainTaskGraphWalk<_Object> >(obj));
-	this->add_state(eStateSmartTerrainTaskLevelPathWalk,	xr_new<CStateMonsterMoveToPointEx<_Object> >			(obj));
-	this->add_state(eStateSmartTerrainTaskWaitCapture,	xr_new<CStateMonsterCustomAction<_Object> >				(obj));
+	this->add_state(eStateSmartTerrainTaskGamePathWalk,	new CStateMonsterSmartTerrainTaskGraphWalk<_Object> (obj));
+	this->add_state(eStateSmartTerrainTaskLevelPathWalk,	new CStateMonsterMoveToPointEx<_Object> 			(obj));
+	this->add_state(eStateSmartTerrainTaskWaitCapture,	new CStateMonsterCustomAction<_Object> 				(obj));
 }
 
 TEMPLATE_SPECIALIZATION

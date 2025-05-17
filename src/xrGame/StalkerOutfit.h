@@ -1,12 +1,12 @@
 ///////////////////////////////////////////////////////////////
 // StalkerOutfit.cpp
-// StalkerOutfit - защитный костюм сталкера
+// StalkerOutfit - Р·Р°С‰РёС‚РЅС‹Р№ РєРѕСЃС‚СЋРј СЃС‚Р°Р»РєРµСЂР°
 ///////////////////////////////////////////////////////////////
 
 
 #pragma once
 
-#include "customoutfit.h"
+#include "CustomOutfit.h"
 #include "../xrScripts/script_export_space.h"
 
 class CStalkerOutfit : 

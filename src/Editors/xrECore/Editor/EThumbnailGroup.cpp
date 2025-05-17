@@ -1,9 +1,9 @@
-#include "stdafx.h"
+﻿#include "stdafx.h"
 #pragma hdrstop
 
 #include "EThumbnail.h"
 //#include "ImageManager.h"
-#pragma package(smart_init)
+
 
 //------------------------------------------------------------------------------
 #define THM_GROUP_VERSION				0x0001
@@ -33,9 +33,14 @@ bool EGroupThumbnail::Load(LPCSTR src_name, LPCSTR path)
 {
 	string_path fn;
     strcpy(fn,EFS.ChangeFileExt(src_name?src_name:m_Name.c_str(),".thm").c_str());
-    if (path) 		FS.update_path(fn,path,fn);
-    else			FS.update_path(fn,_objects_,fn);
-    if (!FS.exist(fn)) return false;
+
+    if (path && xr_strlen(path))
+        FS.update_path(fn, path, fn);
+    else if (path == nullptr)
+        FS.update_path(fn, _groups_, fn);
+
+    if (!FS.TryLoad(fn))
+        return false;
 
     IReader* F 		= FS.r_open(fn);
     u16 version 	= 0;
@@ -91,7 +96,16 @@ void EGroupThumbnail::Save(int age, LPCSTR path)
 
 	string_path fn;
     if (path) 		FS.update_path(fn,path,m_Name.c_str());
-    else			FS.update_path(fn,_objects_,m_Name.c_str());
+    else			FS.update_path(fn, _groups_,m_Name.c_str());
+
+    if (path && xr_strlen(path))
+        FS.update_path(fn, path, m_Name.c_str());
+    else if (path == nullptr)
+        FS.update_path(fn, _groups_, m_Name.c_str());
+    else
+        xr_strcpy(fn, m_Name.c_str());
+
+
     if (F.save_to(fn))
     {
 	    FS.set_file_age	(fn,age?age:m_Age);
@@ -107,7 +121,7 @@ void EGroupThumbnail::FillProp(PropItemVec& items)
     for (SStringVecIt it = objects.begin(); it != objects.end(); it++)
     {
         string256 Buffer;
-        sprintf(Buffer, "Objects\\#%d", it - objects.begin());
+        sprintf(Buffer, "Objects\\#%d", int(it - objects.begin()));
         PHelper().CreateCaption(items, Buffer, it->c_str());
     }
 }

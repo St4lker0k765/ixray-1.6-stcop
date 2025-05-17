@@ -133,10 +133,10 @@ ESceneSpawnTool::~ESceneSpawnTool()
 void ESceneSpawnTool::CreateControls()
 {
 	inherited::CreateDefaultControls(estDefault);
-    AddControl		(xr_new<TUI_ControlSpawnAdd>(estDefault,etaAdd,		this));
+    AddControl		(new TUI_ControlSpawnAdd(estDefault,etaAdd,		this));
 	// frame
 
-    pForm 			= xr_new<UISpawnTool>();
+    pForm 			= new UISpawnTool();
 }
 
  
@@ -175,7 +175,7 @@ ref_shader ESceneSpawnTool::GetIcon(shared_str name)
 
 CCustomObject* ESceneSpawnTool::CreateObject(LPVOID data, LPCSTR name)
 {
-	CSpawnPoint* O	= xr_new<CSpawnPoint>(data,name);
+	CSpawnPoint* O	= new CSpawnPoint(data,name);
     O->FParentTools		= this;
 
 	if(data && name)
@@ -185,7 +185,7 @@ CCustomObject* ESceneSpawnTool::CreateObject(LPVOID data, LPCSTR name)
         	float size 			= pSettings->r_float( (LPCSTR)data, "$def_sphere");
 
             CCustomObject* S	= Scene->GetOTool(OBJCLASS_SHAPE)->CreateObject(0,0);
-            CEditShape* shape 	= dynamic_cast<CEditShape*>(S);
+            CEditShape* shape 	= smart_cast<CEditShape*>(S);
             R_ASSERT			(shape);
 
             Fsphere 			Sph;
@@ -226,7 +226,7 @@ void ESceneSpawnTool::GetStaticDesc(int& v_cnt, int& f_cnt, bool b_selected_only
         if(b_selected_only && !obj->Selected())
         	continue;
 
-        CSpawnPoint* sp = dynamic_cast<CSpawnPoint*>(obj);
+        CSpawnPoint* sp = smart_cast<CSpawnPoint*>(obj);
         if(!sp){
         	Msg("! ghm/ not a spawn object");
             continue;

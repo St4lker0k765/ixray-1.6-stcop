@@ -79,7 +79,7 @@ void CStringTable::Load	(LPCSTR xml_file_full)
 		bool isDublicate = pData->m_StringTable.find(string_name) != pData->m_StringTable.end();
 		if (isDublicate)
 		{
-			VERIFY3(!isDublicate, "duplicate string table id", string_name);
+			//VERIFY3(!isDublicate, "duplicate string table id", string_name);
 			Msg("! duplicate string table id: %s", string_name);
 		}
 
@@ -110,6 +110,9 @@ void CStringTable::ReparseKeyBindings()
 
 xr_string CStringTable::LangName()
 {
+	if (pData == nullptr)
+		return "rus";
+
 	return pData->m_sLanguage.c_str();
 }
 

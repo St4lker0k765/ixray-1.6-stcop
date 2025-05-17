@@ -1,15 +1,15 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "MainMenu.h"
-#include "UI/UIDialogWnd.h"
+#include "../../xrUI/Widgets/UIDialogWnd.h"
 #include "ui/UIMessageBoxEx.h"
-#include "../xrEngine/xr_IOConsole.h"
+#include "../xrEngine/XR_IOConsole.h"
 #include "../xrEngine/IGame_Level.h"
 #include "../xrEngine/CameraManager.h"
-#include "../xrEngine/xr_Level_controller.h"
-#include "ui/UITextureMaster.h"
-#include "ui/UIXmlInit.h"
-#include "ui/UIBtnHint.h"
-#include "UICursor.h"
+#include "../xrEngine/xr_level_controller.h"
+#include "../../xrUI/UITextureMaster.h"
+#include "../../xrUI/UIXmlInit.h"
+#include "../../xrUI/Widgets/UIBtnHint.h"
+#include "../../xrUI/UICursor.h"
 #include "gamespy/GameSpy_Full.h"
 #include "gamespy/GameSpy_HTTP.h"
 #include "gamespy/GameSpy_Available.h"
@@ -23,7 +23,6 @@
 #include "ui/UICDkey.h"
 
 #include <shellapi.h>
-#pragma comment(lib, "shell32.lib")
 
 #include "object_broker.h"
 
@@ -123,10 +122,10 @@ CMainMenu::CMainMenu	()
 		m_pMB_ErrDlgs[DownloadMPMap]->AddCallbackStr("button_copy", MESSAGE_BOX_COPY_CLICKED, CUIWndCallback::void_function(this, &CMainMenu::OnDownloadMPMap_CopyURL));
 		m_pMB_ErrDlgs[DownloadMPMap]->AddCallbackStr("button_yes", MESSAGE_BOX_YES_CLICKED, CUIWndCallback::void_function(this, &CMainMenu::OnDownloadMPMap));
 
-		m_account_mngr			= xr_new<gamespy_gp::account_manager>		(m_pGameSpyFull->GetGameSpyGP());
-		m_login_mngr			= xr_new<gamespy_gp::login_manager>			(m_pGameSpyFull);
-		m_profile_store			= xr_new<gamespy_profile::profile_store>	(m_pGameSpyFull);
-		m_stats_submitter		= xr_new<gamespy_profile::stats_submitter>	(m_pGameSpyFull);
+		m_account_mngr			= new gamespy_gp::account_manager		(m_pGameSpyFull->GetGameSpyGP());
+		m_login_mngr			= new gamespy_gp::login_manager			(m_pGameSpyFull);
+		m_profile_store			= new gamespy_profile::profile_store	(m_pGameSpyFull);
+		m_stats_submitter		= new gamespy_profile::stats_submitter	(m_pGameSpyFull);
 		m_atlas_submit_queue	= new atlas_submit_queue				(m_stats_submitter);
 	}
 	
@@ -173,7 +172,7 @@ void CMainMenu::ReadTextureInfo()
 
 extern ENGINE_API BOOL	bShowPauseString;
 extern bool				IsGameTypeSingle();
-static xr_string StrMainMenu = CStringTable().translate("st_discord_menu").c_str();
+static xr_string StrMainMenu = g_pStringTable->translate("st_discord_menu").c_str();
 
 void CMainMenu::Activate	(bool bActivate)
 {
@@ -408,7 +407,7 @@ bool CMainMenu::OnRenderPPUI_query()
 }
 
 
-extern void draw_wnds_rects();
+extern UI_API  void draw_wnds_rects();
 void CMainMenu::OnRender	()
 {
 	if(m_Flags.test(flGameSaveScreenshot))
@@ -665,8 +664,7 @@ void	CMainMenu::OnSessionTerminate				(LPCSTR reason)
 		return;
 
 	m_start_time = Device.dwTimeGlobal;
-	CStringTable	st;
-	LPCSTR str = st.translate("ui_st_kicked_by_server").c_str();
+	LPCSTR str = g_pStringTable->translate("ui_st_kicked_by_server").c_str();
 	string256 text;
 
 	if ( reason && xr_strlen(reason) && reason[0] == '@' )
@@ -678,13 +676,13 @@ void	CMainMenu::OnSessionTerminate				(LPCSTR reason)
 		xr_strconcat(text, str, " ", reason );
 	}
 	
-	m_pMB_ErrDlgs[SessionTerminate]->SetText(st.translate(text).c_str());
+	m_pMB_ErrDlgs[SessionTerminate]->SetText(g_pStringTable->translate(text).c_str());
 	SetErrorDialog(CMainMenu::SessionTerminate);
 }
 
 void	CMainMenu::OnLoadError				(LPCSTR module)
 {
-	LPCSTR str=CStringTable().translate("ui_st_error_loading").c_str();
+	LPCSTR str = g_pStringTable->translate("ui_st_error_loading").c_str();
 	string1024 Text;
 	xr_strconcat(Text,str," ");
 	xr_strcat(Text,sizeof(Text),module);

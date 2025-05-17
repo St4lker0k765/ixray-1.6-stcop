@@ -12,8 +12,8 @@
 TEMPLATE_SPECIALIZATION
 CBloodsuckerStateAttackAbstract::CBloodsuckerStateAttack(_Object *obj) : inherited_attack(obj)
 {
-	add_state	(eStateAttack_Hide,	xr_new<CStateMonsterBackstubEnemy<_Object> >(obj));
-	add_state	(eStateVampire_Execute,	xr_new<CStateBloodsuckerVampireExecute<_Object> >(obj));
+	add_state	(eStateAttack_Hide,	new CStateMonsterBackstubEnemy<_Object> (obj));
+	add_state	(eStateVampire_Execute,	new CStateBloodsuckerVampireExecute<_Object> (obj));
 }
 
 TEMPLATE_SPECIALIZATION
@@ -68,7 +68,7 @@ void CBloodsuckerStateAttackAbstract::execute()
 	else if (this->check_run_attack_state() )	this->select_state(eStateAttack_RunAttack);
 	else
 	{
-		// определить тип атаки
+		// РѕРїСЂРµРґРµР»РёС‚СЊ С‚РёРї Р°С‚Р°РєРё
 		bool b_melee = false; 
 
 		if (this->prev_substate == eStateAttack_Melee )
@@ -88,7 +88,7 @@ void CBloodsuckerStateAttackAbstract::execute()
 			this->select_state(eStateAttack_Hide);
  		}
  		else
-		// установить целевое состояние
+		// СѓСЃС‚Р°РЅРѕРІРёС‚СЊ С†РµР»РµРІРѕРµ СЃРѕСЃС‚РѕСЏРЅРёРµ
 		if ( b_melee ) 
 		{  
 			// check if enemy is behind me for a long time

@@ -3,17 +3,17 @@
 
 #pragma warning(disable:4995)
 #ifndef _EDITOR
-#include "../../xrEngine/render.h"
+#include "../../xrEngine/Render.h"
 #endif
 #pragma warning(default:4995)
 
 #include "../xrRender/ResourceManager.h"
 #include "../xrRender/tss.h"
-#include "../xrRender/blenders/blender.h"
-#include "../xrRender/blenders/blender_recorder.h"
+#include "../xrRender/blenders/Blender.h"
+#include "../xrRender/blenders/Blender_Recorder.h"
 
-#include "../xrRenderDX10/dx10BufferUtils.h"
-#include "../xrRenderDX10/dx10ConstantBuffer.h"
+#include "dx10BufferUtils.h"
+#include "dx10ConstantBuffer.h"
 
 #include "../xrRender/ShaderResourceTraits.h"
 
@@ -132,8 +132,10 @@ SVS*	CResourceManager::_CreateVS		(LPCSTR _name)
 	xrCriticalSectionGuard guard(creationGuard);
 	xr_string res_name = _name;
 
-	if (Render->m_skinning > 0) {
-		res_name += "_" + std::to_string(Render->m_skinning);
+	const int m_skinning = Engine.External.GetSkinningMode();
+	if (m_skinning > 0)
+	{
+		res_name += "_" + xr_string::ToString(m_skinning);
 	}
 
 	res_name += RImplementation.getShaderParams();
@@ -454,7 +456,7 @@ void				CResourceManager::_DeleteConstantTable	(const R_constant_table* C)
 }
 
 //--------------------------------------------------------------------------------------------------------------
-CRT*	CResourceManager::_CreateRT(LPCSTR Name, u32 w, u32 h, DxgiFormat f, u32 SampleCount, bool useUAV )
+CRT*	CResourceManager::_CreateRT(LPCSTR Name, u32 w, u32 h, DxgiFormat f, u32 SampleCount, CRT::CRTCreationFlags CreationFlags)
 {
 	R_ASSERT(Name && Name[0] && w && h);
 
@@ -468,7 +470,7 @@ CRT*	CResourceManager::_CreateRT(LPCSTR Name, u32 w, u32 h, DxgiFormat f, u32 Sa
 		CRT *RT					=	new CRT();
 		RT->dwFlags				|=	xr_resource_flagged::RF_REGISTERED;
 		m_rtargets.insert		(std::make_pair(RT->set_name(Name),RT));
-		if (Device.b_is_Ready)	RT->create	(Name,w,h,f, SampleCount, useUAV );
+		if (Device.b_is_Ready)	RT->create	(Name,w,h,f, SampleCount, CreationFlags);
 		return					RT;
 	}
 }

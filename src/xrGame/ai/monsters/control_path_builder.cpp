@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "control_path_builder.h"
 #include "control_manager.h"
-#include "BaseMonster/base_monster.h"
+#include "basemonster/base_monster.h"
 #include "../../game_location_selector.h"
 #include "../../level_location_selector.h"
 #include "../../detail_path_manager.h"
@@ -9,8 +9,8 @@
 #include "../../ai_space.h"
 #include "../../movement_manager_space.h"
 #include "../../level_path_manager.h"
-#include "../../actor.h"
-#include "../../Actor_Memory.h"
+#include "../../Actor.h"
+#include "../../actor_memory.h"
 #include "../../visual_memory_manager.h"
 
 #ifdef DEBUG
@@ -283,22 +283,7 @@ bool CControlPathBuilder::can_use_distributed_computations (u32 option) const
 
 u32	 CControlPathBuilder::find_nearest_vertex				(const u32 &level_vertex_id, const Fvector &target_position, const float &range)
 {
-	xr_vector<u32>	temp;
-
-	ai().graph_engine().search	(
-		ai().level_graph(),
-		level_vertex_id,
-		level_vertex_id,
-		&temp,
-		GraphEngineSpace::CNearestVertexParameters(
-			target_position,
-			range
-		)
-	);
-
-	VERIFY			(!temp.empty());
-	VERIFY			(temp.size() == 1);
-	return			(temp.front());
+	return ai().level_graph().SearchNearestVertex(level_vertex_id,target_position,range);
 }
 
 bool CControlPathBuilder::is_path_built()

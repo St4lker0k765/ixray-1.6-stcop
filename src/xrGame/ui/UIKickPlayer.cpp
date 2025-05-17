@@ -2,16 +2,16 @@
 
 #include "UIKickPlayer.h"
 #include "UIVotingCategory.h"
-#include "UIXmlInit.h"
-#include "UI3tButton.h"
-#include "UIListBox.h"
-#include "UIListBoxItem.h"
-#include "UISpinNum.h"
+#include "../../xrUI/UIXmlInit.h"
+#include "../../xrUI/Widgets/UI3tButton.h"
+#include "../../xrUI/Widgets/UIListBox.h"
+#include "../../xrUI/Widgets/UIListBoxItem.h"
+#include "../../xrUI/Widgets/UISpinNum.h"
 #include "UIGameCustom.h"
-#include "../level.h"
+#include "../Level.h"
 #include "../game_cl_base.h"
 #include "../game_cl_teamdeathmatch.h"
-#include "../../xrEngine/xr_ioconsole.h"
+#include "../../xrEngine/XR_IOConsole.h"
 
 CUIKickPlayer::CUIKickPlayer()
 {

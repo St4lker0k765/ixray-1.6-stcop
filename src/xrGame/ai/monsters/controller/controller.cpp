@@ -2,16 +2,16 @@
 #include "controller.h"
 #include "controller_state_manager.h"
 #include "../controlled_entity.h"
-#include "../../../actor.h"
+#include "../../../Actor.h"
 #include "../../../ActorEffector.h"
 #include "../../../ActorCondition.h"
 #include "../ai_monster_effector.h"
 #include "../../../../Include/xrRender/KinematicsAnimated.h"
-#include "../../../level.h"
+#include "../../../Level.h"
 #include "../../../sound_player.h"
 #include "../../../ai_monster_space.h"
 #include "../../../UIGameCustom.h"
-#include "../../../ui/UIStatic.h"
+#include "../../../../xrUI/Widgets/UIStatic.h"
 
 #include "../monster_velocity_space.h"
 #include "../../../level_debug.h"
@@ -722,7 +722,7 @@ bool    CController::tube_ready () const
 }
 
 
-#include "../../../HudManager.h"
+#include "../../../HUDManager.h"
 #include "../../../../xrEngine/CameraBase.h"
 #include "../../../CharacterPhysicsSupport.h"
 
@@ -779,7 +779,7 @@ void CController::OnEvent(NET_Packet& P, u16 type)
 
 				IKinematicsAnimated* skel = smart_cast<IKinematicsAnimated*>(Visual());
 
-				Actor()->Cameras().AddCamEffector(xr_new<CControllerPsyHitCamEffector>(eCEControllerPsyHit, src_pos, target_pos,
+				Actor()->Cameras().AddCamEffector(new CControllerPsyHitCamEffector(eCEControllerPsyHit, src_pos, target_pos,
 					control().animation().motion_time(skel->ID_Cycle_Safe("psy_attack_1"), Visual()),
 					base_fov, dest_fov));
 

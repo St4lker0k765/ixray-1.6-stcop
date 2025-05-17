@@ -1,17 +1,17 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "game_sv_capture_the_artefact.h"
 #include "xrServer_Objects_ALife_Monsters.h"
 #include "Level.h"
-#include "xrserver.h"
+#include "xrServer.h"
 #include "Inventory.h"
 #include "CustomZone.h"
-#include "../xrEngine/igame_persistent.h"
+#include "../xrEngine/IGame_Persistent.h"
 #include "../xrEngine/CameraManager.h"
 #include "Actor.h"
 #include "Artefact.h"
 #include "game_cl_base.h"
 #include "../xrEngine/xr_level_controller.h"
-#include "hudItem.h"
+#include "HudItem.h"
 #include "Weapon.h"
 #include "eatable_item_object.h" 
 #include "Missile.h"
@@ -21,7 +21,7 @@
 #include "ui/UIBuyWndShared.h"
 #include "UIGameCTA.h"
 #include "../xrEngine/string_table.h"
-#include "../xrEngine/xr_ioconsole.h"
+#include "../xrEngine/XR_IOConsole.h"
 #include <functional>
 
 //-------------------------------------------------------------
@@ -1382,7 +1382,7 @@ bool game_sv_CaptureTheArtefact::OnKillResult(KILL_RES KillResult, game_PlayerSt
 					if (tmp_client)
 					{
 						string256 reason;
-						xr_strconcat( reason, CStringTable().translate("st_kicked_by_server").c_str() );
+						xr_strconcat( reason, g_pStringTable->translate("st_kicked_by_server").c_str() );
 						m_server->DisconnectClient( tmp_client, reason );
 					}
 				}
@@ -2203,7 +2203,7 @@ void game_sv_CaptureTheArtefact::ActorDeliverArtefactOnBase(CSE_ActorMP *actor, 
 
 void game_sv_CaptureTheArtefact::StartNewRound()
 {
-	fastdelegate::FastDelegate1<IClient*, void> tmp_functor;
+	xr_delegate<void(IClient*)> tmp_functor;
 	tmp_functor.bind(this, &game_sv_CaptureTheArtefact::PrepareClientForNewRound);
 	m_server->ForEachClientDoSender(tmp_functor);
 	MoveLifeActors();

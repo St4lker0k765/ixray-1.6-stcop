@@ -4,7 +4,8 @@
 //refs
 
 #if 1
-extern doug_lea_allocator	g_render_lua_allocator;
+//extern doug_lea_allocator	g_render_lua_allocator;
+extern doug_lea_area_allocator	g_render_lua_allocator_area;
 
 template <class T>
 class doug_lea_alloc {
@@ -27,9 +28,9 @@ public:
 	doug_lea_alloc(const doug_lea_alloc<T>&) {	}
 	template<class _Other>							doug_lea_alloc(const doug_lea_alloc<_Other>&) {	}
 	template<class _Other>	doug_lea_alloc<T>& operator=		(const doug_lea_alloc<_Other>&) { return (*this); }
-	pointer					allocate(size_type n, const void* p = 0) const { return (T*)g_render_lua_allocator.malloc_impl(sizeof(T) * (u32)n); }
-	void					deallocate(pointer p, size_type n) const { g_render_lua_allocator.free_impl((void*&)p); }
-	void					deallocate(void* p, size_type n) const { g_render_lua_allocator.free_impl(p); }
+	pointer					allocate(size_type n, const void* p = 0) const { return (T*)g_render_lua_allocator_area.malloc_impl(sizeof(T) * (u32)n); }
+	void					deallocate(pointer p, size_type n) const { g_render_lua_allocator_area.free_impl((void*&)p); }
+	void					deallocate(void* p, size_type n) const { g_render_lua_allocator_area.free_impl(p); }
 	char* __charalloc(size_type n) { return (char*)allocate(n); }
 	void					construct(pointer p, const T& _Val) { new(p)T(_Val); }
 
@@ -46,9 +47,9 @@ struct doug_lea_allocator_wrapper {
 		typedef doug_lea_alloc<T>	result;
 	};
 
-	static	void* alloc(const u32& n) { return g_render_lua_allocator.malloc_impl((u32)n); }
+	static	void* alloc(const u32& n) { return g_render_lua_allocator_area.malloc_impl((u32)n); }
 	template <typename T>
-	static	void	dealloc(T*& p) { g_render_lua_allocator.free_impl((void*&)p); }
+	static	void	dealloc(T*& p) { g_render_lua_allocator_area.free_impl((void*&)p); }
 };
 
 #	define render_alloc				doug_lea_alloc
@@ -94,7 +95,9 @@ struct st_LevelOptions{
 	void			Reset			();
 };
 
-class EScene :public XrEditorSceneInterface
+class EScene :
+	public XrEditorSceneInterface,
+	private pureFrame
 {
 	CMemoryWriter 	m_SaveCache;
 public:
@@ -105,6 +108,7 @@ public:
 	st_LevelOptions	m_LevelOp;
 protected:
 	bool m_Valid;
+	bool m_SkipCantFindDialog;
 	int m_Locked;
 	// version control 
 	xrGUID			m_GUID;
@@ -121,7 +125,7 @@ protected:
 
 	TProperties* m_SummaryInfo;
 
-	ObjectList		m_ESO_SnapObjects; // временно здесь а вообще нужно перенести в ESceneTools
+	ObjectList		m_ESO_SnapObjects; // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ ESceneTools
 protected:
 	bool 			OnLoadAppendObject(CCustomObject* O);
 	bool 			OnLoadSelectionAppendObject(CCustomObject* O);
@@ -143,11 +147,12 @@ public:
 		flIsBuildedCForm = (1 << 3),
 		flIsBuildedAIMap = (1 << 4),
 		flIsBuildedGameGraph = (1 << 5),
+		flIsBuildedSndEnv = (1 << 5),
 		flIsStopPlayInEditor = (1 << 6),
 	};
 	Flags32			m_RTFlags;
 public:
-	typedef  fastdelegate::FastDelegate1<CCustomObject*, bool> TAppendObject;
+	typedef  xr_delegate<bool(CCustomObject*)> TAppendObject;
 
 	bool 			ReadObjectStream(IReader& F, CCustomObject*& O);
 	bool 			ReadObjectLTX(CInifile& ini, LPCSTR sect_name, CCustomObject*& O);
@@ -194,6 +199,8 @@ public:
 
 	int				MultiRenameObjects();
 
+	bool			isSkipCantFindDialog() { return m_SkipCantFindDialog; }
+	void			setSkipCantFindDialog(bool b) { m_SkipCantFindDialog = b; }
 	IC bool 		valid() { return m_Valid; }
 
 	IC bool 		locked() { return m_Locked != 0; }
@@ -204,7 +211,7 @@ public:
 	IC ESceneToolBase* GetTool(ObjClassID cat) { return m_SceneTools[cat]; }
 	IC u32					ToolCount() { return m_SceneTools.size(); }
 
-	IC ESceneCustomOTool* GetOTool(ObjClassID cat) { return dynamic_cast<ESceneCustomOTool*>(GetTool(cat)); }
+	IC ESceneCustomOTool* GetOTool(ObjClassID cat) { return smart_cast<ESceneCustomOTool*>(GetTool(cat)); }
 
 	IC SceneToolsMapPairIt 	FirstTool() { return m_SceneTools.begin(); }
 	IC SceneToolsMapPairIt 	LastTool() { return m_SceneTools.end(); }
@@ -249,12 +256,14 @@ public:
 	int 			FrustumSelect(int flag, ObjClassID classfilter = OBJCLASS_DUMMY);
 	void			SelectObjects(bool flag, ObjClassID classfilter = OBJCLASS_DUMMY);
 	void 			ShowObjects(bool flag, ObjClassID classfilter = OBJCLASS_DUMMY, bool bAllowSelectionFlag = false, bool bSelFlag = true);
+	int 			LockObjects(bool flag, ObjClassID classfilter=OBJCLASS_DUMMY, bool bAllowSelectionFlag=false, bool bSelFlag=true);
 	void			InvertSelection(ObjClassID classfilter);
 	int 			SelectionCount(bool testflag, ObjClassID classfilter);
 	void			RemoveSelection(ObjClassID classfilter);
 	void 			CutSelection(ObjClassID classfilter);
 	void			CopySelection(ObjClassID classfilter);
 	void			PasteSelection();
+	void			DuplicateSelection(ObjClassID classfilter);
 
 	void 			SelectLightsForObject(CCustomObject* obj);
 
@@ -321,7 +330,7 @@ public:
 	bool IsPlayInEditor();
 	virtual void Stop();
 
-	virtual	void LoadCFrom(CObjectSpace* Space, CDB::build_callback cb);
+	virtual	void LoadCForm(CObjectSpace* Space, CDB::build_callback cb);
 	virtual IReader* LoadSpawn();
 	virtual IGameGraph* GetGameGraph();
 	virtual ILevelGraph* GetLevelGraph();
@@ -344,13 +353,20 @@ protected:
 public:
 	void            RegisterSubstObjectName(const xr_string& from, const xr_string& to);
 	bool            GetSubstObjectName(const xr_string& from, xr_string& to) const;
+
+private:
+	virtual void OnFrame() override;
+
 private:
 	CLevelGraphEditor m_level_graph;
 	CGameGraphEditor m_game_graph;
 	CMemoryWriter	m_spawn_data;
 
 	CGameGraphBuilder m_graph_builder;
-	CFromBuilder m_cfrom_builder;
+	CFormBuilder m_cform_builder;
+
+	bool IsAppliedPos = false;
+	Fvector ActorNewPos = {};
 };
 
 

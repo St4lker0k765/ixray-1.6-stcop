@@ -5,22 +5,21 @@
 
 #include "../xrRender/PSLibrary.h"
 
-#include "r2_types.h"
+#include "../xrRender/r__types.h"
 #include "r4_rendertarget.h"
 
-#include "../xrRender/hom.h"
-#include "../xrRender/detailmanager.h"
-#include "../xrRender/modelpool.h"
-#include "../xrRender/wallmarksengine.h"
+#include "../xrRender/HOM.h"
+#include "../xrRender/DetailManager.h"
+#include "../xrRender/ModelPool.h"
+#include "../xrRender/WallmarksEngine.h"
 
-#include "smap_allocator.h"
-#include "../xrRender/light_db.h"
-#include "light_render_direct.h"
+#include "SMAP_Allocator.h"
+#include "../xrRender/Light_DB.h"
 #include "../xrRender/LightTrack.h"
 #include "../xrRender/r_sun_cascades.h"
 
-#include "../../xrEngine/irenderable.h"
-#include "../../xrEngine/fmesh.h"
+#include "../../xrEngine/IRenderable.h"
+#include "../../xrEngine/Fmesh.h"
 
 class dxRender_Visual;
 
@@ -71,8 +70,6 @@ public:
 	  u32		dx11_enable_tessellation : 1;
 	} o;
 
-	Flags16 SSAO;
-
 	struct _stats
 	{
 		u32		l_total,	l_visible;
@@ -111,25 +108,25 @@ public:
 	CRenderTarget*												Target;			// Render-target
 
 	CLight_DB													Lights;
-	CLight_Compute_XFORM_and_VIS								LR;
 	xr_vector<light*>											Lights_LastFrame;
 	SMAP_Allocator												LP_smap_pool;
 	light_Package												LP_normal;
 	light_Package												LP_pending;
 
-	xr_vector<Fbox3,render_alloc<Fbox3> >						main_coarse_structure;
 
 	shared_str													c_sbase			;
 	shared_str													c_lmaterial		;
 	float														o_hemi			;
 	float														o_hemi_cube[CROS_impl::NUM_FACES]	;
 	float														o_sun			;
-	ID3DQuery*													q_sync_point[CHWCaps::MAX_GPUS];
-	u32															q_sync_count	;
+
 
 	bool														m_bMakeAsyncSS;
 	bool														m_bFirstFrameAfterReset;	// Determines weather the frame is the first after resetting device.
 	xr_vector<sun::cascade>										m_sun_cascades;
+
+	xr_list<light*>												v_all_lights_dque;
+	xr_list<light*>												v_all_lights;
 
 private:
 	// Loading / Unloading
@@ -143,7 +140,7 @@ private:
 
 	BOOL							add_Dynamic					(dxRender_Visual*pVisual, u32 planes);		// normal processing
 	void							add_Static					(dxRender_Visual*pVisual, u32 planes);
-	void							add_leafs_Dynamic			(dxRender_Visual*pVisual, bool ignore = false);	// if detected node's full visibility
+	void							add_leafs_Dynamic			(dxRender_Visual*pVisual);	// if detected node's full visibility
 	void							add_leafs_Static			(dxRender_Visual*pVisual);						// if detected node's full visibility
 
 public:
@@ -170,7 +167,10 @@ public:
 	IRender_Sector*					getSectorActive				();
 	IRenderVisual*					model_CreatePE				(LPCSTR name);
 	IRender_Sector*					detectSector				(const Fvector& P, Fvector& D);
+	IRender_Sector*					detectLastSector			(const Fvector& P);
 	int								translateSector				(IRender_Sector* pSector);
+	
+	virtual SurfaceParams getSurface(const char* nameTexture) override;
 
 	// HW-occlusion culling
 	IC u32							occq_begin					(u32&	ID		)	{ return HWOCC.occq_begin	(ID);	}
@@ -235,6 +235,17 @@ public:
 		DWORD                           Flags,
 		void*&							result);
 
+	struct PuddleBase {
+		Fmatrix m_world = Fidentity;
+
+		float m_height = EPS;
+		float m_radius = EPS;
+	};
+
+	xr_vector<PuddleBase> m_levels_puddles;
+
+	void							LoadPuddles();
+
 	// Information
 	virtual void					Statistics					(CGameFont* F);
 	virtual LPCSTR					getShaderPath				()									{ return "d3d11\\";	}
@@ -250,7 +261,7 @@ public:
 	virtual void					flush						();
 	virtual void					set_Object					(IRenderable*		O	);
 	virtual	void					add_Occluder				(Fbox2&	bb_screenspace	);			// mask screen region as oclluded
-	virtual void					add_Visual					(IRenderVisual*	V, bool ignore_opt = false);			// add visual leaf	(no culling performed at all)
+	virtual void					add_Visual					(IRenderVisual*	V);			// add visual leaf	(no culling performed at all)
 	virtual void					add_Geometry				(IRenderVisual*	V	);			// add visual(s)	(all culling performed)
 
 	// wallmarks
@@ -281,6 +292,7 @@ public:
 	virtual IRenderVisual*			model_CreateChild			(LPCSTR name, IReader* data);
 	virtual IRenderVisual*			model_Duplicate				(IRenderVisual*	V);
 	virtual void					model_Delete				(IRenderVisual* &	V, BOOL bDiscard);
+	virtual void					model_Delete_Deffered		(IRenderVisual* &	V);
 	virtual void 					model_Delete				(IRender_DetailModel* & F);
 	virtual void					model_Logging				(BOOL bEnable)				{ Models->Logging(bEnable);	}
 	virtual void					models_Prefetch				();
@@ -310,8 +322,8 @@ public:
 	virtual ~CRender											();
 
 	xr_string						getShaderParams				();
-	void							addShaderOption				(const char* name, const char* value);
-	void							clearAllShaderOptions		() { m_ShaderOptions.resize(0); }
+	void							addShaderOption				(const char* name, const char* value = "");
+	void							clearAllShaderOptions		() { m_ShaderOptions.clear(); }
 
 	auto							ShaderOptionsCount			() { return m_ShaderOptions.size(); }
 
@@ -319,7 +331,7 @@ public:
 	virtual size_t					SectorsCount				() { return Sectors.size(); }
 
 private:
-	xr_vector<D3D_SHADER_MACRO>									m_ShaderOptions;
+	xr_string_map<xr_string, xr_string>							m_ShaderOptions;
 
 protected:
 	virtual	void					ScreenshotImpl				(ScreenshotMode mode, LPCSTR name, CMemoryWriter* memory_writer);

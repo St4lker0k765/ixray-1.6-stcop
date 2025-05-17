@@ -14,7 +14,7 @@ call util\build-server.bat
 call util\build-utilities.bat
 
 :: Prepare packing
-call util\generate-patch.bat
+call util\generate-patch.bat build\x64\Compressor-Windows\bin\Release\xrCompress.exe
 call util\clear-utilities.bat
 
 :: Pack all

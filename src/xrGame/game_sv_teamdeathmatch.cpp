@@ -1,7 +1,7 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "game_sv_teamdeathmatch.h"
 #include "xrServer_Objects_ALife_Monsters.h"
-#include "xrserver.h"
+#include "xrServer.h"
 #include "Level.h"
 #include "game_cl_mp.h"
 #include "../xrEngine/string_table.h"
@@ -403,7 +403,7 @@ void game_sv_TeamDeathmatch::OnPlayerKillPlayer(game_PlayerState* ps_killer, gam
 						Msg("--- Kicking player %s", tmp_client->ps->getName());
 #endif
 						string512	reason;
-						xr_strconcat(reason, CStringTable().translate("st_kicked_by_server").c_str() );
+						xr_strconcat(reason, g_pStringTable->translate("st_kicked_by_server").c_str() );
 						m_server->DisconnectClient( tmp_client, reason );
 					}
 				}

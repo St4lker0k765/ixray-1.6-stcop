@@ -2,25 +2,25 @@
 #include "stdafx.h"
 #include "pch_script.h"
 #include "UIActorMenu.h"
-#include "UI3tButton.h"
+#include "../../xrUI/Widgets/UI3tButton.h"
 #include "UIDragDropListEx.h"
 #include "UIDragDropReferenceList.h"
 #include "UICharacterInfo.h"
-#include "UIFrameLineWnd.h"
+#include "../../xrUI/Widgets/UIFrameLineWnd.h"
 #include "UICellItem.h"
 #include "UIInventoryUtilities.h"
 #include "UICellItemFactory.h"
 
 #include "../InventoryOwner.h"
 #include "../Inventory.h"
-#include "../Trade.h"
+#include "../trade.h"
 #include "../Entity.h"
 #include "../Actor.h"
 #include "../Weapon.h"
 #include "../trade_parameters.h"
 #include "../inventory_item_object.h"
 #include "../../xrEngine/string_table.h"
-#include "../ai/monsters/BaseMonster/base_monster.h"
+#include "../ai/monsters/basemonster/base_monster.h"
 #include "../ai_space.h"
 #include "../../xrScripts/script_engine.h"
 #include "../UIGameSP.h"
@@ -328,7 +328,7 @@ void CUIActorMenu::UpdateActor()
 	}
 	else
 	{
-		UpdateActorMP();
+		UpdateActorMoneyMP();
 	}
 	
 	CActor* actor = smart_cast<CActor*>( m_pActorInvOwner );

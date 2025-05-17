@@ -8,8 +8,8 @@
 #include "XR_IOConsole.h"
 #include "line_editor.h"
 
-#include "igame_level.h"
-#include "igame_persistent.h"
+#include "IGame_Level.h"
+#include "IGame_Persistent.h"
 
 #include "x_ray.h"
 #include "xr_input.h"
@@ -96,8 +96,10 @@ void ConsoleLogCallback(LPCSTR line) {
 	Console->AddLogEntry(line);
 }
 
-CConsole::CConsole() : m_hShader_back(nullptr) {
-	m_editor          = xr_new<text_editor::line_editor>( (u32)CONSOLE_BUF_SIZE );
+CConsole::CConsole() : 
+	m_hShader_back(nullptr) 
+{
+	m_editor = new text_editor::line_editor((u32)CONSOLE_BUF_SIZE);
 	m_cmd_history_max = cmd_history_max;
 	m_disable_tips    = false;
 	Register_callbacks();
@@ -133,15 +135,21 @@ void CConsole::Initialize()
 	extern void CCC_Register();
 	CCC_Register();
 
-	CImGuiManager::Instance().Subscribe("DebugConsole", CImGuiManager::ERenderPriority::eMedium, std::bind(&CConsole::DrawUIConsole, this));
-	CImGuiManager::Instance().Subscribe("DebugConsoleVars", CImGuiManager::ERenderPriority::eMedium, std::bind(&CConsole::DrawUIConsoleVars, this));
+	if (!Device.IsEditorMode())
+	{
+		CImGuiManager::Instance().Subscribe("DebugConsole", CImGuiManager::ERenderPriority::eMedium, std::bind(&CConsole::DrawUIConsole, this));
+		CImGuiManager::Instance().Subscribe("DebugConsoleVars", CImGuiManager::ERenderPriority::eMedium, std::bind(&CConsole::DrawUIConsoleVars, this));
+	}
 }
 
 CConsole::~CConsole()
 {
 	xrLogger::RemoveLogCallback(ConsoleLogCallback);
-	CImGuiManager::Instance().Unsubscribe("DebugConsole");
-	CImGuiManager::Instance().Unsubscribe("DebugConsoleVars");
+	if (!Device.IsEditorMode())
+	{
+		CImGuiManager::Instance().Unsubscribe("DebugConsole");
+		CImGuiManager::Instance().Unsubscribe("DebugConsoleVars");
+	}
 
 	xr_delete( m_hShader_back );
 	xr_delete( m_editor );
@@ -246,7 +254,7 @@ void CConsole::OnRender()
 
 	if (!m_hShader_back)
 	{
-		m_hShader_back = xr_new< FactoryPtr<IUIShader> >();
+		m_hShader_back = new FactoryPtr<IUIShader>();
 		(*m_hShader_back)->create( "hud\\default", "ui\\ui_console" ); // "ui\\ui_empty"
 	}
 

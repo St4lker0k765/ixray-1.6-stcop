@@ -3,6 +3,7 @@
 #include "UILogForm.h"
 #include "..\XrCore\os_clipboard.h"
 #include "..\XrEngine\XR_IOConsole.h"
+#include "..\xrEUI\xrUITheme.h"
 #define MSG_ERROR 	0x00C4C4FF
 #define MSG_INFO  	0x00E6FFE7
 #define MSG_CONF 	0x00FFE6E7
@@ -35,6 +36,14 @@ void UILogForm::Show()
 	bAllowLogCommands = true;
 }
 
+void UILogForm::SetActive()
+{
+	if (!bAllowLogCommands)
+		bAllowLogCommands = true;
+
+	//ImGui::SetWindowFocus("Log");
+}
+
 void UILogForm::Hide()
 {
 	bAllowLogCommands = false;
@@ -42,7 +51,7 @@ void UILogForm::Hide()
 
 void UILogForm::Update()
 {
-	static bool FistRun = false;
+	static bool FirstRun = false;
 	if (bAllowLogCommands)
 	{
 		bool NeedCopy = false;
@@ -75,24 +84,28 @@ void UILogForm::Update()
 			xr_string CopyLog;
 			for (int i = 0; i < GetList()->size(); i++)
 			{
-
-				ImVec4 Color = { 1,1,1,1 };
+				CUIThemeManager& theme_manager = CUIThemeManager::Get();
+				ImVec4 Color = theme_manager.log_color_default;
 				const char* Str = GetList()->at(i).c_str();
+
+				if (Str == nullptr || xr_strlen(Str) == 0)
+					continue;
+
 				if (m_Filter[0] && strstr(Str, m_Filter)==0)
 				{
 					continue;
 				}
 				if (strncmp(Str, "! ", 2) == 0)
 				{
-					Color = { 1,0,0,1 };
+					Color = theme_manager.log_color_error;
 				}
 				if (strncmp(Str, "~ ", 2) == 0)
 				{
-					Color = { 1,1,0,1 };
+					Color = theme_manager.log_color_warning;
 				}
 				if (strncmp(Str, "* ", 2) == 0)
 				{
-					Color = { 0.5,0.5,0.5,1 };
+					Color = theme_manager.log_color_debug;
 				}
 
 				ImGui::PushStyleColor(ImGuiCol_Text, Color);
@@ -112,9 +125,9 @@ void UILogForm::Update()
 			{
 				os_clipboard::copy_to_clipboard(CopyLog.c_str());
 			}
-			if (bAutoScroll && ImGui::GetScrollY() >= ImGui::GetScrollMaxY()|| FistRun==false)ImGui::SetScrollHereY();
-
-			FistRun = true;
+			if (bAutoScroll && ImGui::GetScrollY() >= ImGui::GetScrollMaxY()|| FirstRun==false)
+				ImGui::SetScrollHereY();
+			FirstRun = true;
 		}
 		ImGui::EndChild();
 		ImGuiInputTextFlags input_text_flags = ImGuiInputTextFlags_EnterReturnsTrue ;
@@ -131,7 +144,7 @@ void UILogForm::Update()
 	}
 	else
 	{
-		FistRun = false;
+		FirstRun = false;
 	}
 }
 
@@ -142,6 +155,6 @@ void UILogForm::Destroy()
 
 xr_vector<xr_string>* UILogForm::GetList()
 {
-	if (!List)List = xr_new<xr_vector<xr_string>>();
+	if (!List)List = new xr_vector<xr_string>();
 	return List;
 }

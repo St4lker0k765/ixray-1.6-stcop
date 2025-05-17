@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "gameobject.h"
+#include "GameObject.h"
 #include "restriction_space.h"
 #include "../xrScripts/script_export_space.h"
 
@@ -59,6 +59,8 @@ public:
 	IC		bool				actual				() const;
 	virtual	CSpaceRestrictor	*cast_restrictor	() {return this;}
 	virtual	bool				register_schedule	() const {return false;}
+
+	virtual		void	shedule_Update				(u32 dt);
 
 	IC RestrictionSpace::ERestrictorTypes restrictor_type() const; 
 	IC void change_restrictor_type(RestrictionSpace::ERestrictorTypes);

@@ -8,20 +8,21 @@
 
 #include "../xrRenderDX9/dx9ShaderUtils.h"
 
-#include "../../xrEngine/igame_persistent.h"
-#include "../../xrEngine/environment.h"
-#include "../xrRender/fbasicvisual.h"
+#include "../../xrEngine/IGame_Persistent.h"
+#include "../../xrEngine/Environment.h"
+#include "../xrRender/FBasicVisual.h"
 #include "../../xrEngine/CustomHUD.h"
 #include "../../xrEngine/xr_object.h"
-#include "../../xrEngine/fmesh.h"
+#include "../../xrEngine/Fmesh.h"
 #include "../xrRender/SkeletonCustom.h"
-#include "../xrRender/lighttrack.h"
+#include "../xrRender/LightTrack.h"
 #include "../xrRender/dxRenderDeviceRender.h"
 #include "../xrRender/dxWallMarkArray.h"
 #include "../xrRender/dxUIShader.h"
 #include "../../xrCore/git_version.h"
 
-using	namespace		R_dsgraph;
+#include "../../xrParticles/ParticlesAsyncManager.h"
+using namespace R_dsgraph;
 
 CRender													RImplementation;
 
@@ -78,7 +79,7 @@ void					CRender::create					()
 	o.color_mapping = v_dev >= v_need && !Core.ParamsData.test(ECoreParams::nocolormap);
 	Msg("* color_mapping: %s, dev(%d),need(%d)", o.color_mapping ? "used" : "unavailable", v_dev, v_need);
 
-	m_skinning					= -1;
+	Engine.External.SetSkinningMode();
 
 	// disasm
 	o.disasm					= Core.ParamsData.test(ECoreParams::disasm);
@@ -99,39 +100,39 @@ void					CRender::create					()
 
 	xrRender_apply_tf			();
 	::PortalTraverser.initialize();
+	Device.ModelDefferClear = xr_make_delegate(Models, &CModelPool::DeleteQueuedDeffer);
 }
 
-void					CRender::destroy				()
+void CRender::destroy()
 {
-	m_bMakeAsyncSS				= false;
-	::PortalTraverser.destroy	();
-//.	HWOCC.occq_destroy			();
-	PSLibrary.OnDestroy			();
-	
-	xr_delete					(L_Dynamic);
-	xr_delete					(Models);
-	
-	//*** Components
-	xr_delete					(Target);
-	Device.seqFrame.Remove		(this);
+	m_bMakeAsyncSS = false;
+	::PortalTraverser.destroy();
+	//.	HWOCC.occq_destroy			();
+	PSLibrary.OnDestroy();
 
-	r_dsgraph_destroy			();
+	xr_delete(L_Dynamic);
+	xr_delete(Models);
+
+	//*** Components
+	xr_delete(Target);
+	Device.seqFrame.Remove(this);
+
+	r_dsgraph_destroy();
+	Device.ModelDefferClear = nullptr;
 }
 
-void					CRender::reset_begin			()
+void CRender::reset_begin()
 {
 	if (b_loaded)
 	{
-		Device.remove_from_seq_parallel(fastdelegate::FastDelegate0<>(Details, &CDetailManager::MT_CALC));
 		Details->Unload();
 		xr_delete(Details);
 	}
 
-	xr_delete					(Target);
-//.	HWOCC.occq_destroy			();
+	xr_delete(Target);
 }
 
-void					CRender::reset_end				()
+void CRender::reset_end()
 {
 	xrRender_apply_tf			();
 //.	HWOCC.occq_create			(occq_size);
@@ -150,9 +151,15 @@ void					CRender::reset_end				()
 	m_bFirstFrameAfterReset = true;
 }
 
-void					CRender::OnFrame				()
+void CRender::OnFrame()
 {
-	Models->DeleteQueue	();
+	Models->DeleteQueue();
+
+	//Lights Delete queue
+	for (light* L : v_all_lights_dque)
+		xr_delete(L);
+
+	v_all_lights_dque.clear();
 }
 
 // Implementation
@@ -165,6 +172,12 @@ void					CRender::model_Delete			(IRenderVisual* &V, BOOL bDiscard)
 { 
 	dxRender_Visual* pVisual = (dxRender_Visual*)V;
 	Models->Delete(pVisual, bDiscard);
+	V = 0;
+}
+void					CRender::model_Delete_Deffered			(IRenderVisual* &V)		
+{ 
+	dxRender_Visual* pVisual = (dxRender_Visual*)V;
+	Models->DeleteDeffered(pVisual);
 	V = 0;
 }
 IRender_DetailModel*	CRender::model_CreateDM			(IReader*F)
@@ -212,6 +225,17 @@ IDirect3DIndexBuffer9*	CRender::getIB					(int id)			{ VERIFY(id<int(IB.size()))
 IRender_Target*			CRender::getTarget				()					{ return Target;										}
 FSlideWindowItem*		CRender::getSWI					(int id)			{ VERIFY(id<int(SWIs.size()));		return &SWIs[id];	}
 
+CRender::SurfaceParams CRender::getSurface(const char* nameTexture)
+{
+	auto texture = DEV->_CreateTexture(nameTexture);
+	SurfaceParams surface = {};
+	surface.Surface = texture->pSurface;
+	surface.w = texture->get_Width();
+	surface.h = texture->get_Height();
+
+	return surface;
+}
+
 IRender_Light*			CRender::light_create			()					{ return L_DB->Create();								}
 
 IRender_Glow*			CRender::glow_create			()					{ return new CGlow();								}
@@ -221,11 +245,11 @@ void					CRender::flush					()					{ r_dsgraph_render_graph	(0);						}
 BOOL					CRender::occ_visible			(vis_data& P)		{ return HOM.visible(P);								}
 BOOL					CRender::occ_visible			(sPoly& P)			{ return HOM.visible(P);								}
 BOOL					CRender::occ_visible			(Fbox& P)			{ return HOM.visible(P);								}
-ENGINE_API	extern BOOL g_bRendering;
-void					CRender::add_Visual				(IRenderVisual* V, bool ignore_opt)
+ENGINE_API	extern xr_atomic_bool g_bRendering;
+void					CRender::add_Visual				(IRenderVisual* V)
 {
 	VERIFY				(g_bRendering);
-	add_leafs_Dynamic	((dxRender_Visual*)V, ignore_opt);
+	add_leafs_Dynamic	((dxRender_Visual*)V);
 }
 void					CRender::add_Geometry			(IRenderVisual* V ){ add_Static((dxRender_Visual*)V,View->getMask());						}
 void					CRender::add_StaticWallmark		(ref_shader& S, const Fvector& P, float s, CDB::TRI* T, Fvector* verts)
@@ -351,13 +375,6 @@ extern float		r_ssaLOD_A,			r_ssaLOD_B;
 extern float		r_ssaGLOD_start,	r_ssaGLOD_end;
 extern float		r_ssaHZBvsTEX;
 
-ICF bool			pred_sp_sort		(ISpatial* _1, ISpatial* _2)
-{
-	float	d1		= _1->spatial.sphere.P.distance_to_sqr(Device.vCameraPosition);
-	float	d2		= _2->spatial.sphere.P.distance_to_sqr(Device.vCameraPosition);
-	return	d1<d2;
-}
-
 void CRender::Calculate				()
 {
 	Device.Statistic->RenderCALC.Begin();
@@ -377,8 +394,10 @@ void CRender::Calculate				()
 	// Frustum & HOM rendering
 	ViewBase.CreateFromMatrix		(Device.mFullTransform,FRUSTUM_P_LRTB|FRUSTUM_P_FAR);
 	View							= 0;
-	HOM.Enable						();
-	HOM.Render						(ViewBase);
+	if (!ps_r2_ls_flags.test(R2FLAG_EXP_MT_CALC))	{
+		HOM.Enable									();
+		HOM.Render									(ViewBase);
+	}
 	gm_SetNearer					(FALSE);
 	phase							= PHASE_NORMAL;
 
@@ -414,6 +433,11 @@ void CRender::Calculate				()
 	marker	++;
 	if (pLastSector)
 	{
+		{
+			PROF_EVENT("lights_spatial_move");
+			for (light* L : v_all_lights)
+				L->spatial_move();
+		}
 		// Traverse sector/portal structure
 		PortalTraverser.traverse	
 			(
@@ -441,15 +465,11 @@ void CRender::Calculate				()
 		// Traverse object database
 		if  (psDeviceFlags.test(rsDrawDynamic))	{
 			g_SpatialSpace->q_frustum
-				(
-				lstRenderables,
-				ISpatial_DB::O_ORDERED,
-				STYPE_RENDERABLE + STYPE_PARTICLE + STYPE_LIGHTSOURCE,
-				ViewBase
-				);
-
-			// Exact sorting order (front-to-back)
-			std::sort							(lstRenderables.begin(),lstRenderables.end(),pred_sp_sort);
+			(
+			lstRenderables,
+			ISpatial_DB::O_ORDERED,
+			STYPE_RENDERABLE + STYPE_PARTICLE + STYPE_LIGHTSOURCE,
+			ViewBase);//nearest sorting
 
 			// Determine visibility for dynamic part of scene
 			set_Object							(0);
@@ -473,7 +493,7 @@ void CRender::Calculate				()
 			}
 			for (u32 o_it=0; o_it<lstRenderables.size(); o_it++)
 			{
-				ISpatial*	spatial		= lstRenderables[o_it];		spatial->spatial_updatesector	();
+				ISpatial*	spatial		= lstRenderables[o_it].get();		spatial->spatial_updatesector	();
 				CSector*	sector		= (CSector*)spatial->spatial.sector	;
 				if	(0==sector)										
 					continue;	// disassociated from S/P structure
@@ -512,12 +532,10 @@ void CRender::Calculate				()
 							renderable->renderable_Render	();
 							set_Object						(0);	//? is it needed at all
 						}
-						else
+						else if (CGlow* glow = spatial->dcast_CGlow())
 						{
 							// It may be an glow
-							CGlow*		glow				= fast_dynamic_cast<CGlow*>(spatial);
-							VERIFY							(glow);
-							L_Glows->add					(glow);
+							L_Glows->add(glow);
 						}
 						break;	// exit loop on frustums
 					}
@@ -527,13 +545,14 @@ void CRender::Calculate				()
 				{
 					if ( ViewBase.testSphere_dirty(spatial->spatial.sphere.P,spatial->spatial.sphere.R) )
 					{
-						VERIFY								(spatial->spatial.type & STYPE_LIGHTSOURCE);
+						VERIFY(spatial->spatial.type & STYPE_LIGHTSOURCE);
 						// lightsource
-						if(light*			L					= (light*)	spatial->dcast_Light	())
+						if (light* L = (light*)spatial->dcast_Light())
 						{
-							if (L->spatial.sector)				{
-								vis_data&		vis		= L->get_homdata	( );
-								if	(HOM.visible(vis))	L_DB->add_light		(L);
+							if (L->SpatialComponent->spatial.sector)
+							{
+								vis_data& vis = L->get_homdata();
+								if (HOM.visible(vis))	L_DB->add_light(L);
 							}
 						}
 					}
@@ -607,7 +626,6 @@ void	CRender::Render		()
 
 	r_pmask										(true,false);	// disable priority "1"
 	o.vis_intersect								= TRUE			;
-	HOM.Disable									();
 	L_Dynamic->render							(0);				// addititional light sources
 	if(Wallmarks){
 		g_r										= 0;
@@ -619,6 +637,7 @@ void	CRender::Render		()
 	r_pmask										(true,true);	// enable priority "0" and "1"
 	if(L_Shadows)L_Shadows->render				();				// ... and shadows
 	r_dsgraph_render_lods						(false,true);	// lods - FB
+	CParticlesAsync::Wait();
 	r_dsgraph_render_graph						(1);			// normal level, secondary priority
 	L_Dynamic->render							(1);			// addititional light sources, secondary priority
 	phase = PHASE_NORMAL;
@@ -809,6 +828,8 @@ HRESULT	CRender::shader_compile			(
 		void*&							result
 	)
 {
+	const int m_skinning = Engine.External.GetSkinningMode();
+
 	D3D_SHADER_MACRO defines[128];
 	int def_it = 0;
 

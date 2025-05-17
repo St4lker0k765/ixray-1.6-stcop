@@ -10,7 +10,7 @@
 #include "pch_script.h"
 #include "ai_monsters_misc.h"
 #include "../ai_space.h"
-#include "../custommonster.h"
+#include "../CustomMonster.h"
 #include "../ef_storage.h"
 #include "../seniority_hierarchy_holder.h"
 #include "../team_hierarchy_holder.h"
@@ -22,7 +22,7 @@
 #include "../ef_pattern.h"
 #include "../memory_manager.h"
 #include "../enemy_manager.h"
-#include "../level.h"
+#include "../Level.h"
 #include "../agent_manager.h"
 #include "../agent_member_manager.h"
 #include "stalker/ai_stalker.h"
@@ -110,12 +110,12 @@ u32 dwfChooseAction(u32 dwActionRefreshRate, float fMinProbability0, float fMinP
 	GroupHierarchyHolder::MEMBER_REGISTRY	Members;
 	if (!tpEntity)
 		for (int k=0; k<(int)Group.members().size(); ++k) {
-			if (Group.members()[k]->g_Alive() && ((Group.members()[k]->spatial.type & STYPE_VISIBLEFORAI) == STYPE_VISIBLEFORAI))
+			if (Group.members()[k]->g_Alive() && ((Group.members()[k]->SpatialComponent->spatial.type & STYPE_VISIBLEFORAI) == STYPE_VISIBLEFORAI))
 				Members.push_back(Group.members()[k]);
 		}
 	else
 		for (int k=0; k<(int)Group.members().size(); ++k) {
-			if (Group.members()[k]->g_Alive() && ((Group.members()[k]->spatial.type & STYPE_VISIBLEFORAI) == STYPE_VISIBLEFORAI))
+			if (Group.members()[k]->g_Alive() && ((Group.members()[k]->SpatialComponent->spatial.type & STYPE_VISIBLEFORAI) == STYPE_VISIBLEFORAI))
 				if (tpEntity->Position().distance_to(Group.members()[k]->Position()) < fGroupDistance) {
 
 					if (!stalker) {

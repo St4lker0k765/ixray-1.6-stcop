@@ -54,12 +54,12 @@ void UIObjectList::Draw()
 			for (UITreeItem* Item : m_Root.Items)
 			{
 				UIObjectListItem* RItem = (UIObjectListItem*)Item;
-				if (RItem->bIsSelected)
+				if (RItem->Object->Selected())
 				{
 					RItem->Object->Select(true);
 					Fbox bb;
 					if (RItem->Object->GetBox(bb))
-						EDevice->m_Camera.ZoomExtents(bb);
+						UI->CurrentView().m_Camera.ZoomExtents(bb);
 
 					UI->RedrawScene();
 
@@ -95,6 +95,9 @@ void UIObjectList::Draw()
 		ImGui::Separator();
 
 		DrawObjects();
+
+		ImGui::Text("Find: ", "");
+		ImGui::SameLine();
 		if (ImGui::InputText("##value", m_Filter, sizeof(m_Filter)))
 		{
 			m_Root.ClearSelcted();
@@ -127,7 +130,7 @@ void UIObjectList::Update()
 
 void UIObjectList::Show()
 {
-	if (Form == nullptr)Form = xr_new< UIObjectList>();
+	if (Form == nullptr)Form = new UIObjectList();
 	Refresh();
 }
 
@@ -146,7 +149,7 @@ void UIObjectList::Refresh()
 	Form->m_cur_cls = LTools->CurrentClassID();
 	for (SceneToolsMapPairIt it = Scene->FirstTool(); it != Scene->LastTool(); ++it)
 	{
-		ESceneCustomOTool* ot = dynamic_cast<ESceneCustomOTool*>(it->second);
+		ESceneCustomOTool* ot = smart_cast<ESceneCustomOTool*>(it->second);
 		if (ot && ((Form->m_cur_cls == OBJCLASS_DUMMY) || (it->first == Form->m_cur_cls)))
 		{
 			if (it->first == OBJCLASS_DUMMY)
@@ -186,10 +189,11 @@ void UIObjectList::Refresh()
 				}
 				else
 				{
-					UIObjectListItem* Item = static_cast<UIObjectListItem*>(Form->m_Root.AppendItem(Obj->GetName(), 0)); 
+					UIObjectListItem* Item = static_cast<UIObjectListItem*>(Form->m_Root.AppendItem(Obj->GetName(), 0));
 					VERIFY(Item);
 
-					Item->Object = Obj;
+					Item->bIsSelected = Obj->Selected();
+					Item->Object = Obj; 
 				}
 				
 			}
@@ -207,6 +211,9 @@ void UIObjectList::DrawObjects()
 
 	if (ImGui::BeginTable("objects", 1, flags, ImVec2(0, -ImGui::GetFrameHeight() - 4)))
 	{
+		//IsDocked = ImGui::IsWindowDocked();
+		IsFocused = IsDocked || ImGui::IsWindowFocused();
+
 		ImGui::TableSetupScrollFreeze(1, 1);
 		ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthStretch);
 		ImGui::TableHeadersRow();

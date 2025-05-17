@@ -1,7 +1,7 @@
 #include "stdafx.h"
-#include "../../xrEngine/igame_persistent.h"
-#include "../../xrEngine/environment.h"
-#include "fvf.h"
+#include "../../xrEngine/IGame_Persistent.h"
+#include "../../xrEngine/Environment.h"
+#include "FVF.h"
 
 CPortalTraverser	PortalTraverser;
 
@@ -16,6 +16,7 @@ xr_vector<IRender_Sector*>				dbg_sectors;
 
 void CPortalTraverser::traverse			(IRender_Sector* start, CFrustum& F, Fvector& vBase, Fmatrix& mXFORM, u32 options)
 {
+	PROF_EVENT("CPortalTraverser::traverse")
 	Fmatrix			m_viewport_01	= {
 		1.f/2.f,			0.0f,				0.0f,		0.0f,
 		0.0f,				-1.f/2.f,			0.0f,		0.0f,
@@ -61,7 +62,8 @@ void CPortalTraverser::traverse			(IRender_Sector* start, CFrustum& F, Fvector& 
 
 void CPortalTraverser::fade_portal	(CPortal* _p, float ssa)
 {
-	f_portals.push_back				(std::make_pair(_p,ssa));
+	if(RImplementation.HOM.visible(_p->S))
+		f_portals.push_back				(std::make_pair(_p,ssa));
 }
 void CPortalTraverser::initialize	()
 {

@@ -6,10 +6,10 @@
 //#include "xrLC_GlobalData.h"
 #include "light_point.h"
 //#include "xrDeflector.h"
-#include "../../xrcdb/xrcdb.h"
-#include "../shader_xrlc.h"
+#include "../../xrCDB/xrCDB.h"
+#include "../Shader_xrLC.h"
 #include "mu_model_face.h"
-#include "xrface.h"
+#include "xrFace.h"
 #include "xrLC_GlobalData.h"
 
 void LightPoint(CDB::COLLIDER* DB, CDB::MODEL* MDL, base_color_c &C, Fvector &P, Fvector &N, base_lighting& lights, u32 flags, Face* skip);
@@ -220,7 +220,7 @@ void xrMU_Model::calc_lighting	()
 	CDB::CollectorPacked	CL	(BB,(u32)m_vertices.size(),(u32)m_faces.size());
 	export_cform_rcast		(CL,Fidentity);
 
-	CDB::MODEL*				M	= xr_new<CDB::MODEL>	();
+	CDB::MODEL*				M	= new CDB::MODEL();
 	M->build				(CL.getV(),(u32)CL.getVS(),CL.getT(),(u32)CL.getTS());
 
 	calc_lighting			(color,Fidentity,M,inlc_global_data()->L_static(),LP_dont_rgb+LP_dont_sun);

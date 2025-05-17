@@ -36,7 +36,7 @@ SceneBuilder::~SceneBuilder()
 
 #define CHECK_BREAK     	if (UI->NeedAbort()) break;
 #define VERIFY_COMPILE(x,c1,c2) CHECK_BREAK \
-							if (!x){ELog.Msg(mtError, "ERROR: %s %s", c1,c2); break;}
+							if (!x){error_text = std::format("ERROR: {} {}", c1, c2).c_str(); break;}
 
 BOOL SceneBuilder::Compile(bool b_selected_only, bool show_message )
 {
@@ -49,9 +49,9 @@ BOOL SceneBuilder::Compile(bool b_selected_only, bool show_message )
 		return TRUE;
 	}
 
-	xr_string error_text		= "";
+    xr_string error_text = {};
+
 	UI->ResetBreak				();
-	if(UI->ContainEState(esBuildLevel)) return false;
 	ELog.Msg( mtInformation, "Building started..." );
 
     UI->BeginEState(esBuildLevel);
@@ -97,15 +97,19 @@ BOOL SceneBuilder::Compile(bool b_selected_only, bool show_message )
 		    Clear			();
         } while(0);
 
-        if (!error_text.empty()) 	ELog.DlgMsg(mtError,error_text.c_str());
-        else if (UI->NeedAbort())	ELog.DlgMsg(mtInformation,"Building terminated.");
-        else					if(show_message)	ELog.DlgMsg(mtInformation,"Building OK.");
-    }catch(...){
-    	ELog.DlgMsg(mtError,"Error has occured in builder routine. Editor aborted.");
-        UI->EndEState();
+        if (!error_text.empty())
+            ELog.DlgMsg(mtError, error_text.c_str());
+        else if (UI->NeedAbort())
+            ELog.DlgMsg(mtInformation, "Building terminated.");
+        else if (show_message)
+            ELog.DlgMsg(mtInformation, "Building OK.");
+    }
+    catch (...) {
+        ELog.DlgMsg(mtError, "Error has occured in builder routine. Editor aborted.");
+        UI->EndEState(esBuildLevel);
         return false;
     }
-    UI->EndEState();
+    UI->EndEState(esBuildLevel);
 
 	return error_text.empty();
 }
@@ -140,9 +144,61 @@ BOOL SceneBuilder::MakeGame( )
     	ELog.DlgMsg(mtError,"Error has occured in builder routine. Editor aborted.");
         abort();
     }
-    UI->EndEState();
+    UI->EndEState(esBuildLevel);
 
 	return error_text.empty();
+}
+
+BOOL SceneBuilder::MakePuddles()
+{
+    ELog.Msg(mtInformation, "Making started...");
+
+    ESceneCustomOTool* ToolPtr = (ESceneCustomOTool*)Scene->GetTool(OBJCLASS_PUDDLES);
+    auto& ObjectList = ToolPtr->GetObjects();
+
+    if (ObjectList.empty())
+    {
+        ELog.Msg(mtError, "Empty puddles...");
+        return false;
+    }
+
+    PreparePath();
+
+    xr_string ltx_filename = MakeLevelPath("level.puddles");
+
+    if (FS.exist(ltx_filename.c_str()))
+        EFS.MarkFile(ltx_filename.c_str(), true);
+
+    // -- defaults --           
+    IWriter* F = FS.w_open(ltx_filename.c_str());
+
+    for (CCustomObject* Object : ObjectList)
+    {
+        string128 buff;
+        sprintf(buff, "[%s]", Object->FName.c_str());
+        F->w_string(buff);
+
+        RtlZeroMemory(buff, sizeof(buff));
+
+        sprintf(buff, "position = %0.3f, %0.3f, %0.3f", Object->FPosition.x, Object->FPosition.y, Object->FPosition.z);
+        F->w_string(buff);
+        RtlZeroMemory(buff, sizeof(buff));
+
+        sprintf(buff, "rotation = %0.3f", Object->FRotation.y);
+        F->w_string(buff);
+        RtlZeroMemory(buff, sizeof(buff));
+
+        sprintf(buff, "max_height = %0.3f", Object->FScale.y);
+        F->w_string(buff);
+        RtlZeroMemory(buff, sizeof(buff));
+
+        sprintf(buff, "size_xz = %0.3f, %0.3f", Object->FScale.x, Object->FScale.z);
+        F->w_string(buff);
+    }
+
+    FS.w_close(F);
+
+    return true;
 }
 
 
@@ -163,17 +219,21 @@ BOOL SceneBuilder::MakeAIMap()
 
 BOOL SceneBuilder::MakeDetails()
 {
-	xr_string error_text;
-    do{
-		VERIFY_COMPILE(PreparePath(),				"Failed to prepare level path.","");
-        // save details
-		VERIFY_COMPILE(Scene->GetTool(OBJCLASS_DO)->Export(m_LevelPath), "Export failed.","");
-    }while(0);
-    if (!error_text.empty()) 	ELog.DlgMsg(mtError,error_text.c_str());
-    else if (UI->NeedAbort())	ELog.DlgMsg(mtInformation,"Building terminated.");
-    else						ELog.DlgMsg(mtInformation,"Details succesfully exported.");
+    UI->BeginEState(esBuildLevel);
 
-	return error_text.empty();
+    xr_string error_text;
+    do {
+        VERIFY_COMPILE(PreparePath(), "Failed to prepare level path.", "");
+        // save details
+        VERIFY_COMPILE(Scene->GetTool(OBJCLASS_DO)->Export(m_LevelPath), "Export failed.", "");
+    } while (0);
+    if (!error_text.empty()) 	ELog.DlgMsg(mtError, error_text.c_str());
+    else if (UI->NeedAbort())	ELog.DlgMsg(mtInformation, "Building terminated.");
+    else						ELog.DlgMsg(mtInformation, "Details succesfully exported.");
+
+    UI->EndEState(esBuildLevel);
+
+    return error_text.empty();
 }
 
 
@@ -181,7 +241,6 @@ BOOL SceneBuilder::MakeHOM( )
 {
 	xr_string error_text="";
 	UI->ResetBreak();
-	if(UI->ContainEState(esBuildLevel)) return false;
 	ELog.Msg( mtInformation, "Making started..." );
 
     UI->BeginEState(esBuildLevel);
@@ -199,7 +258,7 @@ BOOL SceneBuilder::MakeHOM( )
     	ELog.DlgMsg(mtError,"Error has occured in builder routine. Editor aborted.");
         abort();
     }
-    UI->EndEState();
+    UI->EndEState(esBuildLevel);
 
 	return error_text.empty();
 }
@@ -209,7 +268,6 @@ BOOL SceneBuilder::MakeSOM( )
 {
 	xr_string error_text="";
 	UI->ResetBreak();
-	if(UI->ContainEState(esBuildLevel)) return false;
 	ELog.Msg( mtInformation, "Making started..." );
 
     UI->BeginEState(esBuildLevel);
@@ -227,7 +285,7 @@ BOOL SceneBuilder::MakeSOM( )
     	ELog.DlgMsg(mtError,"Error has occured in builder routine. Editor aborted.");
         abort();
     }
-    UI->EndEState();
+    UI->EndEState(esBuildLevel);
 
 	return error_text.empty();
 }

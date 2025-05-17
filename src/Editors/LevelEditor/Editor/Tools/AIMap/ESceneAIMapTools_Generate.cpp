@@ -241,7 +241,7 @@ void ESceneAIMapTool::hash_Initialize()
 {
 	for (int i=0; i<=HDIM_X; i++)
 		for (int j=0; j<=HDIM_Z; j++){
-//			m_HASH[i][j]			= xr_new<AINodeVec>();
+//			m_HASH[i][j]			= new AINodeVec();
 			m_HASH[i][j].clear		();
 			m_HASH[i][j].reserve	(64);
 		}
@@ -368,7 +368,7 @@ SAINode* ESceneAIMapTool::BuildNode(Fvector& vFrom, Fvector& vAt, bool bIC, bool
 			// register xr_new<node
             AINodeVec* V 		= HashMap(N.Pos);
             if (V){ 
-	        	m_Nodes.push_back	(xr_new<SAINode>(N));
+	        	m_Nodes.push_back	(new SAINode(N));
                 V->push_back		(m_Nodes.back());
                 return m_Nodes.back();
             }else return 0;
@@ -533,7 +533,7 @@ SAINode* ESceneAIMapTool::GetNode(Fvector vAt, bool bIC)	// return node's index
 	SnapXZ			(vAt,m_Params.fPatchSize);
 
 	// *** set up xr_new<node
-	SAINode* N 		= xr_new<SAINode>();
+	SAINode* N 		= new SAINode();
     SAINode* R		= 0;
 	if (CreateNode(vAt,*N,bIC)){
 		R 			= FindNode(N->Pos);
@@ -605,7 +605,7 @@ bool ESceneAIMapTool::GenerateMap(bool bFromSelectedOnly)
             {
                 snap_bb.invalidate	();
                 for (ObjectIt o_it=m_SnapObjects.begin(); o_it!=m_SnapObjects.end(); o_it++){
-                    CSceneObject* 	S = dynamic_cast<CSceneObject*>(*o_it); VERIFY(S);
+                    CSceneObject* 	S = smart_cast<CSceneObject*>(*o_it); VERIFY(S);
                     avg_face_cnt	+= S->GetFaceCount();
                     avg_vert_cnt	+= S->GetVertexCount();
                     mesh_cnt	   	+= S->Meshes()->size();
@@ -621,7 +621,7 @@ bool ESceneAIMapTool::GenerateMap(bool bFromSelectedOnly)
             Fvector verts[3];
             for (ObjectIt o_it=m_SnapObjects.begin(); o_it!=m_SnapObjects.end(); o_it++)
             {
-                CSceneObject* 		S = dynamic_cast<CSceneObject*>(*o_it); VERIFY(S);
+                CSceneObject* 		S = smart_cast<CSceneObject*>(*o_it); VERIFY(S);
                 CEditableObject*    E = S->GetReference(); VERIFY(E);
                 EditMeshVec& 		_meshes = E->Meshes();
                 for (EditMeshIt m_it=_meshes.begin(); m_it!=_meshes.end(); m_it++)
@@ -688,6 +688,9 @@ tm.GetElapsed_sec();
     }else{
     	ELog.DlgMsg(mtError,"Fill snap list before generating slots!");
     }
+
+    IsLoaded = true;
+
     return bRes;
 }
 
@@ -1012,7 +1015,7 @@ void ESceneAIMapTool::SmoothNodes()
             );
             if (vNorm.y<0) vNorm.invert();
             // create _new node
-            SAINode* NEW 	= xr_new<SAINode>(N);
+            SAINode* NEW 	= new SAINode(N);
             NEW->n1 		= (SAINode*)(N.n1?N.n1->idx:InvalidNode);
             NEW->n2 		= (SAINode*)(N.n2?N.n2->idx:InvalidNode);
             NEW->n3 		= (SAINode*)(N.n3?N.n3->idx:InvalidNode);
@@ -1023,7 +1026,7 @@ void ESceneAIMapTool::SmoothNodes()
             smoothed.push_back	(NEW);
         }else{
             // create _new node
-            SAINode* NEW 	= xr_new<SAINode>(N);
+            SAINode* NEW 	= new SAINode(N);
             NEW->n1 		= (SAINode*)(N.n1?N.n1->idx:InvalidNode);
             NEW->n2 		= (SAINode*)(N.n2?N.n2->idx:InvalidNode);
             NEW->n3 		= (SAINode*)(N.n3?N.n3->idx:InvalidNode);

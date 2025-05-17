@@ -1,9 +1,9 @@
 #include "stdafx.h"
 #include "pseudo_gigant.h"
 #include "pseudo_gigant_step_effector.h"
-#include "../../../actor.h"
+#include "../../../Actor.h"
 #include "../../../ActorEffector.h"
-#include "../../../level.h"
+#include "../../../Level.h"
 #include "pseudogigant_state_manager.h"
 #include "../monster_velocity_space.h"
 #include "../control_animation_base.h"
@@ -424,8 +424,8 @@ void CPseudoGigant::OnEvent(NET_Packet& P, u16 type)
 		clamp(hit_value, 0.f, 1.f);
 
 		// запустить эффектор
-		Actor()->Cameras().AddCamEffector(xr_new<CMonsterEffectorHit>(m_threaten_effector.ce_time, m_threaten_effector.ce_amplitude * hit_value, m_threaten_effector.ce_period_number, m_threaten_effector.ce_power * hit_value));
-		Actor()->Cameras().AddPPEffector(xr_new<CMonsterEffector>(m_threaten_effector.ppi, m_threaten_effector.time, m_threaten_effector.time_attack, m_threaten_effector.time_release, hit_value));
+		Actor()->Cameras().AddCamEffector(new CMonsterEffectorHit(m_threaten_effector.ce_time, m_threaten_effector.ce_amplitude * hit_value, m_threaten_effector.ce_period_number, m_threaten_effector.ce_power * hit_value));
+		Actor()->Cameras().AddPPEffector(new CMonsterEffector(m_threaten_effector.ppi, m_threaten_effector.time, m_threaten_effector.time_attack, m_threaten_effector.time_release, hit_value));
 
 		// развернуть камеру
 		if (pA->cam_Active()) {

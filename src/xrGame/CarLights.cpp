@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "CarLights.h"
 #ifdef DEBUG
 
@@ -101,7 +101,7 @@ void SCarLight::TurnOff()
 bool SCarLight::isOn()
 {
 	VERIFY(!physics_world()->Processing());
-	VERIFY(light_render->get_active()==glow_render->get_active());
+	VERIFY(Device.IsEditorMode() || light_render->get_active()==glow_render->get_active());
 	return light_render->get_active();
 }
 

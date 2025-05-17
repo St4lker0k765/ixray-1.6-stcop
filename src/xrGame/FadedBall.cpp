@@ -1,9 +1,9 @@
 ///////////////////////////////////////////////////////////////
 // FadedBall.cpp
-// FadedBall - артефакт блеклый шар
+// FadedBall - Р°СЂС‚РµС„Р°РєС‚ Р±Р»РµРєР»С‹Р№ С€Р°СЂ
 ///////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "FadedBall.h"
 #include "../xrPhysics/PhysicsShell.h"
 

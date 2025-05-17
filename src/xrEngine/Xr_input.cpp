@@ -1,4 +1,4 @@
-﻿#include "stdafx.h"
+#include "stdafx.h"
 #pragma hdrstop
 
 #include "xr_input.h"
@@ -450,13 +450,12 @@ void CInput::MouseUpdate( )
 void CInput::iCapture(IInputReceiver *p)
 {
 	VERIFY(p);
-#ifndef _EDITOR
-	if (KBState[SDL_SCANCODE_LALT] || CImGuiManager::Instance().IsCapturingInputs())
+
+	if (!Device.IsEditorMode() && (KBState[SDL_SCANCODE_LALT] || CImGuiManager::Instance().IsCapturingInputs()))
 	{
 		NoInputUpdate();
 	} 
-	else 
-#endif
+	else
 	{
 		MouseUpdate();
 		GamepadUpdate();
@@ -520,11 +519,12 @@ void CInput::OnAppDeactivate	(void)
 
 void CInput::OnFrame()
 {
+	PROF_EVENT("CInput::OnFrame");
 	CScopeTimer Input(RDEVICE.Statistic->Input);
 
 	dwCurTime = RDEVICE.TimerAsync_MMT();
-#if !defined(_EDITOR) && !defined(MASTER_GOLD)
-	if (KBState[SDL_SCANCODE_LALT] || CImGuiManager::Instance().IsCapturingInputs())
+#if !defined(MASTER_GOLD)
+	if (!Device.IsEditorMode() && (KBState[SDL_SCANCODE_LALT] || CImGuiManager::Instance().IsCapturingInputs()))
 	{
 		NoInputUpdate();
 	} 
@@ -548,10 +548,12 @@ IInputReceiver* CInput::CurrentIR()
 void CInput::unacquire()
 {
 	SDL_SetRelativeMouseMode(false);
+	IsAcquire = false;
 }
 
 void CInput::acquire()
 {
+	IsAcquire = true;
 	SDL_SetRelativeMouseMode(true);
 }
 

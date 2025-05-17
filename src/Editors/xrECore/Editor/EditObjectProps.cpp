@@ -31,6 +31,7 @@ xr_token ECORE_API eo_type_token[]={
 	{ "Static",					0},
 	{ "Dynamic",				CEditableObject::eoDynamic},
 	{ "Progressive Dynamic",	CEditableObject::eoDynamic|CEditableObject::eoProgressive},
+	{ "Disable Opt Dynamic",	CEditableObject::eoDynamic|CEditableObject::eoSkipOpt},
 	{ "HOM",					CEditableObject::eoHOM},
 	{ "Multiple Usage",			CEditableObject::eoMultipleUsage|CEditableObject::eoUsingLOD},
 	{ "Sound Occluder",			CEditableObject::eoSoundOccluder},
@@ -50,7 +51,7 @@ void CEditableObject::FillBasicProps(LPCSTR pref, PropItemVec& items)
 	PHelper().CreateCaption		(items, PrepareKey(pref,"Version\\Modif Name"),	m_ModifName.c_str());
 	PHelper().CreateCaption		(items, PrepareKey(pref,"Version\\Creation Time"), ct.c_str());
 	PHelper().CreateCaption		(items, PrepareKey(pref,"Version\\Modified Time"), mt.c_str());
-    V=PHelper().CreateVector   	(items, PrepareKey(pref,"Transform\\Position"),	&t_vPosition,	-10000,	10000,0.01,2); 		V->OnChangeEvent.bind(this,&CEditableObject::OnChangeTransform);
+    V=PHelper().CreateVector   	(items, PrepareKey(pref,"Transform\\Position"),	&t_vPosition,	-100000,	100000,0.01,2); 		V->OnChangeEvent.bind(this,&CEditableObject::OnChangeTransform);
     V=PHelper().CreateAngle3   	(items, PrepareKey(pref,"Transform\\Rotation"),	&t_vRotate, 	-10000,	10000,0.1,1);		V->OnChangeEvent.bind(this,&CEditableObject::OnChangeTransform);
     V=PHelper().CreateVector   	(items, PrepareKey(pref,"Transform\\Scale"),	&t_vScale, 		0.01,	10000,0.01,2);			V->OnChangeEvent.bind(this,&CEditableObject::OnChangeTransform);
     V=PHelper().CreateCaption  	(items, PrepareKey(pref,"Transform\\BBox Min"),	shared_str().printf("{%3.2f, %3.2f, %3.2f}",VPUSH(GetBox().min)));
@@ -126,7 +127,3 @@ void CEditableObject::FillMotionList(LPCSTR pref, ListItemsVec& items, int modeI
     for (SMotionIt m_it=m_lst.begin(); m_it!=m_lst.end(); m_it++)
         LHelper().CreateItem(items, PrepareKey(pref, (*m_it)->Name()).c_str(), modeID, 0, *m_it);
 }
-
-
-
- 

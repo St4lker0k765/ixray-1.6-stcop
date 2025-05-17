@@ -35,12 +35,13 @@ private:
 private:
 	xr_vector<ModelDef>			Models;				// Reference / Base
 	xr_vector<dxRender_Visual*>	ModelsToDelete;		// 
+	xr_set<dxRender_Visual*>	ModelsToDeleteDeffer;		// 
 	REGISTRY					Registry;			// Just pairing of pointer / Name
 	POOL						Pool;				// Unused / Inactive
 	BOOL						bLogging;
     BOOL						bForceDiscard;
     BOOL						bAllowChildrenDuplicate;
-
+	xrCriticalSection			deffered_del_lock;
 	void						Destroy	();
 public:
                             CModelPool			();
@@ -57,9 +58,11 @@ public:
 	dxRender_Visual*			Create				(LPCSTR name, IReader* data=0);
 	dxRender_Visual*			CreateChild			(LPCSTR name, IReader* data);
 	void					Delete				(dxRender_Visual* &V, BOOL bDiscard=FALSE);
+	void					DeleteDeffered		(dxRender_Visual* &V);
 	void					Discard				(dxRender_Visual* &V, BOOL b_complete);
 	void					DeleteInternal		(dxRender_Visual* &V, BOOL bDiscard=FALSE);
 	void					DeleteQueue			();
+	void					DeleteQueuedDeffer	();
 
 	void					Logging				(BOOL bEnable)	{ bLogging=bEnable; }
 	

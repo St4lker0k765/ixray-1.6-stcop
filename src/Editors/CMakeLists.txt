@@ -26,12 +26,12 @@ endif()
 
 if (IXRAY_EDITORS)
     set_target_properties(xrECore PROPERTIES ${IXRAY_FOLDER_EDITOR_CORE})
-    
+
     set_target_properties(ParticlesEditor PROPERTIES ${IXRAY_FOLDER_EDITORS})
     set_target_properties(ActorEditor PROPERTIES ${IXRAY_FOLDER_EDITORS})
     set_target_properties(ShaderEditor PROPERTIES ${IXRAY_FOLDER_EDITORS})
     set_target_properties(LevelEditor PROPERTIES ${IXRAY_FOLDER_EDITORS})
-    
+
     if (NOT IXRAY_UTILS)
         set_target_properties(xrSE_Factory PROPERTIES ${IXRAY_FOLDER_EDITOR_EXCORE})
         set_target_properties(ETools PROPERTIES ${IXRAY_FOLDER_EDITOR_EXCORE})

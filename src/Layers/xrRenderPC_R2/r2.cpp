@@ -4,11 +4,11 @@
 
 #include "../xrRenderDX9/dx9ShaderUtils.h"
 #include "r2.h"
-#include "../xrRender/fbasicvisual.h"
+#include "../xrRender/FBasicVisual.h"
 #include "../../xrEngine/xr_object.h"
 #include "../../xrEngine/CustomHUD.h"
-#include "../../xrEngine/igame_persistent.h"
-#include "../../xrEngine/environment.h"
+#include "../../xrEngine/IGame_Persistent.h"
+#include "../../xrEngine/Environment.h"
 #include "../../xrEngine/ICore_GPU.h"
 #include "../xrRender/SkeletonCustom.h"
 #include "../xrRender/LightTrack.h"
@@ -95,11 +95,11 @@ static class cl_sun_shafts_intensity : public R_constant_setup
 extern ENGINE_API BOOL r2_sun_static;
 //////////////////////////////////////////////////////////////////////////
 // Just two static storage
-void					CRender::create					()
+void CRender::create()
 {
 	Device.seqFrame.Add	(this,REG_PRIORITY_HIGH+0x12345678);
 
-	m_skinning			= -1;
+	Engine.External.SetSkinningMode();
 
 	// hardware
 	o.smapsize			= ps_r2_smapsize;
@@ -226,11 +226,6 @@ void					CRender::create					()
 	o.distortion		= o.distortion_enabled;
 	o.disasm			= Core.ParamsData.test(ECoreParams::disasm);
 	o.forceskinw		= Core.ParamsData.test(ECoreParams::skinw);
-	
-	if (ps_r_ssao)
-	{
-		SSAO = ps_r2_ls_flags_ssao;
-	}
 
 	// constants
 	dxRenderDeviceRender::Instance().Resources->RegisterConstantSetup	("parallax",	&binder_parallax);
@@ -251,30 +246,25 @@ void					CRender::create					()
 
 	//rmNormal					();
 	marker						= 0;
-	//R_CHK						(RDevice->CreateQuery(D3DQUERYTYPE_EVENT,&q_sync_point[0]));
-	//R_CHK						(RDevice->CreateQuery(D3DQUERYTYPE_EVENT,&q_sync_point[1]));
-	ZeroMemory(q_sync_point, sizeof(q_sync_point));
-	for (u32 i=0; i<Caps.iGPUNum; ++i)
-		R_CHK						(RDevice->CreateQuery(D3DQUERYTYPE_EVENT,&q_sync_point[i]));
 
 	xrRender_apply_tf			();
 	::PortalTraverser.initialize();
+
+	Device.ModelDefferClear = xr_make_delegate(Models, &CModelPool::DeleteQueuedDeffer);
 }
 
-void					CRender::destroy				()
+void CRender::destroy()
 {
 	m_bMakeAsyncSS				= false;
 	::PortalTraverser.destroy	();
-	//_RELEASE					(q_sync_point[1]);
-	//_RELEASE					(q_sync_point[0]);
-	for (u32 i=0; i<Caps.iGPUNum; ++i)
-		_RELEASE(q_sync_point[i]);
+
 	HWOCC.occq_destroy			();
 	xr_delete					(Models);
 	xr_delete					(Target);
 	PSLibrary.OnDestroy			();
 	Device.seqFrame.Remove		(this);
-	r_dsgraph_destroy			();
+	r_dsgraph_destroy();
+	Device.ModelDefferClear = nullptr;
 }
 
 void CRender::reset_begin()
@@ -297,25 +287,16 @@ void CRender::reset_begin()
 
 	if (b_loaded)
 	{
-		Device.remove_from_seq_parallel(fastdelegate::FastDelegate0<>(Details, &CDetailManager::MT_CALC));
 		Details->Unload();
 		xr_delete(Details);
 	}
 
 	xr_delete					(Target);
 	HWOCC.occq_destroy			();
-	//_RELEASE					(q_sync_point[1]);
-	//_RELEASE					(q_sync_point[0]);
-	for (u32 i=0; i<Caps.iGPUNum; ++i)
-		_RELEASE(q_sync_point[i]);
 }
 
 void CRender::reset_end()
 {
-	//R_CHK						(RDevice->CreateQuery(D3DQUERYTYPE_EVENT,&q_sync_point[0]));
-	//R_CHK						(RDevice->CreateQuery(D3DQUERYTYPE_EVENT,&q_sync_point[1]));
-	for (u32 i=0; i<Caps.iGPUNum; ++i)
-		R_CHK					(RDevice->CreateQuery(D3DQUERYTYPE_EVENT,&q_sync_point[i]));
 	HWOCC.occq_create			(occq_size);
 
 	if (b_loaded)
@@ -332,26 +313,15 @@ void CRender::reset_end()
 	// that some data is not ready in the first frame (for example device camera position)
 	m_bFirstFrameAfterReset = true;
 }
-/*
-void CRender::OnFrame()
-{
-	Models->DeleteQueue			();
-	if (ps_r2_ls_flags.test(R2FLAG_EXP_MT_CALC))	{
-		Device.seqParallel.insert	(Device.seqParallel.begin(),
-			fastdelegate::FastDelegate0<>(&HOM,&CHOM::MT_RENDER));
-	}
-}*/
-void CRender::OnFrame()
-{
-	Models->DeleteQueue			();
-	if (ps_r2_ls_flags.test(R2FLAG_EXP_MT_CALC))	{
-		// MT-details (@front)
-		Device.seqParallel.insert	(Device.seqParallel.begin(),
-			fastdelegate::FastDelegate0<>(Details,&CDetailManager::MT_CALC));
 
-		// MT-HOM (@front)
-		Device.seqParallel.insert	(Device.seqParallel.begin(),
-			fastdelegate::FastDelegate0<>(&HOM,&CHOM::MT_RENDER));
+void CRender::OnFrame()
+{
+	Models->DeleteQueue();
+	{
+		//Lights Delete queue
+		for (light*L:v_all_lights_dque)
+			xr_delete(L);
+		v_all_lights_dque.clear();
 	}
 }
 
@@ -366,6 +336,12 @@ void					CRender::model_Delete			(IRenderVisual* &V, BOOL bDiscard)
 { 
 	dxRender_Visual* pVisual = (dxRender_Visual*)V;
 	Models->Delete(pVisual, bDiscard);
+	V = 0;
+}
+void					CRender::model_Delete_Deffered			(IRenderVisual* &V)	
+{ 
+	dxRender_Visual* pVisual = (dxRender_Visual*)V;
+	Models->DeleteDeffered(pVisual);
 	V = 0;
 }
 IRender_DetailModel*	CRender::model_CreateDM			(IReader*	F)
@@ -430,7 +406,7 @@ BOOL					CRender::occ_visible			(vis_data& P)		{ return HOM.visible(P);								}
 BOOL					CRender::occ_visible			(sPoly& P)			{ return HOM.visible(P);								}
 BOOL					CRender::occ_visible			(Fbox& P)			{ return HOM.visible(P);								}
 
-void					CRender::add_Visual				(IRenderVisual*		V, bool ignore_opt)	{ add_leafs_Dynamic((dxRender_Visual*)V, ignore_opt);								}
+void					CRender::add_Visual				(IRenderVisual*		V)	{ add_leafs_Dynamic((dxRender_Visual*)V);								}
 void					CRender::add_Geometry			(IRenderVisual*		V )	{ add_Static((dxRender_Visual*)V,View->getMask());					}
 void					CRender::add_StaticWallmark		(ref_shader& S, const Fvector& P, float s, CDB::TRI* T, Fvector* verts)
 {
@@ -496,6 +472,16 @@ void					CRender::rmNormal			()
 	IRender_Target* T	=	getTarget	();
 	D3DVIEWPORT9 VP		= {0,0,T->get_width(),T->get_height(),0,1.f };
 	CHK_DX				(RDevice->SetViewport(&VP));
+}
+
+CRender::SurfaceParams CRender::getSurface(const char* nameTexture) {
+	auto texture = DEV->_CreateTexture(nameTexture);
+	SurfaceParams surface = {};
+	surface.Surface = texture->pSurface;
+	surface.w = texture->get_Width();
+	surface.h = texture->get_Height();
+
+	return surface;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -684,6 +670,7 @@ HRESULT	CRender::shader_compile			(
 	}
 
 	// options
+	const int m_skinning = Engine.External.GetSkinningMode();
 	{
 		xr_sprintf						(c_smapsize,"%04d",u32(o.smapsize));
 		defines[def_it].Name		=	"SMAP_size";
@@ -778,25 +765,6 @@ HRESULT	CRender::shader_compile			(
 		def_it						++;
 	}
 	sh_name[len]='0'+char(o.forceskinw); ++len;
-
-	bool HasSSAOBlur = SSAO.test(ESSAO_DATA::SSAO_BLUR);
-	if (HasSSAOBlur)
-	{
-		defines[def_it].Name		=	"USE_SSAO_BLUR";
-		defines[def_it].Definition	=	"1";
-		def_it						++;
-	}
-	sh_name[len]='0'+char(HasSSAOBlur); ++len;
-
-	bool HasSSAOOpt = SSAO.test(ESSAO_DATA::SSAO_OPT_DATA);
-	bool HasSSAOOptHalf = SSAO.test(ESSAO_DATA::SSAO_HALF_DATA);
-	if (HasSSAOOpt)
-	{
-		defines[def_it].Name		= "SSAO_OPT_DATA";
-		defines[def_it].Definition  = HasSSAOOptHalf ? "2" : "1";
-		def_it++;
-	}
-	sh_name[len]='0'+char(HasSSAOOpt ? (HasSSAOOptHalf ? 2 : 1) : 0); ++len;
 
 	// skinning
 	if (m_skinning<0)		{
@@ -895,30 +863,26 @@ HRESULT	CRender::shader_compile			(
 		sh_name[len]='0'; ++len;
 	}
 
-	if (ps_r_ssao)
-	{
-		xr_sprintf					(c_ssao,"%d",ps_r_ssao);
-		defines[def_it].Name		=	"SSAO_QUALITY";
-		defines[def_it].Definition	=	c_ssao;
-		def_it						++;
-		sh_name[len]='0'+char(ps_r_ssao); ++len;
+	if(ps_r_ssao_mode) {
+		xr_sprintf(c_ssao, "%d", ps_r_ssao_mode);
+		defines[def_it].Name = "SSAO_QUALITY";
+		defines[def_it].Definition = c_ssao;
+		def_it++;
+		sh_name[len] = '0' + char(ps_r_ssao_mode); ++len;
 	}
-	else
-	{
-		sh_name[len]='0'; ++len;
+	else {
+		sh_name[len] = '0'; ++len;
 	}
 
-	if (ps_r_sun_quality)
-	{
-		xr_sprintf					(c_sun_quality,"%d",ps_r_sun_quality);
-		defines[def_it].Name		=	"SUN_QUALITY";
-		defines[def_it].Definition	=	c_sun_quality;
-		def_it						++;
-		sh_name[len]='0'+char(ps_r_sun_quality); ++len;
+	if(ps_r_sun_quality) {
+		xr_sprintf(c_sun_quality, "%d", ps_r_sun_quality);
+		defines[def_it].Name = "SUN_QUALITY";
+		defines[def_it].Definition = c_sun_quality;
+		def_it++;
+		sh_name[len] = '0' + char(ps_r_sun_quality); ++len;
 	}
-	else
-	{
-		sh_name[len]='0'; ++len;
+	else {
+		sh_name[len] = '0'; ++len;
 	}
 
 	if (ps_r2_ls_flags.test(R2FLAG_STEEP_PARALLAX))

@@ -2,16 +2,16 @@
 #pragma once
 
 #include "Rain.h"
-#include "igame_persistent.h"
-#include "environment.h"
+#include "IGame_Persistent.h"
+#include "Environment.h"
 #include "Editor/XrEditorSceneInterface.h"
 
 #ifdef _EDITOR
     #include "ui_toolscustom.h"
 #else
-    #include "render.h"
-	#include "igame_level.h"
-	#include "../xrcdb/xr_area.h"
+#include "Render.h"
+#include "IGame_Level.h"
+#include "../xrCDB/xr_area.h"
 	#include "xr_object.h"
 #endif
 
@@ -112,6 +112,7 @@ void CEffect_Rain::RenewItem(Item& dest, float height, BOOL bHit)
 
 void	CEffect_Rain::OnFrame	()
 {
+	PROF_EVENT("CEffect_Rain::OnFrame");
 #ifndef _EDITOR
 	if (!g_pGameLevel&&!Device.IsEditorMode())			return;
 #endif

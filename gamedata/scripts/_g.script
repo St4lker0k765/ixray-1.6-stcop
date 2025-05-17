@@ -1,15 +1,7 @@
---// JIT init
 if (jit == nil) then
 	profiler.setup_hook	()
 end
 
-math.randomseed(time_global())
-
-isMarshal = marshal ~= nil
-isLfs = lfs ~= nil
-
---// Some X-Ray block
-DebugLog = false
 
 function empty	(container)
 	if (type(container) == "function") then
@@ -31,15 +23,6 @@ end
 
 schemes = {} -- соответствие схем модулям
 stypes = {} -- типы схем
-
-function log(str) 
-    if DebugLog then
-        SemiLog(str)
-    end
-	if DebuggerMode then
-		LuaPanda.printToVSCode(str,1,2)
-	end
-end
 
 -- Загружает схему из файла на диске и активирует в мотиваторе.
 -- Здесь:
@@ -425,10 +408,26 @@ local stalker_classes = {}
 local weapon_classes = {}
 local artefact_classes = {}
 
-IsMonster   = function(object, class_id)    return monster_classes [class_id or get_clsid(object) or -1] ~= nil end
-IsStalker   = function(object, class_id)    return stalker_classes [class_id or get_clsid(object) or -1] ~= nil end
-isWeapon    = function(object, class_id)    return weapon_classes  [class_id or get_clsid(object) or -1] ~= nil end
-isArtefact  = function(object, class_id)    return artefact_classes[class_id or get_clsid(object) or -1] ~= nil end
+function IsMonster (object, class_id)
+		local id = class_id or get_clsid(object)
+		return monster_classes[id] == true
+end
+function IsStalker (object, class_id)
+		local id = class_id or get_clsid(object)
+		return stalker_classes[id] == true
+end
+
+function isWeapon(object, class_id)
+	local id = class_id or get_clsid(object)
+	return weapon_classes[id] == true
+end
+
+function isArtefact(object, class_id)
+		local id = class_id or get_clsid(object)
+	return artefact_classes[id] == true
+end
+
+
 -------------------------------------------------------------------------------------------
 function get_object_community(obj)
 	if type(obj.id) == "function" then
@@ -486,6 +485,16 @@ function set_inactivate_input_time(delta)
 	db.storage[db.actor:id()].disable_input_idle = delta
 	level.disable_input()
 end
+
+-- Принимает: позицию положения, позицию куда смотреть, время сна в минутах.
+--[[
+function set_sleep_relocate(point, look, timeout)
+	db.storage[db.actor:id()].sleep_relocate_time = game.get_game_time()
+	db.storage[db.actor:id()].sleep_relocate_idle = timeout*60
+	db.storage[db.actor:id()].sleep_relocate_point = point
+	db.storage[db.actor:id()].sleep_relocate_look = look
+end
+]]--
 
 -- проверяет целую часть числа на нечетность
 function odd( x )
@@ -601,6 +610,9 @@ function start_game_callback()
 	sim_board.clear()
 	sr_light.clean_up ()
 	pda.add_quick_slot_items_on_game_start()
+	-- Tестирование оптимизации
+	--local test_object = test_object.test_object_class()
+	--test_object:test()
 end
 
 --' Усталость
@@ -701,7 +713,7 @@ local save_markers = {}
 
 -- Функции для проверки корректности сейв лоад
 function set_save_marker(p, mode, check, prefix)
-	save.set_stage(prefix)
+
 	-- определяем ключ маркера.
 	local result = ""
 --	if debug ~= nil then
@@ -727,8 +739,7 @@ function set_save_marker(p, mode, check, prefix)
 				printf("WARNING! may be this is problem save point")
 			end
 			if dif >= 10240 then
-				callstack()
-				save.call_error()
+--				abort("You are saving too much")
 			end
 			p:w_u16(dif)
 		else

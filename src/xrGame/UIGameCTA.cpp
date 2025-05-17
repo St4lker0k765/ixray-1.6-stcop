@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "UIGameCTA.h"
 
 #include "UITeamPanels.h"
@@ -18,7 +18,7 @@
 #include "../xrEngine/xr_level_controller.h"
 
 #include "object_broker.h"
-#include "weaponknife.h"
+#include "WeaponKnife.h"
 
 #include "ui/UISkinSelector.h"
 #include "../xrEngine/string_table.h"
@@ -30,12 +30,12 @@
 #include "ui/UIBuyWndShared.h"
 #include "ui/UIMoneyIndicator.h"
 #include "ui/UIRankIndicator.h"
-#include "ui/UIProgressShape.h"
+#include "../../xrUI/Widgets/UIProgressShape.h"
 #include "ui/UIMessageBoxEx.h"
 #include "ui/UIVoteStatusWnd.h"
 #include "ui/UIActorMenu.h"
 #include "ui/UISkinSelector.h"
-#include "ui/UIHelper.h"
+#include "../../xrUI/UIHelper.h"
 
 #define CTA_GAME_WND_XML	"ui_game_cta.xml"
 
@@ -729,7 +729,7 @@ void CUIGameCTA::SetScore(s32 max_score, s32 greenTeamScore, s32 blueTeamScore)
 	m_team2_score->SetText(str);
 	if (max_score <= 0)
 	{
-		xr_strcpy(str,"--");
+		xr_strcpy(str,"∞");
 	} else
 	{
 		xr_sprintf(str,"%d", max_score);

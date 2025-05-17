@@ -11,6 +11,8 @@
 //	Value for skybox depth
 #define Z_MAX 100000
 
+#pragma warning(disable : 4000)
+
 //--------------------------------------------------------------------------------------
 // Textures
 //--------------------------------------------------------------------------------------
@@ -86,27 +88,27 @@ struct VS_INPUT
 
 struct PS_INPUT_RAYDATA_BACK
 {
-    float4 pos : SV_Position;
+    float4 pos : SV_POSITION;
     float depth : TEXCOORD0;
 };
 
 struct PS_INPUT_RAYDATA_FRONT
 {
-    float4 pos : SV_Position;
+    float4 pos : SV_POSITION;
     float3 posInGrid : POSITION;
     float depth : TEXCOORD0;
 };
 
 struct PS_INPUT_RAYCAST
 {
-    float4 pos : SV_Position;
+    float4 pos : SV_POSITION;
     float3 posInGrid : POSITION;
 };
 
 struct VS_OUTPUT_EDGE
 {
     // There's no textureUV11 because its weight is zero.
-    float4 position : SV_Position; // vertex position
+    float4 position : SV_POSITION; // vertex position
     float2 textureUV00 : TEXCOORD0; // kernel tap texture coords
     float2 textureUV01 : TEXCOORD1; // kernel tap texture coords
     float2 textureUV02 : TEXCOORD2; // kernel tap texture coords
@@ -261,7 +263,7 @@ void DoSample(float weight, float3 O, inout float4 color)
         float lookUpVal = ((s - threshold) / (maxValue - threshold));
         lookUpVal = 1.0 - pow(lookUpVal, RednessFactor);
         lookUpVal = clamp(lookUpVal, 0, 1);
-        float3 interpColor = fireTransferFunction.SampleLevel(samLinearClamp, float2(lookUpVal, 0), 0);
+        float3 interpColor = fireTransferFunction.SampleLevel(samLinearClamp, float2(lookUpVal, 0), 0).xyz;
         float mult = (s - threshold);
         color += float4(weight * interpColor.rgb, weight * mult * mult * fireAlphaMultiplier);
     }
@@ -306,7 +308,7 @@ float4 Raycast(PS_INPUT_RAYCAST input)
     // Sample twice per voxel
     float fSamples = (rayLength / gridScaleFactor * maxGridDim) * 2.0;
     int nSamples = floor(fSamples);
-    float3 stepVec = normalize((rayOrigin - eyeOnGrid) * gridDim) * recGridDim * 0.5;
+    float3 stepVec = normalize((rayOrigin - eyeOnGrid.xyz) * gridDim.xyz) * recGridDim.xyz * 0.5;
 
     float3 O = rayOrigin + stepVec * Offset;
 
@@ -339,3 +341,4 @@ float4 Raycast(PS_INPUT_RAYCAST input)
 
     return color;
 }
+

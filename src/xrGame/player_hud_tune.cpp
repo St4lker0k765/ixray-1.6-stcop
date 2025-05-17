@@ -1,14 +1,14 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "player_hud.h"
 #include "Level.h"
 #include "debug_renderer.h"
 #include "../xrEngine/xr_input.h"
-#include "HudManager.h"
+#include "HUDManager.h"
 #include "HudItem.h"
 #include "../xrEngine/Effector.h"
 #include "../xrEngine/CameraManager.h"
 #include "../xrEngine/FDemoRecord.h"
-#include "ui_base.h"
+#include "../../xrUI/ui_base.h"
 #include "debug_renderer.h"
 
 u32 hud_adj_mode		= 0;

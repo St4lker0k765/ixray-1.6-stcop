@@ -2,10 +2,10 @@
 //#include "build.h"
 //#include "std_classes.h"
 #include "../xrForms/xrThread.h"
-#include "xrdeflector.h"
-#include "xrlc_globaldata.h"
+#include "xrDeflector.h"
+#include "xrLC_GlobalData.h"
 #include "light_point.h"
-#include "xrface.h"
+#include "xrFace.h"
 
 extern void Jitter_Select	(Fvector2* &Jitter, u32& Jcount);
 
@@ -104,7 +104,7 @@ void CDeflector::L_Direct	(CDB::COLLIDER* DB, base_lighting* LightsSelected, HAS
 							Vertex	*V2 = F->v[1];
 							Vertex	*V3 = F->v[2];
 							wP.from_bary(V1->P,V2->P,V3->P,B);
-//. не нужно использовать	if (F->Shader().flags.bLIGHT_Sharp)	{ wN.set(F->N); }
+//. РЅРµ РЅСѓР¶РЅРѕ РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊ	if (F->Shader().flags.bLIGHT_Sharp)	{ wN.set(F->N); }
 //							else								
 							{ 
 								wN.from_bary(V1->N,V2->N,V3->N,B);	exact_normalize	(wN); 

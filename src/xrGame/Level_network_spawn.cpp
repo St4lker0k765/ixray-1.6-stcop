@@ -1,9 +1,9 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 #include "xrServer_Objects_ALife_All.h"
 #include "Level.h"
 #include "game_cl_base.h"
-#include "net_queue.h"
+#include "NET_Queue.h"
 #include "ai_space.h"
 #include "game_level_cross_table.h"
 #include "level_graph.h"
@@ -17,7 +17,7 @@ void CLevel::cl_Process_Spawn(NET_Packet& P)
 	// Begin analysis
 	shared_str			s_name;
 	P.r_stringZ			(s_name);
-
+	PROF_EVENT("cl_Process_Spawn")
 	// Create DC (xrSE)
 	CSE_Abstract*	E	= F_entity_Create	(*s_name);
 	R_ASSERT2(E, *s_name);
@@ -188,7 +188,7 @@ CSE_Abstract *CLevel::spawn_item		(LPCSTR section, const Fvector &position, u32 
 		weapon->a_elapsed	= weapon->get_ammo_magsize();
 	
 	// Fill
-	abstract->s_name		= section;
+	abstract->s_name.printf("%s", section);
 	abstract->set_name_replace	(section);
 //.	abstract->s_gameid		= u8(GameID());
 	abstract->o_Position	= position;

@@ -1,6 +1,6 @@
 #pragma once
 #include "Physics.h"
-#include "phupdateobject.h"
+#include "PHUpdateObject.h"
 #include "IPHWorld.h"
 #include "physics_scripted.h"
 #include "../xrEngine/pure.h"
@@ -25,7 +25,8 @@ class	CObjectList;
 
 class CPHWorld	:	public	pureFrame,
 					public	IPHWorld,
-					public	cphysics_scripted
+					public	cphysics_scripted,
+					private xray::noncopyable
 #ifdef DEBUG_DRAW
 					, public pureRender
 #endif
@@ -53,7 +54,7 @@ class CPHWorld	:	public	pureFrame,
 	CObjectList*			m_level_objects;
 
 public:
-	xr_vector<ISpatial*>		r_spatial;
+	xr_vector<ISpatialShared>	r_spatial;
 	u64							m_steps_num;
 
 private:
@@ -74,8 +75,6 @@ private:
 	PhysicsStepTimeCallback*	physics_step_time_callback;
 
 public:
-	CPHWorld(const CPHWorld& other) = delete;
-	CPHWorld& operator =(const CPHWorld& other) = delete;
 								CPHWorld						( )							;
 	virtual						~CPHWorld						(){}						;
 

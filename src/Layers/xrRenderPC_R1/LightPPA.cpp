@@ -4,9 +4,9 @@
 
 #include "stdafx.h"
 #include "LightPPA.h"
-#include "../../xrEngine/igame_persistent.h"
-#include "../../xrEngine/environment.h"
-#include "../xrRender/fbasicvisual.h"
+#include "../../xrEngine/IGame_Persistent.h"
+#include "../../xrEngine/Environment.h"
+#include "../xrRender/FBasicVisual.h"
 #include "../../xrEngine/CustomHUD.h"
 
 const u32	MAX_POLYGONS			=	1024*8;
@@ -149,10 +149,13 @@ void CLightR_Manager::render_point	(u32 _priority)
 	for (xr_vector<light*>::iterator it=selected_point.begin(); it!=selected_point.end(); it++)
 	{
 		light*	L					= *it;
-		VERIFY						(L->spatial.sector && _valid(L->range));
+		if (L->SpatialComponent->spatial.sector == nullptr && _valid(L->range))
+		{
+			continue;
+		}
 
 		//		0. Dimm & Clip
-		float	lc_dist				= lc_COP.distance_to	(L->spatial.sphere.P) - L->spatial.sphere.R;
+		float	lc_dist				= lc_COP.distance_to	(L->SpatialComponent->spatial.sphere.P) - L->SpatialComponent->spatial.sphere.R;
 		float	lc_scale			= 1 - lc_dist/lc_limit;
 		if		(lc_scale<EPS)		continue;
 		if		(L->range<0.01f)	continue;
@@ -190,12 +193,12 @@ void CLightR_Manager::render_point	(u32 _priority)
 		RImplementation.r1_dlight_tcgen		= L_texgen;
 
 		//		3. Calculate visibility for light + build soring tree
-		VERIFY										(L->spatial.sector);
+		VERIFY										(L->SpatialComponent->spatial.sector);
 		if( _priority == 1)
 			RImplementation.r_pmask						(false,true);
 
 		RImplementation.r_dsgraph_render_subspace	(
-			L->spatial.sector,
+			L->SpatialComponent->spatial.sector,
 			L_combine,
 			L_pos,
 			true,
@@ -230,9 +233,12 @@ void CLightR_Manager::render_spot	(u32 _priority)
 	for (xr_vector<light*>::iterator it=selected_spot.begin(); it!=selected_spot.end(); it++)
 	{
 		light*	L					= *it;
-
+		if (L->SpatialComponent->spatial.sector == nullptr)
+		{
+			continue;
+		}
 		//		0. Dimm & Clip
-		float	lc_dist				= lc_COP.distance_to	(L->spatial.sphere.P) - L->spatial.sphere.R;
+		float	lc_dist				= lc_COP.distance_to	(L->SpatialComponent->spatial.sphere.P) - L->SpatialComponent->spatial.sphere.R;
 		float	lc_scale			= 1 - lc_dist/lc_limit;
 		if		(lc_scale<EPS)		continue;
 
@@ -267,13 +273,13 @@ void CLightR_Manager::render_spot	(u32 _priority)
 		RImplementation.r1_dlight_tcgen		= L_texgen;
 
 		//		3. Calculate visibility for light + build soring tree
-		VERIFY										(L->spatial.sector);
+		VERIFY										(L->SpatialComponent->spatial.sector);
 		// RImplementation.marker					++;
 		if( _priority == 1)
 			RImplementation.r_pmask						(false,true);
 
 		RImplementation.r_dsgraph_render_subspace	(
-			L->spatial.sector,
+			L->SpatialComponent->spatial.sector,
 			L_combine,
 			L_pos,
 			TRUE,
@@ -298,7 +304,6 @@ void CLightR_Manager::render_spot	(u32 _priority)
 		if (bHUD&&_priority == 0)	RImplementation.r_dsgraph_render_hud();	
 		//	RCache.set_ClipPlanes					(false,	&L_combine);
 	}
-	//		??? grass ???l
 }
 
 void CLightR_Manager::render		(u32 _priority)
@@ -319,19 +324,22 @@ void CLightR_Manager::render		(u32 _priority)
 	}
 }
 
-void CLightR_Manager::add			(light* L)
+void CLightR_Manager::add(light* L)
 {
-	if (L->range<0.1f)				return;
-	if (0==L->spatial.sector)		return;
-	if (IRender_Light::POINT==L->flags.type)
+	if (L->range < 0.1f)
+		return;
+
+	if (L->SpatialComponent->spatial.sector == nullptr)
+		return;
+	if (IRender_Light::POINT == L->flags.type)
 	{
 		// PPA
-		selected_point.push_back	(L);
-	} else {
-		// spot/flash
-		selected_spot.push_back		(L);
+		selected_point.push_back(L);
 	}
-	VERIFY							(L->spatial.sector);
+	else {
+		// spot/flash
+		selected_spot.push_back(L);
+	}
 }
 
 CLightR_Manager::CLightR_Manager	()

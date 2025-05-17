@@ -1,16 +1,17 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "wallmark_manager.h"
 #include "Level.h"
-#include "../xrEngine/gamemtllib.h"
+#include "../xrEngine/GameMtlLib.h"
 #include "../xrPhysics/CalculateTriangle.h"
-#include "profiler.h"
 #ifdef DEBUG
-#include "phdebug.h"
+#include "PHDebug.h"
 #endif
 
 CWalmarkManager::CWalmarkManager()
+    :m_owner(nullptr)
 {
 }
+
 CWalmarkManager::~CWalmarkManager()
 {
 	Clear();
@@ -86,6 +87,9 @@ void CWalmarkManager::PlaceWallmarks(const Fvector& start_pos)
     m_pos = start_pos;
 
     shared_str sect;
+
+    if (m_owner == nullptr)
+        return;
 
     if (pSettings->line_exist(m_owner->cNameSect(), "wallmark_section"))
     {

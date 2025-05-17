@@ -1,7 +1,7 @@
 #ifndef UI_MainCommandH
 #define UI_MainCommandH
 
-enum
+enum ECoreCommands
 {
 	COMMAND_INITIALIZE=0,		// p1 - D3DWindow, p2 - TPanel
 	COMMAND_DESTROY,
@@ -39,13 +39,17 @@ enum
     COMMAND_GRID_NUMBER_OF_SLOTS,
     COMMAND_GRID_SLOT_SIZE,
     
+    COMMAND_ICON_PICKER,
+    COMMAND_ICON_LOAD,
+    COMMAND_ICON_REMOVE,
+
     COMMAND_REFRESH_UI_BAR,
     COMMAND_RESTORE_UI_BAR,
     COMMAND_SAVE_UI_BAR,
 
     COMMAND_MUTE_SOUND,
 
-    // имеют разную реализацию
+    // пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
     COMMAND_CLEAR,
     COMMAND_LOAD,
     COMMAND_SAVE,
@@ -57,6 +61,7 @@ enum
     // sound
 	COMMAND_SOUND_EDITOR,
 	COMMAND_SYNC_SOUNDS,
+    COMMAND_SYNC_SOUNDS_HARD,
     
 	COMMAND_UNDO,
 	COMMAND_REDO,
@@ -69,6 +74,7 @@ enum
 
     COMMAND_SIMULATE,
     COMMAND_USE_SIMULATE_POSITIONS,
+    COMMAND_IMAGE_EDITOR_SELECT,
 
     COMMAND_MAIN_LAST
 };
@@ -93,7 +99,7 @@ public:
 //	IC operator 	LPCSTR 			()							{VERIFY(type==tpStr);return s.c_str();}
 };
 
-typedef fastdelegate::FastDelegate2<CCommandVar,CCommandVar,CCommandVar> TECommandEvent;
+using TECommandEvent = xr_delegate< CCommandVar(CCommandVar,CCommandVar)>;
 
 class SECommand;
 
@@ -128,7 +134,7 @@ public:
 					~SECommand		(){xr_free(name);xr_free(desc); for (ESubCommandVecIt it=sub_commands.begin(); it!=sub_commands.end(); it++) xr_delete(*it);}
     IC LPCSTR		Name			(){return name&&name[0]?name:"";}
 	IC LPCSTR		Desc			(){return desc&&desc[0]?desc:"";}
-    void			AppendSubCommand(LPCSTR desc, CCommandVar p0, CCommandVar p1){sub_commands.push_back(xr_new<SESubCommand>(desc,this,p0,p1));}
+    void			AppendSubCommand(LPCSTR desc, CCommandVar p0, CCommandVar p1){sub_commands.push_back(new SESubCommand(desc,this,p0,p1));}
 };
 
 using ECommandVec = xr_vector<SECommand*>;
@@ -148,12 +154,12 @@ ECORE_API BOOL				AllowLogCommands		();
 #define BIND_CMD_EVENT_S(a) 						TECommandEvent(a)
 #define BIND_CMD_EVENT_C(a,b)						TECommandEvent(a,&b)
 
-#define REGISTER_CMD_S(id,cmd)  					RegisterCommand(id, xr_new<SECommand>(#id,"",false,false,BIND_CMD_EVENT_S(cmd),id,false));
-#define REGISTER_CMD_C(id,owner,cmd) 				RegisterCommand(id, xr_new<SECommand>(#id,"",false,false,BIND_CMD_EVENT_C(owner,cmd),id,false));
-#define REGISTER_CMD_SE(id,desc,cmd,gs) 			RegisterCommand(id, xr_new<SECommand>(#id,desc,true,false,BIND_CMD_EVENT_S(cmd),id,gs));
-#define REGISTER_CMD_CE(id,desc,owner,cmd,gs)		RegisterCommand(id, xr_new<SECommand>(#id,desc,true,false,BIND_CMD_EVENT_C(owner,cmd),id,gs));
-#define REGISTER_SUB_CMD_SE(id,desc,cmd,gs){  		SECommand* SUB_CMD_HOLDER; RegisterCommand(id, SUB_CMD_HOLDER=xr_new<SECommand>(#id,desc,true,true,BIND_CMD_EVENT_S(cmd),id,gs));
-#define REGISTER_SUB_CMD_CE(id,desc,owner,cmd,gs){ 	SECommand* SUB_CMD_HOLDER; RegisterCommand(id, SUB_CMD_HOLDER=xr_new<SECommand>(#id,desc,true,true,BIND_CMD_EVENT_C(owner,cmd),id,gs));
+#define REGISTER_CMD_S(id,cmd)  					RegisterCommand(id, new SECommand(#id,"",false,false,BIND_CMD_EVENT_S(cmd),id,false));
+#define REGISTER_CMD_C(id,owner,cmd) 				RegisterCommand(id, new SECommand(#id,"",false,false,BIND_CMD_EVENT_C(owner,cmd),id,false));
+#define REGISTER_CMD_SE(id,desc,cmd,gs) 			RegisterCommand(id, new SECommand(#id,desc,true,false,BIND_CMD_EVENT_S(cmd),id,gs));
+#define REGISTER_CMD_CE(id,desc,owner,cmd,gs)		RegisterCommand(id, new SECommand(#id,desc,true,false,BIND_CMD_EVENT_C(owner,cmd),id,gs));
+#define REGISTER_SUB_CMD_SE(id,desc,cmd,gs){  		SECommand* SUB_CMD_HOLDER; RegisterCommand(id, SUB_CMD_HOLDER=new SECommand(#id,desc,true,true,BIND_CMD_EVENT_S(cmd),id,gs));
+#define REGISTER_SUB_CMD_CE(id,desc,owner,cmd,gs){ 	SECommand* SUB_CMD_HOLDER; RegisterCommand(id, SUB_CMD_HOLDER=new SECommand(#id,desc,true,true,BIND_CMD_EVENT_C(owner,cmd),id,gs));
 #define APPEND_SUB_CMD(desc,p0,p1)					RegisterSubCommand(SUB_CMD_HOLDER,desc,p0,p1);
 #define REGISTER_SUB_CMD_END }
 

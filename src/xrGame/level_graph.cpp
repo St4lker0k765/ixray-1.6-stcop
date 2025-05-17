@@ -6,10 +6,10 @@
 //	Description : Level graph
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "level_graph.h"
-#include "profiler.h"
-#include "../XrEngine/Editor/XrEditorSceneInterface.h"
+#include "../xrEngine/Editor/XrEditorSceneInterface.h"
+
 LPCSTR LEVEL_GRAPH_NAME = "level.ai";
 CLevelGraph::CLevelGraph		()
 {

@@ -17,7 +17,7 @@ ListItem* CListHelper::FindItem		(ListItemsVec& items,	LPCSTR key)
     
 ListItem* CListHelper::CreateItem	(ListItemsVec& items, LPCSTR key, int type, u32 item_flags, void* object)
 {
-    ListItem* item	= xr_new<ListItem>	(type);
+    ListItem* item	= new ListItem	(type);
     item->SetName	(key);
     item->m_Object	= object;
     item->m_Flags.set(item_flags,TRUE);
@@ -40,7 +40,7 @@ bool CListHelper::NameAfterEdit(ListItem* sender, LPCSTR value, shared_str& N)
             else name++;
             if ((item != sender) && (N == name))
             {
-                // елемент с таким именем уже существует
+                // РµР»РµРјРµРЅС‚ СЃ С‚Р°РєРёРј РёРјРµРЅРµРј СѓР¶Рµ СЃСѓС‰РµСЃС‚РІСѓРµС‚
                 N =value; return false;
             }
         }

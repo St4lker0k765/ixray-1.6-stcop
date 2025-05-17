@@ -11,25 +11,7 @@
 #define AIMAP_CHUNK_SNAP_OBJECTS	0x0007
 #define AIMAP_CHUNK_INTERNAL_DATA	0x0008
 #define AIMAP_CHUNK_INTERNAL_DATA2	0x0009
-
-
-poolSS<SAINode,1024> g_ainode_pool;
-
-void* SAINode::operator new(std::size_t size)
-{
-	return g_ainode_pool.create();
-}
-
-void* SAINode::operator new(std::size_t size, SAINode* src)
-{
-    return 			src;
-}
-
-void SAINode::operator delete(void* ptr)
-{
-    auto node = (SAINode*)ptr;
-	g_ainode_pool.destroy(node);
-}
+#define AIMAP_CHUNK_IGNORED_MTLS	0x0010
 
 void SAINode::PointLF(Fvector& D, float patch_size)
 {
@@ -123,6 +105,7 @@ void SAINode::LoadStream(IReader& F, ESceneAIMapTool* tools)
     F.r				(&np,sizeof(np)); 	tools->UnpackPosition(Pos,np,tools->m_AIBBox,tools->m_Params);
 	Plane.build		(Pos,Plane.n);
     flags.assign	(F.r_u8());
+
 }
 
 void SAINode::SaveStream(IWriter& F, ESceneAIMapTool* tools)
@@ -172,7 +155,7 @@ void ESceneAIMapTool::Clear(bool bOnlyNodes)
 	    //m_SnapObjects.clear	();
         m_AIBBox.invalidate	();
         ExecCommand		(COMMAND_REFRESH_SNAP_OBJECTS);
-		g_ainode_pool.clear	();
+		//g_ainode_pool.clear	();
         RealUpdateSnapList();
     }
 }
@@ -294,60 +277,79 @@ void ESceneAIMapTool::SaveLTX(CInifile& ini, int id)
 
 bool ESceneAIMapTool::LoadStream(IReader& F)
 {
-	inherited::LoadStream	(F);
+    IsLoaded = false;
+    inherited::LoadStream(F);
 
-	u16 version = 0;
+    u16 version = 0;
 
-    R_ASSERT(F.r_chunk(AIMAP_CHUNK_VERSION,&version));
-    if( version!=AIMAP_VERSION ){
-        ELog.DlgMsg( mtError, "AIMap: Unsupported version.");
+    R_ASSERT(F.r_chunk(AIMAP_CHUNK_VERSION, &version));
+    if (version != AIMAP_VERSION) {
+        ELog.DlgMsg(mtError, "AI-Map: Unsupported version.");
         return false;
     }
 
     R_ASSERT(F.find_chunk(AIMAP_CHUNK_FLAGS));
-    F.r				(&m_Flags,sizeof(m_Flags));
+    F.r(&m_Flags, sizeof(m_Flags));
 
     R_ASSERT(F.find_chunk(AIMAP_CHUNK_BOX));
-    F.r				(&m_AIBBox,sizeof(m_AIBBox));
+    F.r(&m_AIBBox, sizeof(m_AIBBox));
 
     R_ASSERT(F.find_chunk(AIMAP_CHUNK_PARAMS));
-    F.r				(&m_Params,sizeof(m_Params));
+    F.r(&m_Params, sizeof(m_Params));
 
     R_ASSERT(F.find_chunk(AIMAP_CHUNK_NODES));
-    m_Nodes.resize	(F.r_u32());
-	for (AINodeIt it=m_Nodes.begin(); it!=m_Nodes.end(); it++){
-    	*it			= xr_new<SAINode>();
-    	(*it)->LoadStream	(F,this);
+    m_Nodes.resize(F.r_u32());
+    for (AINodeIt it = m_Nodes.begin(); it != m_Nodes.end(); it++) {
+        *it = new SAINode();
+        (*it)->LoadStream(F, this);
     }
-	DenumerateNodes	();
+    DenumerateNodes();
 
-    if (F.find_chunk(AIMAP_CHUNK_INTERNAL_DATA)){
-    	m_VisRadius	= F.r_float();
-    	m_BrushSize	= F.r_u32();
+    if (F.find_chunk(AIMAP_CHUNK_INTERNAL_DATA)) {
+        m_VisRadius = F.r_float();
+        m_BrushSize = F.r_u32();
     }
-    if (F.find_chunk(AIMAP_CHUNK_INTERNAL_DATA2)){
-    	m_SmoothHeight	= F.r_float();
+    if (F.find_chunk(AIMAP_CHUNK_INTERNAL_DATA2)) {
+        m_SmoothHeight = F.r_float();
     }
 
-	// snap objects
-    if (F.find_chunk(AIMAP_CHUNK_SNAP_OBJECTS)){
-    	shared_str 	buf;
-		int cnt 	= F.r_u32();
-        if (cnt){
-	        for (int i=0; i<cnt; i++){
-    	    	F.r_stringZ	(buf);
-        	    CCustomObject* O = Scene->FindObjectByName(buf.c_str(),OBJCLASS_SCENEOBJECT);
-            	if (!O)		ELog.Msg(mtError,"AIMap: Can't find snap object '%s'.",buf.c_str());
-	            else		m_SnapObjects.push_back(O);
-    	    }
+    // snap objects
+    if (F.find_chunk(AIMAP_CHUNK_SNAP_OBJECTS)) 
+    {
+        shared_str 	buf;
+        int cnt = F.r_u32();
+        if (cnt) {
+            for (int i = 0; i < cnt; i++) {
+                F.r_stringZ(buf);
+                CCustomObject* O = Scene->FindObjectByName(buf.c_str(), OBJCLASS_SCENEOBJECT);
+                if (!O)		ELog.Msg(mtError, "AI-Map: Can't find snap object '%s'.", buf.c_str());
+                else		m_SnapObjects.push_back(O);
+            }
         }
     }
 
-    hash_FillFromNodes		();
+    m_ignored_materials.clear();
+    if (F.find_chunk(AIMAP_CHUNK_IGNORED_MTLS))
+    {
+        shared_str buf;
+        u32 cnt = F.r_u32();
 
+        m_ignored_materials.reserve(cnt);
+
+        for (u32 i = 0; i < cnt; i++) 
+        {
+            F.r_stringZ(buf);
+
+            SGameMtl* mtl = GameMaterialLibraryEditors->GetMaterial(*buf);
+            if (mtl) m_ignored_materials.push_back(mtl->GetID());
+        }
+    }
+
+    hash_FillFromNodes();
+
+    IsLoaded = true;
     return true;
 }
-
 
 bool ESceneAIMapTool::LoadSelection(IReader& F)
 {
@@ -402,6 +404,21 @@ void ESceneAIMapTool::SaveStream(IWriter& F)
     for (ObjectIt o_it=m_SnapObjects.begin(); o_it!=m_SnapObjects.end(); o_it++)
     	F.w_stringZ	((*o_it)->GetName());
     F.close_chunk	();
+
+    F.open_chunk(AIMAP_CHUNK_IGNORED_MTLS);
+    F.w_u32((u32)m_ignored_materials.size());
+
+    for (u16 MaterialID : m_ignored_materials)
+    {
+        SGameMtl* mtl = GameMaterialLibraryEditors->GetMaterialByID(MaterialID);
+        R_ASSERT(mtl);
+        F.w_stringZ(*mtl->m_Name);
+    }
+
+    ((UIAIMapTool*)(pForm))->UpdateIgnoreMaterial();
+    //Scene->GetTool(OBJCLASS_AIMAP)->GetToolForm();
+
+    F.close_chunk();
 }
 
 
@@ -432,19 +449,25 @@ void ESceneAIMapTool::OnObjectRemove(CCustomObject* O, bool bDeleting)
 
 int ESceneAIMapTool::AddNode(const Fvector& pos, bool bIgnoreConstraints, bool bAutoLink, int sz)
 {
-   	Fvector Pos				= pos;
-    if (1==sz){
-        SAINode* N 			= BuildNode(Pos,Pos,bIgnoreConstraints,true);
-        if (N){
-            N->flags.set	(SAINode::flSelected,TRUE);
-            if (bAutoLink) 	UpdateLinks(N,bIgnoreConstraints);
-            return			1;
-        }else{
-            ELog.Msg		(mtError,"Can't create node.");
-            return 			0;
+    Fvector Pos = pos;
+    if (1 == sz)
+    {
+        SAINode* N = BuildNode(Pos, Pos, bIgnoreConstraints, true);
+        IsLoaded = true;
+        if (N) 
+        {
+            N->flags.set(SAINode::flSelected, TRUE);
+            if (bAutoLink) 	UpdateLinks(N, bIgnoreConstraints);
+            return 1;
         }
-    }else{
-		return BuildNodes	(Pos,sz,bIgnoreConstraints);
+        else 
+        {
+            ELog.Msg(mtError, "Can't create node.");
+            return 0;
+        }
+    }
+    else {
+        return BuildNodes(Pos, sz, bIgnoreConstraints);
     }
 }
 
@@ -479,16 +502,17 @@ void ESceneAIMapTool::SelectObjects(bool flag)
 }
 struct delete_sel_node_pred 
 {
-	bool operator()(SAINode*& x)
+    bool operator()(SAINode*& x)
     {
-    	// breaking links
-        for (int k=0; k<4; k++)
-            if (x->n[k]&&x->n[k]->flags.is(SAINode::flSelected))
-                x->n[k]=0;
-		// free memory                
-    	bool res	= x->flags.is(SAINode::flSelected); 
-        if (res) 	xr_delete(x); 
-        return 		res; 
+        // breaking links
+        for (int k = 0; k < 4; k++)
+            if (x->n[k] && x->n[k]->flags.is(SAINode::flSelected))
+                x->n[k] = 0;
+        // free memory                
+        bool res = x->flags.is(SAINode::flSelected);
+        if (res)
+            xr_delete(x);
+        return res;
     }
 };
 void ESceneAIMapTool::RemoveSelection()

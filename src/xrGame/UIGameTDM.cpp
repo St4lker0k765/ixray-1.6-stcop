@@ -1,9 +1,9 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "UIGameTDM.h"
 
 #include "game_cl_base.h"
 
-#include "game_cl_TeamDeathmatch.h"
+#include "game_cl_teamdeathmatch.h"
 
 #include "ui/TeamInfo.h"
 
@@ -151,7 +151,7 @@ void CUIGameTDM::SetFraglimit(int local_frags, int fraglimit)
 	if(fraglimit)
 		xr_sprintf(str,"%d", fraglimit);
 	else
-		xr_sprintf(str,"%s", "--");
+		xr_sprintf(str,"%s","âˆž");
 
 	m_pFragLimitIndicator->SetText(str);
 }

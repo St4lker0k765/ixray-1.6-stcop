@@ -1,6 +1,6 @@
-#include "stdafx.h"
-#include "build.h"
-#include "sector.h"
+#include "StdAfx.h"
+#include "Build.h"
+#include "Sector.h"
 #include "OGF_Face.h"
 xr_vector<CSector*>	g_sectors;
 
@@ -22,7 +22,7 @@ void CBuild::BuildSectors()
 	for (u32 I=0; I<g_tree.size(); I++)
 	{
 		u32 Sector = g_tree[I]->Sector;
-		if (0==g_sectors[Sector]) g_sectors[Sector] = xr_new<CSector> (Sector);
+		if (0==g_sectors[Sector]) g_sectors[Sector] = new CSector (Sector);
 	}
 
 	Status("Building hierrarhy...");

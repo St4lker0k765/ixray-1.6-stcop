@@ -1,11 +1,11 @@
-#include "stdafx.h"
-#include "../xrEngine/xr_ioconsole.h"
+#include "StdAfx.h"
+#include "../xrEngine/XR_IOConsole.h"
 #include "entity_alive.h"
 #include "game_sv_single.h"
 #include "alife_simulator.h"
 #include "alife_simulator_header.h"
 #include "level_graph.h"
-#include "../xrEngine/fdemorecord.h"
+#include "../xrEngine/FDemoRecord.h"
 #include "Level.h"
 #include "../xrEngine/xr_level_controller.h"
 #include "game_cl_base.h"
@@ -15,9 +15,9 @@
 #include "autosave_manager.h"
 
 #include "Actor.h"
-#include "huditem.h"
+#include "HudItem.h"
 #include "UIGameCustom.h"
-#include "UI/UIDialogWnd.h"
+#include "../../xrUI/Widgets/UIDialogWnd.h"
 #include "../xrEngine/xr_input.h"
 #include "saved_game_wrapper.h"
 
@@ -43,6 +43,10 @@ extern	float	g_fTimeFactor;
 void CLevel::IR_OnMouseWheel( int direction )
 {
 	if(	g_bDisableAllInput	) return;
+
+	/* avo: script callback */
+	if (g_actor) g_actor->callback(GameObject::eMouseWheel)(direction);
+	/* avo: end */
 
 	if (CurrentGameUI()->IR_UIOnMouseWheel(direction)) return;
 	if( Device.Paused()
@@ -70,6 +74,11 @@ void CLevel::IR_OnMouseHold(int btn)
 void CLevel::IR_OnMouseMove( int dx, int dy )
 {
 	if(g_bDisableAllInput)							return;
+
+	/* avo: script callback */
+	if (g_actor) g_actor->callback(GameObject::eMouseMove)(dx, dy);
+	/* avo: end */
+
 	if (CurrentGameUI()->IR_UIOnMouseMove(dx,dy))		return;
 	if (Device.Paused() && !IsDemoPlay() 
 #ifdef DEBUG
@@ -175,7 +184,11 @@ void CLevel::IR_OnKeyboardPress	(int key)
 #ifdef DEBUG
 		FS.get_path					("$game_config$")->m_Flags.set(FS_Path::flNeedRescan, TRUE);
 		FS.get_path					("$game_scripts$")->m_Flags.set(FS_Path::flNeedRescan, TRUE);
-		FS.rescan_pathes			();
+		FS.rescan_pathes();
+		FS.IsAddonPhase = true;
+		FS.get_path					("$arch_dir_addons$")->m_Flags.set(FS_Path::flNeedRescan, TRUE);
+		FS.rescan_pathes();
+		FS.IsAddonPhase = false;
 #endif // DEBUG
 		string_path					saved_game,command;
 		xr_strconcat(saved_game, Core.UserName, " - ", g_pStringTable->translate("quicksave").c_str());

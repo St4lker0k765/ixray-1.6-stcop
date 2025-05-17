@@ -1,9 +1,10 @@
 #pragma once
-class UIMainMenuForm :public XrUI
+class UIMainMenuForm :public IEditorWnd
 {
 public:
 	UIMainMenuForm();
 	virtual ~UIMainMenuForm();
 	virtual void Draw();
+	void ExportLevelAsArchive();
 };
 

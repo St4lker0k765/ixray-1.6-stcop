@@ -3,12 +3,12 @@
 //////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include "../../../xrengine/stats.h"
+#include "../../../xrEngine/Stats.h"
 // refs
 class CGameFont;
-#if 0
+
 class ECORE_API CEStats:
-	public CStatsPhysics, public CStats
+	public CStats
 {
 public:
 	float		fFPS,fRFPS,fTPS;	// FPS, RenderFPS, TPS
@@ -17,9 +17,12 @@ public:
 	u32		dwShader_Matrices;	// Number of times the shader-xform changes
 	u32		dwShader_Constants;	// Number of times the shader-consts changes
 	u32		dwSND_Played,dwSND_Allocated;	// Play/Alloc
-    u32		dwTotalLight,dwLightInScene;
 	u32		dwLevelSelFaceCount;	// Number of faces in scene
 	u32		dwLevelSelVertexCount;	// Number of vertices in scene
+
+	u32		lastDPS_verts;
+	u32		lastDPS_polys;
+	u32		lastDPS_calls;
 
 	CStatTimer	RenderDUMP_RT;
 	CStatTimer	RenderTOTAL;		//
@@ -43,13 +46,10 @@ public:
 	CStatTimer	TEST2;				// debug counter
 	CStatTimer	TEST3;				// debug counter
 
-	virtual void	Show		(CGameFont* font);
+	virtual void	Show		() override;
 
 	CEStats	();
 	virtual	~CEStats	();
 };
 
 #define UPDATEC(vert,poly,pass)		{ EDevice->Statistic->dwVert+=(vert)*(pass);EDevice->Statistic->dwPoly+=(poly)*pass; EDevice->Statistic->dwCalls+=pass; }
-#else
-#define UPDATEC(vert,poly,pass)
-#endif

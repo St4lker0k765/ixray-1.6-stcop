@@ -15,9 +15,9 @@
 TEMPLATE_SPECIALIZATION
 CStateGroupPanicAbstract::CStateGroupPanic(_Object *obj) : inherited(obj)
 {
-	this->add_state(eStatePanic_Run,					xr_new<CStateGroupPanicRun<_Object> >(obj));
-	this->add_state(eStatePanic_FaceUnprotectedArea,	xr_new<CStateMonsterLookToUnprotectedArea<_Object> >(obj));
-	this->add_state(eStatePanic_MoveToHomePoint,		xr_new<CStateMonsterAttackMoveToHomePoint<_Object> >(obj));	
+	this->add_state(eStatePanic_Run,					new CStateGroupPanicRun<_Object> (obj));
+	this->add_state(eStatePanic_FaceUnprotectedArea,	new CStateMonsterLookToUnprotectedArea<_Object> (obj));
+	this->add_state(eStatePanic_MoveToHomePoint,		new CStateMonsterAttackMoveToHomePoint<_Object> (obj));	
 }
 
 TEMPLATE_SPECIALIZATION
@@ -68,12 +68,12 @@ TEMPLATE_SPECIALIZATION
 void CStateGroupPanicAbstract::check_force_state()
 {
 	if ((this->current_substate == eStatePanic_FaceUnprotectedArea)){
-		// åñëè âèäèò âðàãà
+		// ÐµÑÐ»Ð¸ Ð²Ð¸Ð´Ð¸Ñ‚ Ð²Ñ€Ð°Ð³Ð°
 		if (this->object->EnemyMan.get_enemy_time_last_seen() == Device.dwTimeGlobal) {
 			this->select_state(eStatePanic_Run);
 			return;
 		}
-		// åñëè ïîëó÷èë hit
+		// ÐµÑÐ»Ð¸ Ð¿Ð¾Ð»ÑƒÑ‡Ð¸Ð» hit
 		if (this->object->HitMemory.get_last_hit_time() + 5000 > Device.dwTimeGlobal) {
 			this->select_state(eStatePanic_Run);
 			return;

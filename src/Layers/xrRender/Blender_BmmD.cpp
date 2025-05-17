@@ -5,7 +5,8 @@
 #include "stdafx.h"
 #pragma hdrstop
 
-#include "blender_BmmD.h"
+#include "Blender_BmmD.h"
+#include "uber_deffer.h"
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -65,27 +66,46 @@ void	CBlender_BmmD::Compile	(CBlender_Compile& C)
 {
 	IBlender::Compile		(C);
 	if (C.bEditor)	{
-		C.PassBegin		();
-		{
-			C.PassSET_ZB		(TRUE,TRUE);
-			C.PassSET_Blend_SET	();
-			C.PassSET_LightFog	(TRUE,TRUE);
-			
-			// Stage1 - Base texture
-			C.StageBegin		();
-			C.StageSET_Color	(D3DTA_TEXTURE,	  D3DTOP_MODULATE,		D3DTA_DIFFUSE);   
-			C.StageSET_Alpha	(D3DTA_TEXTURE,	  D3DTOP_MODULATE,		D3DTA_DIFFUSE);
-			C.StageSET_TMC		(oT_Name,oT_xform,"$null",0);
-			C.StageEnd			();
-			
-			// Stage2 - Second texture
-			C.StageBegin		();
-			C.StageSET_Color	(D3DTA_TEXTURE,	  D3DTOP_MODULATE2X,	D3DTA_CURRENT);
-			C.StageSET_Alpha	(D3DTA_TEXTURE,	  D3DTOP_SELECTARG2,	D3DTA_CURRENT);
-			C.StageSET_TMC		(oT2_Name,oT2_xform,"$null",0);
-			C.StageEnd			();
-		}
-		C.PassEnd			();
+		string256 mask;
+		xr_strconcat(mask, C.L_textures[0].c_str(), "_mask");
+
+	//	C.r_Pass("impl_dt", "impl_dt", TRUE);
+		uber_deffer(C, true, "deffer_base", "deffer_impl", false, oT2_Name[0] ? oT2_Name : 0, true);
+		C.r_Sampler("s_mask", mask);
+
+		C.r_Sampler_waf("s_dt_r", oR_Name, false);
+		C.r_Sampler_waf("s_dt_g", oG_Name, false);
+		C.r_Sampler_waf("s_dt_b", oB_Name, false);
+		C.r_Sampler_waf("s_dt_a", oA_Name, false);
+
+		C.r_Sampler("s_dn_r", xr_strconcat(mask, oR_Name, "_bump"));
+		C.r_Sampler("s_dn_g", xr_strconcat(mask, oG_Name, "_bump"));
+		C.r_Sampler("s_dn_b", xr_strconcat(mask, oB_Name, "_bump"));
+		C.r_Sampler("s_dn_a", xr_strconcat(mask, oA_Name, "_bump"));
+		C.r_Sampler("s_detail", oT2_Name);
+
+		C.r_End();
+		//C.PassBegin		();
+		//{
+		//	C.PassSET_ZB		(TRUE,TRUE);
+		//	C.PassSET_Blend_SET	();
+		//	C.PassSET_LightFog	(TRUE,TRUE);
+		//	
+		//	// Stage1 - Base texture
+		//	C.StageBegin		();
+		//	C.StageSET_Color	(D3DTA_TEXTURE,	  D3DTOP_MODULATE,		D3DTA_DIFFUSE);   
+		//	C.StageSET_Alpha	(D3DTA_TEXTURE,	  D3DTOP_MODULATE,		D3DTA_DIFFUSE);
+		//	C.StageSET_TMC		(oT_Name,oT_xform,"$null",0);
+		//	C.StageEnd			();
+		//	
+		//	// Stage2 - Second texture
+		//	C.StageBegin		();
+		//	C.StageSET_Color	(D3DTA_TEXTURE,	  D3DTOP_MODULATE2X,	D3DTA_CURRENT);
+		//	C.StageSET_Alpha	(D3DTA_TEXTURE,	  D3DTOP_SELECTARG2,	D3DTA_CURRENT);
+		//	C.StageSET_TMC		(oT2_Name,oT2_xform,"$null",0);
+		//	C.StageEnd			();
+		//}
+		//C.PassEnd			();
 	} else {
 		if (C.L_textures.size()<2)	Debug.fatal	(DEBUG_INFO,"Not enought textures for shader, base tex: %s",*C.L_textures[0]);
 		switch (C.iElement)
@@ -197,6 +217,7 @@ void	CBlender_BmmD::Compile	(CBlender_Compile& C)
 	xr_strconcat(mask, C.L_textures[0].c_str(), "_mask");
 
 	RImplementation.addShaderOption("USE_LM_HEMI", "1");
+	RImplementation.addShaderOption("USE_TDETAIL_BUMP", "1");
 
 	switch(C.iElement) {
 	case SE_R2_NORMAL_HQ:
@@ -206,24 +227,29 @@ void	CBlender_BmmD::Compile	(CBlender_Compile& C)
 		C.r_ColorWriteEnable(false, false, false, false);
 		C.r_End(false);
 
+		C.bDetail_Bump = C.bDetail_Diffuse;
+		if(C.iElement == SE_R2_NORMAL_HQ) {
+			RImplementation.addShaderOption("USE_4_BUMP", "");
+		}
+
 		uber_deffer(C, true, "deffer_base", "deffer_impl", false, oT2_Name[0] ? oT2_Name : 0, true);
 		C.RS.SetRS(D3DRS_ZFUNC, D3D11_COMPARISON_EQUAL);
 
-		C.r_dx10Texture("s_mask", mask);
 		C.r_dx10Texture("s_lmap", C.L_textures[1]);
 
-		C.r_dx10Texture("s_dt_r", oR_Name);
-		C.r_dx10Texture("s_dt_g", oG_Name);
-		C.r_dx10Texture("s_dt_b", oB_Name);
-		C.r_dx10Texture("s_dt_a", oA_Name);
+		if(C.iElement == SE_R2_NORMAL_HQ) {
+			C.r_dx10Texture("s_mask", mask);
 
-		C.r_dx10Texture		("s_dn_r",	xr_strconcat(mask,oR_Name,"_bump") );
-		C.r_dx10Texture		("s_dn_g",	xr_strconcat(mask,oG_Name,"_bump") );
-		C.r_dx10Texture		("s_dn_b",	xr_strconcat(mask,oB_Name,"_bump") );
-		C.r_dx10Texture		("s_dn_a",	xr_strconcat(mask,oA_Name,"_bump") );
+			C.r_dx10Texture("s_dt_r", oR_Name);
+			C.r_dx10Texture("s_dt_g", oG_Name);
+			C.r_dx10Texture("s_dt_b", oB_Name);
+			C.r_dx10Texture("s_dt_a", oA_Name);
 
-		C.r_dx10Sampler("smp_base");
-		C.r_dx10Sampler("smp_linear");
+			C.r_dx10Texture("s_dn_r", xr_strconcat(mask, oR_Name, "_bump"));
+			C.r_dx10Texture("s_dn_g", xr_strconcat(mask, oG_Name, "_bump"));
+			C.r_dx10Texture("s_dn_b", xr_strconcat(mask, oB_Name, "_bump"));
+			C.r_dx10Texture("s_dn_a", xr_strconcat(mask, oA_Name, "_bump"));
+		}
 
 		C.r_Stencil(TRUE, D3DCMP_ALWAYS, 0xff, 0x7f, D3DSTENCILOP_KEEP, D3DSTENCILOP_REPLACE, D3DSTENCILOP_KEEP);
 		C.r_StencilRef(0x01);

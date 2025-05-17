@@ -1,15 +1,15 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
-#include "../xrEngine/fdemorecord.h"
-#include "../xrEngine/fdemoplay.h"
-#include "../xrEngine/environment.h"
-#include "../xrEngine/igame_persistent.h"
+#include "../xrEngine/FDemoRecord.h"
+#include "../xrEngine/FDemoPlay.h"
+#include "../xrEngine/Environment.h"
+#include "../xrEngine/IGame_Persistent.h"
 #include "../xrParticles/stdafx.h"
 #include "../xrParticles/ParticlesObject.h"
 #include "Level.h"
 #include "HUDManager.h"
 #include "xrServer.h"
-#include "net_queue.h"
+#include "NET_Queue.h"
 #include "game_cl_base.h"
 #include "entity_alive.h"
 #include "ai_space.h"
@@ -17,15 +17,15 @@
 //#include "PHdynamicdata.h"
 //#include "Physics.h"
 #include "ShootingObject.h"
-#include "GameTaskManager.h"
+#include "GametaskManager.h"
 #include "Level_Bullet_Manager.h"
 #include "../xrScripts/script_process.h"
 #include "../xrScripts/script_engine.h"
 #include "../xrScripts/script_engine_space.h"
 #include "team_base_zone.h"
-#include "infoportion.h"
+#include "InfoPortion.h"
 #include "patrol_path_storage.h"
-#include "date_time.h"
+#include "../xrEngine/date_time.h"
 #include "space_restriction_manager.h"
 #include "seniority_hierarchy_holder.h"
 #include "space_restrictor.h"
@@ -34,25 +34,25 @@
 #include "ClimableObject.h"
 #include "level_graph.h"
 #include "mt_config.h"
-#include "phcommander.h"
+#include "PHCommander.h"
 #include "map_manager.h"
 #include "../xrEngine/CameraManager.h"
 #include "level_sounds.h"
-#include "car.h"
+#include "Car.h"
 #include "trade_parameters.h"
 #include "game_cl_base_weapon_usage_statistic.h"
 #include "MainMenu.h"
 #include "../xrEngine/XR_IOConsole.h"
 #include "Actor.h"
 #include "player_hud.h"
-#include "UI/UIGameTutorial.h"
+#include "ui/UIGameTutorial.h"
 #include "file_transfer.h"
-#include "message_filter.h"
-#include "demoplay_control.h"
-#include "demoinfo.h"
+#include "Message_Filter.h"
+#include "DemoPlay_Control.h"
+#include "DemoInfo.h"
 #include "CustomDetector.h"
 
-#include "../xrPhysics/iphworld.h"
+#include "../xrPhysics/IPHWorld.h"
 #include "../xrPhysics/console_vars.h"
 #ifdef DEBUG_DRAW
 #	include "level_debug.h"
@@ -63,6 +63,7 @@
 
 // Lain:added
 #	include "debug_text_tree.h"
+#include "level_changer.h"
 #endif
 
 ENGINE_API bool g_dedicated_server;
@@ -186,12 +187,14 @@ CLevel::CLevel():IPureClient	(Device.GetTimerGlobal())
 	m_game_graph = 0;
 	m_chunk = 0;
 	spawn = 0;
+
 }
 
 extern CAI_Space *g_ai_space;
 
 CLevel::~CLevel()
 {
+	DestroyImGuiInGame();
 	xr_delete					(g_player_hud);
 	delete_data					(hud_zones_list);
 	hud_zones_list				= nullptr;
@@ -213,7 +216,7 @@ CLevel::~CLevel()
 
 	// destroy PSs
 	for (POIt p_it=m_StaticParticles.begin(); m_StaticParticles.end()!=p_it; ++p_it)
-		CParticlesObject::Destroy(*p_it);
+		Particles::Details::Destroy(*p_it);
 	m_StaticParticles.clear		();
 
 	// Unload sounds
@@ -314,6 +317,7 @@ CLevel::~CLevel()
 	m_chunk->close();
 	FS.r_close(spawn);
 }
+
 
 shared_str	CLevel::name		() const
 {
@@ -434,6 +438,7 @@ void CLevel::cl_Process_Event				(u16 dest, u16 type, NET_Packet& P)
 
 void CLevel::ProcessGameEvents		()
 {
+	PROF_EVENT("CLevel::ProcessGameEvents");
 	// Game events
 	{
 		NET_Packet			P;
@@ -453,16 +458,19 @@ void CLevel::ProcessGameEvents		()
 			{
 			case M_SPAWN:
 				{
+					PROF_EVENT("M_SPAWN");
 					u16 dummy16;
 					P.r_begin(dummy16);
 					cl_Process_Spawn(P);
 				}break;
 			case M_EVENT:
 				{
+					PROF_EVENT("M_EVENT");
 					cl_Process_Event(dest, type, P);
 				}break;
 			case M_MOVE_PLAYERS:
 				{
+					PROF_EVENT("M_MOVE_PLAYERS");
 					u8 Count = P.r_u8();
 					for (u8 i=0; i<Count; i++)
 					{
@@ -482,16 +490,19 @@ void CLevel::ProcessGameEvents		()
 				}break;
 			case M_STATISTIC_UPDATE:
 				{
+					PROF_EVENT("M_STATISTIC_UPDATE");
 					if (!IsGameTypeSingle())
 						Game().m_WeaponUsageStatistic->OnUpdateRequest(&P);
 				}break;
 			case M_FILE_TRANSFER:
 				{
+					PROF_EVENT("M_FILE_TRANSFER");
 					if (m_file_transfer)			//in case of net_Stop
 						m_file_transfer->on_message(&P);
 				}break;
 			case M_GAMEMESSAGE:
 				{
+					PROF_EVENT("M_GAMEMESSAGE");
 					Game().OnGameMessage(P);
 				}break;
 			default:
@@ -578,17 +589,9 @@ void CLevel::OnFrame()
 	if (!g_dedicated_server)
 	{
 		if (g_mt_config.test(mtMap))
-			Device.seqParallel.push_back(fastdelegate::FastDelegate0<>(m_map_manager, &CMapManager::Update));
+			Device.seqParallel.push_back(xr_make_delegate(m_map_manager, &CMapManager::Update));
 		else
 			MapManager().Update();
-
-		if (Device.dwPrecacheFrame == 0)
-		{
-			//if (g_mt_config.test(mtMap)) 
-			//	Device.seqParallel.push_back	(fastdelegate::FastDelegate0<>(m_game_task_manager,&CGameTaskManager::UpdateTasks));
-			//else								
-			GameTaskManager().UpdateTasks();
-		}
 	}
 	// Inherited update
 	inherited::OnFrame();
@@ -683,11 +686,6 @@ void CLevel::OnFrame()
 #endif
 	g_pGamePersistent->Environment().SetGameTime(GetEnvironmentGameDayTimeSec(), game->GetEnvironmentGameTimeFactor());
 
-	ai().script_engine().script_process(ScriptEngine::eScriptProcessorLevel)->update();
-
-	m_ph_commander->update();
-	m_ph_commander_scripts->update();
-
 	//  
 	Device.Statistic->TEST0.Begin();
 	BulletManager().CommitRenderSet();
@@ -695,12 +693,12 @@ void CLevel::OnFrame()
 
 	// update static sounds
 	if (g_mt_config.test(mtLevelSounds))
-		Device.seqParallel.push_back(fastdelegate::FastDelegate0<>(m_level_sound_manager, &CLevelSoundManager::Update));
+		Device.seqParallel.push_back(xr_make_delegate(m_level_sound_manager, &CLevelSoundManager::Update));
 	else
 		m_level_sound_manager->Update();
 
 	if (g_mt_config.test(mtLUA_GC))	
-		Device.seqParallel.push_back(fastdelegate::FastDelegate0<>(this, &CLevel::script_gc));
+		Device.seqParallel.push_back(xr_make_delegate(this, &CLevel::script_gc));
 	else						
 		script_gc();
 
@@ -718,6 +716,14 @@ void CLevel::OnFrame()
 int		psLUA_GCSTEP					= 10			;
 void	CLevel::script_gc				()
 {
+	{
+		PROF_EVENT("m_ph_commander");
+		ai().script_engine().script_process(ScriptEngine::eScriptProcessorLevel)->update();
+
+		m_ph_commander->update();
+		m_ph_commander_scripts->update();
+	}
+	PROF_EVENT("CLevel::script_gc");
 	lua_gc	(ai().script_engine().lua(), LUA_GCSTEP, psLUA_GCSTEP);
 }
 
@@ -729,7 +735,7 @@ void test_precise_path	();
 extern	Flags32	dbg_net_Draw_Flags;
 #endif
 
-extern void draw_wnds_rects();
+extern UI_API void draw_wnds_rects();
 
 void CLevel::OnRender()
 {
@@ -782,6 +788,11 @@ void CLevel::OnRender()
 			CSpaceRestrictor	*space_restrictor = smart_cast<CSpaceRestrictor*>	(_O);
 			if (space_restrictor)
 				space_restrictor->OnRender();
+
+			CLevelChanger* lchanger = smart_cast<CLevelChanger*>	(_O);
+			if (lchanger)
+				lchanger->OnRender();
+
 			CClimableObject		*climable		  = smart_cast<CClimableObject*>	(_O);
 			if(climable)
 				climable->OnRender();

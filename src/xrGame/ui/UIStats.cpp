@@ -1,11 +1,11 @@
 #include "StdAfx.h"
 
 #include "UIStats.h"
-#include "UIXmlInit.h"
+#include "../../xrUI/UIXmlInit.h"
 #include "UIStatsPlayerList.h"
-#include "UIStatic.h"
-#include "UIFrameWindow.h"
-#include "../level.h"
+#include "../../xrUI/Widgets/UIStatic.h"
+#include "../../xrUI/Widgets/UIFrameWindow.h"
+#include "../Level.h"
 #include "game_base_space.h"
 
 

@@ -5,7 +5,9 @@
 // DirectX headers
 #include <d3d9.h>
 #include "../xrEUI/stdafx.h"
-#include "..\..\Layers\xrRenderDX9\xrD3DDefs.h"
+#include "../../Layers/xrRenderDX9/xrD3DDefs.h"
+
+#include "../../utils/xrDXT/xrDXT.h"
 
 #ifdef	XRECORE_EXPORTS
 #define ECORE_API		__declspec(dllexport)
@@ -13,15 +15,15 @@
 #define ECORE_API		__declspec(dllimport)
 #endif
 
-#include "..\..\xrEngine\stdafx.h"
-#include "..\..\xrEngine\device.h"
-#include "..\xrEProps\stdafx.h"
-#include "..\..\xrCDB\xrCDB.h"
-#include "..\..\xrSound\Sound.h"
-#include "..\..\xrParticles\psystem.h"
+#include "../../xrEngine/stdafx.h"
+#include "../../xrEngine/device.h"
+#include "../xrEProps/stdafx.h"
+#include "../../xrCDB/xrCDB.h"
+#include "../../xrSound/Sound.h"
+#include "../../xrParticles/psystem.h"
 
-#include "..\..\XrEngine\fmesh.h"
-#include "..\..\XrEngine\_d3d_extensions.h"
+#include "../../xrEngine/Fmesh.h"
+#include "../../xrEngine/_d3d_extensions.h"
 #define smart_cast dynamic_cast
 
 #ifndef O_SEQUENTIAL
@@ -61,13 +63,13 @@ using LPAStringVec = xr_vector<AnsiString*>;
 using LPAStringIt = LPAStringVec::iterator;
 
 
-#include "..\Public\xrEProps.h"
-#include "..\..\xrCore\Log.h"
-#include "editor\ELog.h"
-#include "..\..\XrEngine\defines.h"
+#include "../Public/xrEProps.h"
+#include "../../xrCore/log.h"
+#include "Editor/ELog.h"
+#include "../../xrEngine/defines.h"
 
-#include "../../xrphysics/xrphysics.h"
-#include "../../Layers\xrRender\FVF.h"
+#include "../../xrPhysics/xrPhysics.h"
+#include "../../Layers/xrRender/FVF.h"
 
 struct str_pred 
 {
@@ -80,9 +82,9 @@ struct astr_pred
     {	return x<y;	}
 };
 
-#include "editor\device.h"
-#include "..\..\XrEngine\properties.h"
-#include "editor\render.h"
+#include "Editor/device.h"
+#include "../../xrEngine/Properties.h"
+#include "Editor/render.h"
 using FLvertexVec = xr_vector<FVF::L>;
 using FLvertexIt = FLvertexVec::iterator;
 
@@ -101,8 +103,8 @@ using RStrVecIt = RStrVec::iterator;
 	#include "../../xrCore/net_utils.h"
 #endif
 
-#define INI_NAME(buf) 		{FS.update_path(buf,"$local_root$",EFS.ChangeFileExt(UI->EditorName(),".ini").c_str());}
-#define JSON_NAME(buf) 		{FS.update_path(buf,"$local_root$",EFS.ChangeFileExt(UI->EditorName(),".json").c_str());}
+#define INI_NAME(buf) 		{FS.update_path(buf,"$app_data_root$",EFS.ChangeFileExt(UI->EditorName(),".ini").c_str());}
+#define JSON_NAME(buf) 		{FS.update_path(buf,"$app_data_root$",EFS.ChangeFileExt(UI->EditorName(),".json").c_str());}
 //#define INI_NAME(buf) 		{buf = buf+xr_string(Core.WorkingPath)+xr_string("\\")+EFS.ChangeFileExt(UI->EditorName(),".ini");}
 #define DEFINE_INI(storage)	{string_path buf; INI_NAME(buf); storage->IniFileName=buf;}
 #define NONE_CAPTION "<none>"
@@ -127,8 +129,8 @@ using RStrVecIt = RStrVec::iterator;
 #define		TEX_POINT_ATT	"internal\\internal_light_attpoint"
 #define		TEX_SPOT_ATT	"internal\\internal_light_attclip"
 
-#include "..\..\Layers\xrRender\ETextureParams.h"
-#include "..\..\Layers\xrRender\\ResourceManager.h"
+#include "../../Layers/xrRender/ETextureParams.h"
+#include "../../Layers/xrRender/ResourceManager.h"
 
 #include "../../Layers/xrRender/blenders/Blender_Recorder.h"
 #include "../../Layers/xrRender/blenders/Blender.h"

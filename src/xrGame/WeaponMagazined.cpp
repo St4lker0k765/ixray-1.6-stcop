@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "pch_script.h"
 
 #include "WeaponMagazined.h"
@@ -16,15 +16,19 @@
 #include "object_broker.h"
 #include "../xrEngine/string_table.h"
 #include "MPPlayersBag.h"
-#include "ui/UIXmlInit.h"
-#include "ui/UIStatic.h"
+#include "../../xrUI/UIXmlInit.h"
+#include "../../xrUI/Widgets/UIStatic.h"
 #include "game_object_space.h"
 #include "script_game_object.h"
 #include "Actor_Flags.h"
 #include "player_hud.h"
 #include "CustomDetector.h"
 
-ENGINE_API	bool	g_dedicated_server;
+#if USE_OLD_OBJECT_PLANNER
+#include "Legacy/object_handler_planner.h"
+#endif
+
+ENGINE_API bool	g_dedicated_server;
 
 CUIXml*				pWpnScopeXml = nullptr;
 
@@ -93,14 +97,14 @@ void CWeaponMagazined::Load	(LPCSTR section)
 	// Sounds
 	m_sounds.LoadSound(section,"snd_draw", "sndShow"		, false, m_eSoundShow		);
 	m_sounds.LoadSound(section,"snd_holster", "sndHide"		, false, m_eSoundHide		);
-	m_sounds.LoadSound(section,"snd_shoot", "sndShot"		, false, m_eSoundShot		);
+	m_layered_sounds.LoadSound(section, "snd_shoot", "sndShot", false, m_eSoundShot);
 	m_sounds.LoadSound(section,"snd_empty", "sndEmptyClick"	, false, m_eSoundEmptyClick	);
 	m_sounds.LoadSound(section,"snd_reload", "sndReload"	, true, m_eSoundReload		);
 
-	if (WeaponSoundExist(section, "snd_reload_empty") && HudAnimationExist("anm_reload_empty"))
+	if (WeaponSoundExist(section, "snd_reload_empty"))
 		m_sounds.LoadSound(section,"snd_reload_empty", "sndReloadEmpty"	, true, m_eSoundReload);
 	
-	if (WeaponSoundExist(section, "snd_reload_misfire") && HudAnimationExist("anm_reload_misfire"))
+	if (WeaponSoundExist(section, "snd_reload_misfire"))
 		m_sounds.LoadSound(section, "snd_reload_misfire", "sndReloadMis", true, m_eSoundReload);
 
 	if (WeaponSoundExist(section, "snd_aim"))
@@ -119,7 +123,7 @@ void CWeaponMagazined::Load	(LPCSTR section)
 		if(pSettings->line_exist(section, "silencer_smoke_particles"))
 			m_sSilencerSmokeParticles = pSettings->r_string(section, "silencer_smoke_particles");
 		
-		m_sounds.LoadSound(section,"snd_silncer_shot", "sndSilencerShot", false, m_eSoundShot);
+		m_layered_sounds.LoadSound(section, "snd_silncer_shot", "sndSilencerShot", false, m_eSoundShot);
 	}
 
 	m_iBaseDispersionedBulletsCount = READ_IF_EXISTS(pSettings, r_u8, section, "base_dispersioned_bullets_count", 0);
@@ -198,11 +202,14 @@ void CWeaponMagazined::FireEnd()
 {
 	inherited::FireEnd();
 
-	if (EngineExternal()[EEngineExternalGame::EnableAutoreload])
+	const static bool isAutoreload = EngineExternal()[EEngineExternalGame::EnableAutoreload];
+	if (isAutoreload)
 	{
-		CActor	*actor = smart_cast<CActor*>(H_Parent());
-		if(m_pInventory && !iAmmoElapsed && actor && GetState()!=eReload)
+		CActor *actor = smart_cast<CActor*>(H_Parent());
+		if (m_pInventory && !iAmmoElapsed && actor && GetState() != eReload)
+		{
 			Reload();
+		}
 	}
 }
 
@@ -525,6 +532,7 @@ void CWeaponMagazined::OnStateSwitch	(u32 S)
 
 void CWeaponMagazined::UpdateCL			()
 {
+	PROF_EVENT("CWeaponMagazined::UpdateCL")
 	inherited::UpdateCL	();
 	float dt = Device.fTimeDelta;
 
@@ -698,7 +706,8 @@ void CWeaponMagazined::SetDefaults	()
 void CWeaponMagazined::OnShot()
 {
 	// Sound
-	PlaySound(m_sSndShotCurrent.c_str(), get_LastFP(), true);
+	//Alundaio: Actor sounds
+	m_layered_sounds.PlaySound(m_sSndShotCurrent.c_str(), get_LastFP(), H_Root(), !!GetHUDmode(), false, (u8)-1);
 
 	// Camera	
 	AddShotEffector				();
@@ -778,7 +787,6 @@ void CWeaponMagazined::switch2_Idle	()
 
 #ifdef DEBUG
 #include "ai/stalker/ai_stalker.h"
-#include "object_handler_planner.h"
 #endif
 void CWeaponMagazined::switch2_Fire	()
 {
@@ -792,6 +800,7 @@ void CWeaponMagazined::switch2_Fire	()
 	if (ii != io->inventory().ActiveItem())
 		Msg					("! not an active item, item %s, owner %s, active item %s",*cName(),*H_Parent()->cName(),io->inventory().ActiveItem() ? *io->inventory().ActiveItem()->object().cName() : "no_active_item");
 
+#if USE_OLD_OBJECT_PLANNER
 	if ( !(io && (ii == io->inventory().ActiveItem())) ) 
 	{
 		CAI_Stalker			*stalker = smart_cast<CAI_Stalker*>(H_Parent());
@@ -801,6 +810,7 @@ void CWeaponMagazined::switch2_Fire	()
 			stalker->planner().show_target_world_state	();
 		}
 	}
+#endif
 #else
 	if (!io)
 		return;
@@ -829,7 +839,12 @@ void CWeaponMagazined::switch2_Empty()
 {
 	OnZoomOut();
 	
-	if (EngineExternal()[EEngineExternalGame::EnableAutoreload])
+	const static bool isAutoreload = EngineExternal()[EEngineExternalGame::EnableAutoreload];
+	if (!isAutoreload)
+	{
+		OnEmptyClick();
+	}
+	else
 	{
 		if (!IsTriStateReload())
 		{
@@ -849,8 +864,6 @@ void CWeaponMagazined::switch2_Empty()
 			}
 		}
 	}
-	else
-		OnEmptyClick();
 }
 
 void CWeaponMagazined::PlayReloadSound()
@@ -858,9 +871,9 @@ void CWeaponMagazined::PlayReloadSound()
 	if(!m_sounds_enabled)
 		return;
 
-	if (m_sounds.FindSoundItem("sndReloadMis", false) && HudAnimationExist("anm_reload_misfire") && IsMisfire() && bMisfireReload)
+	if (m_sounds.FindSoundItem("sndReloadMis", false) && IsMisfire() && bMisfireReload)
 		PlaySound("sndReloadMis", get_LastFP());
-	else if (m_sounds.FindSoundItem("sndReloadEmpty", false) && HudAnimationExist("anm_reload_empty") && iAmmoElapsed == 0)
+	else if (m_sounds.FindSoundItem("sndReloadEmpty", false) && iAmmoElapsed == 0)
 		PlaySound("sndReloadEmpty", get_LastFP());
 	else
 		PlaySound("sndReload", get_LastFP());
@@ -1463,8 +1476,8 @@ bool CWeaponMagazined::GetBriefInfo( II_BriefInfo& info )
 	u32 at_size = (u32)m_ammoTypes.size();
 	if ( unlimited_ammo() || at_size == 0 )
 	{
-		info.fmj_ammo._set( "--" );
-		info.ap_ammo._set( "--" );
+		info.fmj_ammo._set("∞");
+		info.ap_ammo._set("∞");
 	}
 	else
 	{
@@ -1488,13 +1501,13 @@ bool CWeaponMagazined::GetBriefInfo( II_BriefInfo& info )
 	if ( ae != 0 && m_magazine.size() != 0 )
 	{
 		LPCSTR ammo_type = m_ammoTypes[m_magazine.back().m_LocalAmmoType].c_str();
-		info.name		= CStringTable().translate( pSettings->r_string(ammo_type, "inv_name_short") );
+		info.name		= g_pStringTable->translate( pSettings->r_string(ammo_type, "inv_name_short") );
 		info.icon		= ammo_type;
 	}
 	else
 	{
 		LPCSTR ammo_type	= m_ammoTypes[m_ammoType].c_str();
-		info.name			= CStringTable().translate( pSettings->r_string(ammo_type, "inv_name_short") );
+		info.name			= g_pStringTable->translate( pSettings->r_string(ammo_type, "inv_name_short") );
 		info.icon			= ammo_type;
 	}
 	return true;
@@ -1534,7 +1547,7 @@ bool CWeaponMagazined::install_upgrade_impl( LPCSTR section, bool test )
 	result |= result2;
 
 	result2 = process_if_exists_set( section, "snd_shoot", &CInifile::r_string, str, test );
-	if ( result2 && !test ) { m_sounds.LoadSound( section, "snd_shoot"	, "sndShot"		, false, m_eSoundShot		);	}
+	if ( result2 && !test ) { m_layered_sounds.LoadSound( section, "snd_shoot"	, "sndShot"		, false, m_eSoundShot		);	}
 	result |= result2;
 
 	result2 = process_if_exists_set( section, "snd_empty", &CInifile::r_string, str, test );
@@ -1555,7 +1568,7 @@ bool CWeaponMagazined::install_upgrade_impl( LPCSTR section, bool test )
 		result |= process_if_exists_set( section, "silencer_smoke_particles", &CInifile::r_string, m_sSilencerSmokeParticles, test );
 
 		result2 = process_if_exists_set( section, "snd_silncer_shot", &CInifile::r_string, str, test );
-		if ( result2 && !test ) { m_sounds.LoadSound( section, "snd_silncer_shot"	, "sndSilencerShot", false, m_eSoundShot	);	}
+		if ( result2 && !test ) { m_layered_sounds.LoadSound( section, "snd_silncer_shot"	, "sndSilencerShot", false, m_eSoundShot	);	}
 		result |= result2;
 	}
 

@@ -2,16 +2,12 @@
 //
 //////////////////////////////////////////////////////////////////////
 #pragma once
-
-#include "../../xrcore/fs.h"
-#include "../shader_xrlc.h"
-
-struct		 STextureParams;
-
-extern "C" bool __declspec(dllimport) __stdcall DXTCompress(LPCSTR out_name, u8* raw_data, u8* normal_map, u32 w, u32 h, u32 pitch, STextureParams* fmt, u32 depth);
+#include "../xrDXT/xrDXT.h"
+#include "../../xrCore/FS.h"
+#include "../Shader_xrLC.h"
 
 #include "../xrLC_Light/b_build_texture.h"
-#include "../xrLC_Light/xrfacedefs.h"
+#include "../xrLC_Light/xrFaceDefs.h"
 
 class xrLC_GlobalData;
 class xrMU_Model;

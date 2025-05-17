@@ -1,12 +1,12 @@
 #include "stdafx.h"
-#include "flod.h"
+#include "FLOD.h"
 
 #ifdef _EDITOR
 #include "igame_persistent.h"
 #include "environment.h"
 #else
-#include "../../xrEngine/igame_persistent.h"
-#include "../../xrEngine/environment.h"
+#include "../../xrEngine/IGame_Persistent.h"
+#include "../../xrEngine/Environment.h"
 #endif
 
 extern float	r_ssaLOD_A;
@@ -15,6 +15,7 @@ extern float	r_ssaLOD_B;
 ICF		bool	pred_dot		(const std::pair<float,u32>& _1, const std::pair<float,u32>& _2)	{ return _1.first < _2.first; }
 void R_dsgraph_structure::r_dsgraph_render_lods	(bool _setup_zb, bool _clear)
 {
+	PROF_EVENT("LODS: Render")
 	if (_setup_zb)	mapLOD.getLR	(lstLODs)	;	// front-to-back
 	else			mapLOD.getRL	(lstLODs)	;	// back-to-front
 	if (lstLODs.empty())			return		;

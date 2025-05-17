@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "../level.h"
+#include "../Level.h"
 #include "../map_location.h"
 #include "../map_manager.h"
 #include "../map_spot.h"
@@ -529,8 +529,12 @@ bool CUILevelMap::OnMouseAction(float x, float y, EUIMessages mouse_action)
 				MapWnd()->CreateSpotWindow(RealPosition, MapName());
 				return true;
 			}
+			else if (_mapLoc->IsUserDefined())
+			{
+				Level().MapManager().RemoveMapLocation(_mapLoc);
+				return true;
+			}
 		}
-
 	}
 
 	if(mouse_action==WINDOW_MOUSE_MOVE && (FALSE==pInput->iGetAsyncBtnState(0)) )

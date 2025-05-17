@@ -4,7 +4,7 @@
 
 #include "stdafx.h"
 #include "EngineAPI.h"
-#include "../xrcdb/xrXRC.h"
+#include "../xrCDB/xrXRC.h"
 
 #include <filesystem>
 
@@ -191,9 +191,7 @@ void CEngineAPI::CreateRendererList()
 		}
 		else
 		{
-			char fullPath[MAX_PATH]{};
-			GetModuleFileNameA(nullptr, fullPath, MAX_PATH);
-			auto dir = std::filesystem::weakly_canonical(fullPath).parent_path();
+			auto dir = std::filesystem::weakly_canonical(Platform::GetBinaryFolderPath());
 			bSupports_r1 = std::filesystem::exists(dir / r1_name);
 			bSupports_r2 = std::filesystem::exists(dir / r2_name);
 			bSupports_r4 = std::filesystem::exists(dir / r4_name);
@@ -243,4 +241,16 @@ APILevel CEngineAPI::GetAPI()
 	}
 
 	return APILevel::DX9;
+}
+
+thread_local int SkinningMode = -1;
+
+int CEngineAPI::GetSkinningMode() const
+{
+	return SkinningMode;
+}
+
+void CEngineAPI::SetSkinningMode(int Mode)
+{
+	SkinningMode = Mode;
 }

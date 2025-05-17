@@ -1,10 +1,5 @@
 #include "stdafx.h"
 #include "UIPostProcess.h"
-#include "../xrEUI/ImOpenFileDialog.h"
-#include "../xrEUI/ImGuiFileDialogConfig.h"
-
-#include "../../xrEProps/UIFileLoad.h"
-extern CUFileOpen* FileOpen;
 
 static CMainPPE MyForm;
 
@@ -111,9 +106,9 @@ size_t CMainPPE::GetSelectedItemID() const
 void CMainPPE::Apply(xr_string FileName)
 {
 	// action if OK
-	std::filesystem::path Path = FileName.c_str();
+	xr_path Path = FileName;
 	xr_string filePathName = FileName;
-	MyForm.FileName = Path.filename().generic_string().c_str();
+	MyForm.FileName = Path.xfilename();
 	// action
 
 	if (MyForm.DrawDialogType == DialogType::Save)
@@ -143,25 +138,24 @@ void CMainPPE::ClickHandle()
 {
 	if (LoadClick)
 	{
-		string_path AnimDir = {};
-		FS.update_path(AnimDir, "$game_anims$", "");
+		xr_string temp_fn;
+		EFS.GetOpenName("$game_anims$", temp_fn, false, 0, -1, "*.ppe");
 
-		ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".ppe", AnimDir);
 		LoadClick = false;
 
 		DrawDialogType = DialogType::Load;
-		FileOpen->AfterLoadCallback = CMainPPE::Apply;
+		CMainPPE::Apply(temp_fn);
 	}
 	else if (SaveClick)
 	{
-		string_path AnimDir = {};
-		FS.update_path(AnimDir, "$game_anims$", "");
+		xr_string temp_fn;
+		EFS.GetSaveName("$game_anims$", temp_fn, 0, -1, "*.ppe");
 
-		ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".ppe", AnimDir);
+		//FileOpen->ShowDialog(AnimDir, ".ppe");
 		SaveClick = false;
 		
 		DrawDialogType = DialogType::Save;
-		FileOpen->AfterLoadCallback = CMainPPE::Apply;
+		CMainPPE::Apply(temp_fn);
 	}
 	else if (NewClick)
 	{

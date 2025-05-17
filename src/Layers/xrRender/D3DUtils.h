@@ -15,13 +15,15 @@
 #	define DU_DRAW_DP	RCache.dbg_DP
 #endif
 
+class CEditableObject;
+
 struct SPrimitiveBuffer{
     ref_geom				pGeom;
     u32						v_cnt;
     u32						i_cnt;
     D3DPRIMITIVETYPE 		p_type;
     u32						p_cnt;
-	typedef fastdelegate::FastDelegate0<> TOnRender;
+	typedef xr_delegate<void()> TOnRender;
     TOnRender				OnRender;
     void 			RenderDIP()	{DU_DRAW_DIP(p_type,pGeom,0,0,v_cnt,0,p_cnt);}
     void 			RenderDP()	{DU_DRAW_DP	(p_type,pGeom,0,p_cnt);}
@@ -52,6 +54,7 @@ public:
 	ref_geom 	vs_TL;
 	ref_geom 	vs_LIT;
 protected:
+    CEditableObject* m_axis_object;
     FVF::L*		m_DD_pv;
     FVF::L*		m_DD_pv_start;
     u32 		m_DD_base;
@@ -77,7 +80,7 @@ public:
     virtual void  OnDeviceDestroy();
 
 	void UpdateGrid(int number_of_cell, float square_size, int subdiv=10);
-
+    void DestroyObjects();
     //----------------------------------------------------
     virtual void  DrawCross(const Fvector& p, float szx1, float szy1, float szz1, float szx2, float szy2, float szz2, u32 clr, BOOL bRot45=false);
     virtual void  DrawCross(const Fvector& p, float sz, u32 clr, BOOL bRot45=false){ DrawCross(p, sz,sz,sz, sz,sz,sz, clr, bRot45); }

@@ -1,5 +1,5 @@
-#include "stdafx.h"
-#include "../xrEngine/xr_ioconsole.h"
+#include "StdAfx.h"
+#include "../xrEngine/XR_IOConsole.h"
 #include "../xrEngine/xr_ioc_cmd.h"
 #include "Level.h"
 #include "xrServer.h"
@@ -8,13 +8,13 @@
 #include "Actor.h"
 #include "xrServer_Object_base.h"
 #include "RegistryFuncs.h"
-#include "gamepersistent.h"
+#include "GamePersistent.h"
 #include "MainMenu.h"
 #include "UIGameCustom.h"
 #include "game_sv_deathmatch.h"
 #include "game_sv_artefacthunt.h"
 #include "game_sv_capture_the_artefact.h"
-#include "date_time.h"
+#include "../xrEngine/date_time.h"
 #include "game_cl_base_weapon_usage_statistic.h"
 #include "../xrEngine/string_table.h"
 #include "../xrGameSpy/xrGameSpy_MainDefs.h"
@@ -1174,6 +1174,8 @@ public:
 		if (!g_pGameLevel || !Level().Server || !Level().Server->game) return;
 
 		u32	cnt = Level().Server->game->get_players_count();
+		if (g_dedicated_server)
+			cnt--;
 		Msg("- Total Players : %d", cnt);
 		Msg("- ----player list begin-----");
 		struct PlayersEnumerator
@@ -1186,17 +1188,20 @@ public:
 			void operator()(IClient* client)
 			{
 				xrClientData *l_pC	= (xrClientData*)client;
-				if (!l_pC)
+				if (!l_pC || !l_pC->ps)
+					return;
+
+				if (g_dedicated_server && l_pC->ID == Level().Server->GetServerClient()->ID)
 					return;
 				ip_address			Address;
 				DWORD dwPort		= 0;
 				Level().Server->GetClientAddress(client->ID, Address, &dwPort);
 				string512 tmp_string;
-				xr_sprintf(tmp_string, "- (player session id : %u), (name : %s), (ip: %s), (ping: %u);",
-					client->ID.value(),
+				xr_sprintf(tmp_string, "- (player session id : %u), (name : %s), (ip: %s), (ping: %u), (money: %d);", client->ID.value(),
 					l_pC->ps->getName(),
 					Address.to_string().c_str(),
-					l_pC->ps->ping);
+					l_pC->ps->ping,
+					l_pC->ps->money_for_round);
 				if (filter_string)
 				{
 					if (strstr(tmp_string, filter_string))

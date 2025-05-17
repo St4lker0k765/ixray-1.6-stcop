@@ -179,14 +179,6 @@ namespace CPU
 		return SDL_GetTicks();
 	}
 
-#ifdef M_BORLAND
-	u64	__fastcall GetCLK		(void)
-	{
-		_asm    db 0x0F;
-		_asm    db 0x31;
-	}
-#endif
-
 	void Detect	()
 	{
 		// Detect QPC
@@ -253,11 +245,6 @@ void _initialize_cpu	(void)
 
 }
 
-#ifdef M_BORLAND
-void _initialize_cpu_thread	()
-{
-}
-#else
 // per-thread initialization
 #define _MM_DENORMALS_ZERO_MASK 0x0040
 #define _MM_DENORMALS_ZERO_ON 0x0040
@@ -294,7 +281,6 @@ void _initialize_cpu_thread	()
 #endif
 	}
 }
-#endif
 
 // threading API 
 void thread_name(const char* name)
@@ -315,7 +301,10 @@ void	__cdecl thread_entry	(void*	_params )	{
 	thread_name			(startup->name);
 	thread_t*			entry	= startup->entry;
 	void*				arglist	= startup->args;
-	xr_delete			(startup);
+
+	free(startup->name);
+	xr_delete(startup);
+
 	_initialize_cpu_thread		();
 
 	// call
@@ -329,7 +318,7 @@ ThreadID thread_spawn	(thread_t*	entry, const char*	name, unsigned	stack, void* 
 
 	THREAD_STARTUP*		startup	= new THREAD_STARTUP	();
 	startup->entry		= entry;
-	startup->name		= (char*)name;
+	startup->name		= xr_strdup((char*)name);
 	startup->args		= arglist;
 
 #ifdef IXR_WINDOWS

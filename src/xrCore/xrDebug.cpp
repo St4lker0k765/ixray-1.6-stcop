@@ -20,22 +20,11 @@
 
 extern bool shared_str_initialized;
 
-#ifdef __BORLANDC__
-    #	include "d3d9.h"
-    #	include "d3dx9.h"
-    #	include "D3DX_Wrapper.h"
-    #	pragma comment(lib,"EToolsB.lib")
-    #	define DEBUG_INVOKE	DebugBreak()
-        static BOOL			bException	= TRUE;
-#else
-    #	define DEBUG_INVOKE	__debugbreak();
-        static BOOL			bException	= FALSE;
-
-	#	define USE_OWN_ERROR_MESSAGE_WINDOW
-#endif
+#define DEBUG_INVOKE	__debugbreak();
+static BOOL bException = FALSE;
+#define USE_OWN_ERROR_MESSAGE_WINDOW
 
 #ifdef IXR_WINDOWS
-#include <dbghelp.h>						// MiniDump flags
 #include <new.h>							// for _set_new_mode
 #include <signal.h>							// for signals
 #endif
@@ -118,8 +107,8 @@ void xrDebug::gather_info		(const char *expression, const char *description, con
 void xrDebug::do_exit	(const std::string &message)
 {
 	xrLogger::FlushLog			();
+	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", message.c_str(), nullptr);
 #ifdef IXR_WINDOWS
-	MessageBoxA			(nullptr,message.c_str(),"Error",MB_OK|MB_ICONERROR|MB_SYSTEMMODAL);
 	TerminateProcess	(GetCurrentProcess(),1);
 #else
     kill(getpid(), SIGKILL);
@@ -179,18 +168,42 @@ void xrDebug::show_dialog(const std::string& message, bool& ignore_always)
 		get_on_dialog()	(true);
 
 	xrLogger::FlushLog();
-#ifdef IXR_WINDOWS
-	int result = MessageBoxA
-	(
-		nullptr, 
-		message.c_str(), 
-		"Fatal Error",
-		MB_CANCELTRYCONTINUE | MB_ICONERROR | MB_DEFBUTTON3 | MB_SYSTEMMODAL | MB_DEFAULT_DESKTOP_ONLY
-	);
 
-	switch (result) 
+	int buttonid = -1;
+
+	const SDL_MessageBoxButtonData buttons[] = 
 	{
-	case IDCANCEL: 
+		{ 0, 0, "Cancel" },
+		{ 0, 1, "Try again" },
+		{ SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 2, "Continue" },
+	};
+
+	auto utf8_message = Platform::ANSI_TO_UTF8(Platform::UTF8_to_CP1251(message.c_str()));
+
+	const SDL_MessageBoxData messageboxdata = 
+	{
+		SDL_MESSAGEBOX_ERROR | SDL_MESSAGEBOX_BUTTONS_LEFT_TO_RIGHT,		/* .flags */
+		nullptr,					/* .window */
+		"Fatal Error",				/* .title */
+		utf8_message.c_str(),			/* .message */
+		std::size(buttons),			/* .numbuttons */
+		buttons,					/* .buttons */
+		nullptr						/* .colorScheme */
+	};
+
+	int ret = SDL_ShowMessageBox(&messageboxdata, &buttonid);
+
+	if (buttonid == 1)
+	{
+		// Return to main menu
+		error_after_dialog = false;
+	}
+	else if (buttonid == 2)
+	{
+		error_after_dialog = false;
+		ignore_always = true;
+	}
+	else
 	{
 		if (IsDebuggerPresent())
 		{
@@ -198,26 +211,7 @@ void xrDebug::show_dialog(const std::string& message, bool& ignore_always)
 		}
 		// TODO: Maybe not correct
 		exit(-1);
-		break;
 	}
-	case IDTRYAGAIN: 
-	{
-		error_after_dialog = false;
-		break;
-	}
-	case IDCONTINUE: 
-	{
-		error_after_dialog = false;
-		ignore_always = true;
-		break;
-	}
-	default: 
-	{
-		Msg("! xrDebug::backend default reached");
-		break;
-	}
-	}
-#endif
 	if (get_on_dialog())
 		get_on_dialog()	(false);
 }
@@ -307,7 +301,12 @@ int out_of_memory_handler	(size_t size)
 	else {
 		Memory.mem_compact	();
 
-		u32					process_heap	= mem_usage_impl(nullptr, nullptr);
+#ifdef IXR_WINDOWS
+		u32 process_heap = mem_usage_impl((void*)_get_heap_handle(), 0, 0);
+#else
+		u32 process_heap = mem_usage_impl(0, 0, 0);
+#endif // IXR_WINDOWS
+
 		int					eco_strings		= (int)g_pStringContainer->stat_economy			();
 		int					eco_smem		= (int)g_pSharedMemoryContainer->stat_economy	();
 		Msg					("* [x-ray]: process heap[%d K]", process_heap / 1024);
@@ -334,6 +333,7 @@ typedef BOOL (WINAPI *MINIDUMPWRITEDUMP)(HANDLE hProcess, DWORD dwPid, HANDLE hF
 										 CONST PMINIDUMP_CALLBACK_INFORMATION CallbackParam
 										 );
 
+// TODO: windows specific stuff, Linux would require debugging tools and APIs like `libunwind`, `libbfd`, and `gdb`...
 void save_mini_dump			(_EXCEPTION_POINTERS *pExceptionInfo)
 {
 	// firstly see if dbghelp.dll is around and has the function we need
@@ -466,7 +466,6 @@ void format_message	(LPSTR buffer, const u32 &buffer_size)
 
 #ifndef _EDITOR
     #include <errorrep.h>
-    #pragma comment( lib, "faultrep.lib" )
 #endif
 
 #include "StackTrace/StackTrace.h"
@@ -520,7 +519,7 @@ LONG WINAPI UnhandledFilter	(_EXCEPTION_POINTERS *pExceptionInfo)
 
 		//SDL_ShowWindow(g_AppInfo.Window);
 		//SDL_MinimizeWindow(g_AppInfo.Window);
-		MessageBoxA			(nullptr,"Fatal error occured\n\nPress OK to abort program execution","Fatal error",MB_OK|MB_ICONERROR|MB_SYSTEMMODAL);
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Fatal error", "Fatal error occured\n\nPress OK to abort program execution", nullptr);
 	}
 
 #ifndef _EDITOR
@@ -537,135 +536,109 @@ LONG WINAPI UnhandledFilter	(_EXCEPTION_POINTERS *pExceptionInfo)
 #endif
 
 //////////////////////////////////////////////////////////////////////
-#ifdef M_BORLAND
-	namespace std{
-		extern new_handler _RTLENTRY _EXPFUNC set_new_handler( new_handler new_p );
-	};
+void _terminate()
+{
+	if (strstr(GetCommandLineA(), "-silent_error_mode"))
+		exit(-1);
 
-	static void __cdecl def_new_handler() 
-    {
-		FATAL		("Out of memory.");
-    }
+	string4096				assertion_info;
 
-    void	xrDebug::_initialize		(const bool &dedicated)
-    {
-		handler							= 0;
-		m_on_dialog						= 0;
-        std::set_new_handler			(def_new_handler);	// exception-handler for 'out of memory' condition
-//		::SetUnhandledExceptionFilter	(UnhandledFilter);	// exception handler to all "unhandled" exceptions
-    }
-#else
-	void _terminate		()
-	{
-		if (strstr(GetCommandLineA(),"-silent_error_mode"))
-			exit				(-1);
-
-		string4096				assertion_info;
-		
-		Debug.gather_info			(
+	Debug.gather_info(
 		//gather_info				(
-			"<no expression>",
-			"Unexpected application termination",
-			0,
-			0,
-	#ifdef ANONYMOUS_BUILD
-			"",
-			0,
-	#else
-			__FILE__,
-			__LINE__,
-	#endif
+		"<no expression>",
+		"Unexpected application termination",
+		0,
+		0,
+#ifdef ANONYMOUS_BUILD
+		"",
+		0,
+#else
+		__FILE__,
+		__LINE__,
+#endif
 	#ifndef _EDITOR
-			__FUNCTION__,
+		__FUNCTION__,
 	#else // _EDITOR
 			"",
 	#endif // _EDITOR
-			assertion_info
-		);
-		
-		LPCSTR endline = "\r\n";
-		LPSTR buffer = assertion_info + xr_strlen(assertion_info);
-		buffer += xr_sprintf(buffer, xr_strlen(assertion_info), "Press OK to abort execution%s", endline);
+		assertion_info
+	);
+
+	LPCSTR endline = "\r\n";
+	LPSTR buffer = assertion_info + xr_strlen(assertion_info);
+	buffer += xr_sprintf(buffer, xr_strlen(assertion_info), "Press OK to abort execution%s", endline);
+
+	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Fatal Error", assertion_info, nullptr);
+	exit(-1);
+}
 
 #ifdef IXR_WINDOWS
-		MessageBoxA				(
-			/*GetTopWindow(nullptr)*/ nullptr,
-			assertion_info,
-			"Fatal Error",
-			MB_OK|MB_ICONERROR|MB_SYSTEMMODAL
-		);
-#endif
-		exit(-1);
+IC void handler_base(const char* reason_string)
+{
+	bool skip;
+	Debug.backend("Error handler is invoked!", reason_string, nullptr, nullptr, DEBUG_INFO, skip);
+}
+
+void invalid_parameter_handler(const wchar_t* expression, const wchar_t* function, const wchar_t* file, unsigned int line, uintptr_t reserved)
+{
+	string4096	expression_,
+		function_,
+		file_;
+
+	size_t converted_chars = 0;
+
+	if (expression)
+		wcstombs_s(&converted_chars, expression_, sizeof(expression_), expression, (wcslen(expression) + 1) * 2 * sizeof(char));
+	else
+		xr_strcpy(expression_, "");
+
+	if (function)
+		wcstombs_s(&converted_chars, function_, sizeof(function_), function, (wcslen(function) + 1) * 2 * sizeof(char));
+	else
+		xr_strcpy(function_, __FUNCTION__);
+
+	if (file)
+		wcstombs_s(&converted_chars, file_, sizeof(file_), file, (wcslen(file) + 1) * 2 * sizeof(char));
+	else
+	{
+		line = __LINE__;
+		xr_strcpy(file_, __FILE__);
 	}
 
+	bool skip;
+	Debug.backend("Error handler is invoked!", expression_, nullptr, nullptr, file_, line, function_, skip);
+}
+#endif
+
+void __cdecl debug_on_thread_spawn(void)
+{
 #ifdef IXR_WINDOWS
-	IC void handler_base(const char* reason_string)
-	{
-		bool skip;
-		Debug.backend("Error handler is invoked!", reason_string, nullptr, nullptr, DEBUG_INFO, skip);
-	}
+	SetUnhandledExceptionFilter(UnhandledFilter);
 
-	void invalid_parameter_handler(const wchar_t* expression, const wchar_t* function, const wchar_t* file, unsigned int line, uintptr_t reserved)
-	{
-		string4096	expression_,
-			function_,
-			file_;
+	auto abort_handler = [](int signal) { handler_base("Application is aborting"); };
+	auto floating_point_handler = [](int signal) { handler_base("Floating point error"); };
+	auto pure_call_handler = []() { handler_base("Pure virtual function call"); };
+	auto illegal_instruction_handler = [](int signal) { handler_base("Illegal instruction"); };
 
-		size_t converted_chars = 0;
+	signal(SIGABRT, abort_handler);
+	signal(SIGFPE, floating_point_handler);
+	signal(SIGILL, illegal_instruction_handler);
 
-		if (expression)
-			wcstombs_s(&converted_chars, expression_, sizeof(expression_), expression, (wcslen(expression) + 1) * 2 * sizeof(char));
-		else
-			xr_strcpy(expression_, "");
+	_set_invalid_parameter_handler(&invalid_parameter_handler);
 
-		if (function)
-			wcstombs_s(&converted_chars, function_, sizeof(function_), function, (wcslen(function) + 1) * 2 * sizeof(char));
-		else
-			xr_strcpy(function_, __FUNCTION__);
+	_set_new_mode(1);
+	_set_new_handler(&out_of_memory_handler);
 
-		if (file)
-			wcstombs_s(&converted_chars, file_, sizeof(file_), file, (wcslen(file) + 1) * 2 * sizeof(char));
-		else
-		{
-			line = __LINE__;
-			xr_strcpy(file_, __FILE__);
-		}
-
-		bool skip;
-		Debug.backend("Error handler is invoked!", expression_, nullptr, nullptr, file_, line, function_, skip);
-	}
+	_set_purecall_handler(pure_call_handler);
 #endif
+}
 
-	void __cdecl debug_on_thread_spawn(void)
-	{
+void xrDebug::_initialize(const bool& dedicated)
+{
+	static bool is_dedicated = dedicated;
+
+	*g_bug_report_file = 0;
 #ifdef IXR_WINDOWS
-		SetUnhandledExceptionFilter(UnhandledFilter);
-
-		auto abort_handler = [](int signal) { handler_base("Application is aborting"); };
-		auto floating_point_handler = [](int signal) { handler_base("Floating point error"); };
-		auto pure_call_handler = []() { handler_base("Pure virtual function call"); };
-		auto illegal_instruction_handler = [](int signal) { handler_base("Illegal instruction"); };
-
-		signal(SIGABRT, abort_handler);
-		signal(SIGFPE, floating_point_handler);
-		signal(SIGILL, illegal_instruction_handler);
-
-		_set_invalid_parameter_handler(&invalid_parameter_handler);
-
-		_set_new_mode(1);
-		_set_new_handler(&out_of_memory_handler);
-
-		_set_purecall_handler(pure_call_handler);
+	previous_filter = ::SetUnhandledExceptionFilter(UnhandledFilter);	// exception handler to all "unhandled" exceptions
 #endif
-	}
-
-	void xrDebug::_initialize(const bool& dedicated)
-	{
-		static bool is_dedicated = dedicated;
-
-		*g_bug_report_file = 0;
-#ifdef IXR_WINDOWS
-		previous_filter = ::SetUnhandledExceptionFilter(UnhandledFilter);	// exception handler to all "unhandled" exceptions
-#endif
-	}
-#endif
+}

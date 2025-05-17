@@ -2,7 +2,7 @@
 #define BEST_SCORES_SYSTEM_INCLUDED
 
 #include "../xrCore/associative_vector.h"
-#include "../xrGameSpy/GameSpy/sake/sake.h"
+#include "../xrGameSpy/gamespy/sake/sake.h"
 #include "profile_data_types.h"
 
 class CGameSpy_Full;
@@ -11,7 +11,7 @@ class CGameSpy_SAKE;
 namespace gamespy_profile
 {
 
-typedef fastdelegate::FastDelegate<void (bool, shared_str const &)>	bestscore_operation_cb;
+typedef xr_delegate<void (bool, shared_str const &)>	bestscore_operation_cb;
 
 class best_scores_store
 {

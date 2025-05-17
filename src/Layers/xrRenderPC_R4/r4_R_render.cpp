@@ -1,15 +1,17 @@
 #include "stdafx.h"
 
-#include "../../xrEngine/igame_persistent.h"
+#include "../../xrEngine/IGame_Persistent.h"
 #include "../xrRender/FBasicVisual.h"
-#include "../../xrEngine/customhud.h"
+#include "../../xrEngine/CustomHUD.h"
 #include "../../xrEngine/xr_object.h"
+
+#include "../../xrParticles/ParticlesAsyncManager.h"
 
 #include "../xrRender/QueryHelper.h"
 
 #include "FSR2Wrapper.h"
 
-#include "../../xrEngine/gamefont.h"
+#include "../../xrEngine/GameFont.h"
 #include "../../xrEngine/x_ray.h"
 #include "../xrRender/SkeletonCustom.h"
 static	float	CalcSSADynamic				(const Fvector& C, float R)
@@ -55,8 +57,10 @@ void CRender::render_main	(bool deffered, bool zfill)
 //	Msg						("---begin");
 	marker					++;
 	bool dont_test_sectors = Sectors.size() <= 1;
+
 	// Calculate sector(s) and their objects
-	if (pLastSector)		{
+	if (pLastSector)		
+	{
 		//!!!
 		//!!! BECAUSE OF PARALLEL HOM RENDERING TRY TO DELAY ACCESS TO HOM AS MUCH AS POSSIBLE
 		//!!!
@@ -64,19 +68,11 @@ void CRender::render_main	(bool deffered, bool zfill)
 		{
 			// Traverse object database
 			g_SpatialSpace->q_frustum
-				(
-				lstRenderablesMain,
-				ISpatial_DB::O_ORDERED,
-				STYPE_RENDERABLE + STYPE_RENDERABLESHADOW + STYPE_PARTICLE + STYPE_LIGHTSOURCE,
-				ViewBase
-				);
-
-			// (almost) Exact sorting order (front-to-back)
-			std::sort(lstRenderablesMain.begin(), lstRenderablesMain.end(), [](ISpatial* _1, ISpatial* _2) {
-			float d1 = _1->spatial.sphere.P.distance_to_sqr(Device.vCameraPosition);
-			float d2 = _2->spatial.sphere.P.distance_to_sqr(Device.vCameraPosition);
-			return d1 < d2;
-			});
+			(
+			lstRenderablesMain,
+			ISpatial_DB::O_ORDERED,
+			STYPE_RENDERABLE + STYPE_RENDERABLESHADOW + STYPE_PARTICLE + STYPE_LIGHTSOURCE,
+			ViewBase);//nearest sorting
 
 			// Determine visibility for dynamic part of scene
 			set_Object							(0);
@@ -136,6 +132,8 @@ void CRender::render_main	(bool deffered, bool zfill)
 		// Determine visibility for static geometry hierrarhy
 		if(psDeviceFlags.test(rsDrawStatic))
 		{
+			PROF_EVENT("add_static")
+
 			if (dont_test_sectors)
 			{
 				CSector*	sector		= (CSector*)Sectors[0];
@@ -155,37 +153,46 @@ void CRender::render_main	(bool deffered, bool zfill)
 				}
 			}
 		}
-
+		PROF_EVENT("add_dynamic")
 		// Traverse frustums
 		for (u32 o_it=0; o_it<lstRenderablesMain.size(); o_it++)
 		{
-			ISpatial*	spatial	= lstRenderablesMain[o_it];
+			ISpatial*	spatial	= lstRenderablesMain[o_it].get();
 			if	(0==spatial) continue; spatial->spatial_updatesector();
 			CSector* sector = (CSector*)spatial->spatial.sector;
 			if	(0==sector) continue;
-			Fbox sp_box;
-			sp_box.setb(spatial->spatial.sphere.P,Fvector().set(spatial->spatial.sphere.R, spatial->spatial.sphere.R, spatial->spatial.sphere.R));
-			HOM.Enable();
-			if(!HOM.visible(sp_box)) continue;
+
+			if ((spatial->spatial.type & STYPE_LIGHTSOURCE) && deffered)
+			{
+				// hud lightsource
+				if(light* L = (light*)(spatial->dcast_Light()))
+				{
+					if(L->flags.bHudMode)
+					{
+						Lights.add_light(L);
+						continue;
+					}
+				}
+			}
+
+			if(!HOM.visible(spatial->spatial.sphere)) continue;
 
 			if ((spatial->spatial.type & STYPE_LIGHTSOURCE) && deffered)
 			{
 				// lightsource
 				if(light* L = (light*)(spatial->dcast_Light()))
 				{
-					if (L->get_LOD()>EPS_L)
+					if (L->get_LOD()>EPS_L&&!L->flags.bHudMode)
 					{
 						
 						if(dont_test_sectors)
-						{
 							Lights.add_light(L);
-						}
 						else
 						{
 							for (u32 s_it = 0; s_it < L->m_sectors.size(); s_it++)
 							{
 								CSector* sector_ = (CSector*)L->m_sectors[s_it];
-								if(PortalTraverser.i_marker == sector_->r_marker)
+								if(sector_ != nullptr && PortalTraverser.i_marker == sector_->r_marker)
 								{
 									Lights.add_light(L);
 									break;
@@ -201,36 +208,36 @@ void CRender::render_main	(bool deffered, bool zfill)
 				if (spatial->spatial.type & STYPE_RENDERABLE && psDeviceFlags.test(rsDrawDynamic))
 				{
 					// renderable
-					if	(IRenderable* renderable = spatial->dcast_Renderable())
+					if (IRenderable* renderable = spatial->dcast_Renderable())
 					{
-						if(Device.vCameraPosition.distance_to_sqr(spatial->spatial.sphere.P)<_sqr(g_pGamePersistent->Environment().CurrentEnv->fog_distance))
+						if (Device.vCameraPosition.distance_to_sqr(spatial->spatial.sphere.P) < _sqr(g_pGamePersistent->Environment().CurrentEnv->fog_distance))
 						{
-							if(CalcSSADynamic(spatial->spatial.sphere.P,spatial->spatial.sphere.R)>0.002f&&GetDistFromCamera(spatial->spatial.sphere.P)<220.f)
+							if (CalcSSADynamic(spatial->spatial.sphere.P, spatial->spatial.sphere.R) > spatial->spatial.ssa_dyn_factor && GetDistFromCamera(spatial->spatial.sphere.P) < spatial->spatial.ssa_d_cam)
 							{
-								if(deffered)
+								if (deffered)
 								{
 									CKinematics* pKin = (CKinematics*)renderable->renderable.visual;
-									if(pKin)
+									if (pKin)
 									{
 										pKin->CalculateBones(TRUE);
 										pKin->CalculateWallmarks();
 										//dbg_text_renderer(spatial->spatial.sphere.P);
 									}
 								}
-								if(spatial->spatial.sphere.R>1.f)
+								if (spatial->spatial.sphere.R > 1.f)
 								{
 									// Rendering
-									set_Object						(renderable);
+									set_Object(renderable);
 									renderable->renderable_Render();
-									set_Object						(0);
+									set_Object(0);
 								}
 							}
-							if(spatial->spatial.sphere.R<=1.f)
+							if (spatial->spatial.sphere.R <= 1.f)
 							{
 								// Rendering
-								set_Object						(renderable);
+								set_Object(renderable);
 								renderable->renderable_Render();
-								set_Object						(0);
+								set_Object(0);
 							}
 						}
 					}
@@ -263,7 +270,7 @@ void CRender::render_main	(bool deffered, bool zfill)
 						{
 							if(Device.vCameraPosition.distance_to_sqr(spatial->spatial.sphere.P)<_sqr(g_pGamePersistent->Environment().CurrentEnv->fog_distance))
 							{
-								if(CalcSSADynamic(spatial->spatial.sphere.P,spatial->spatial.sphere.R)>0.002f&&GetDistFromCamera(spatial->spatial.sphere.P)<220.f)
+								if(CalcSSADynamic(spatial->spatial.sphere.P,spatial->spatial.sphere.R)>spatial->spatial.ssa_dyn_factor&&GetDistFromCamera(spatial->spatial.sphere.P)<spatial->spatial.ssa_d_cam)
 								{
 									if(deffered)
 									{
@@ -308,12 +315,20 @@ void CRender::render_main	(bool deffered, bool zfill)
 				}
 			}
 		}
-		if (g_pGameLevel && psDeviceFlags.test(rsDrawDynamic) && (phase==PHASE_NORMAL))	g_hud->Render_Last();		// HUD
+		if (g_pGameLevel && psDeviceFlags.test(rsDrawDynamic) && (phase==PHASE_NORMAL))	
+		{
+			PROF_EVENT("Render HUD");
+			g_hud->Render_Last();		// HUD
+		}
 	}
 	else
 	{
-		set_Object									(0);
-		if (g_pGameLevel && psDeviceFlags.test(rsDrawDynamic) && (phase==PHASE_NORMAL))	g_hud->Render_Last();		// HUD
+		set_Object(0);
+		if (g_pGameLevel && psDeviceFlags.test(rsDrawDynamic) && (phase == PHASE_NORMAL))
+		{
+			PROF_EVENT("Render HUD");
+			g_hud->Render_Last();		// HUD
+		}
 	}
 }
 
@@ -437,7 +452,6 @@ void CRender::Render		()
 	// Msg						("sstatic: %s, sun: %s",o.sunstatic?;"true":"false", bSUN?"true":"false");
 
 	RCache.set_xform_world(Fidentity);
-	RCache.set_xform_world_old(Fidentity);
 
 	// HOM
 	ViewBase.CreateFromMatrix					(Device.mFullTransform, FRUSTUM_P_LRTB + FRUSTUM_P_FAR);
@@ -446,14 +460,13 @@ void CRender::Render		()
 		HOM.Enable									();
 		HOM.Render									(ViewBase);
 	}
-
+	
 	//******* Z-prefill calc - DEFERRER RENDERER
 	if (ps_r2_ls_flags.test(R2FLAG_ZFILL))		
 	{
 		PIX_EVENT(DEFER_Z_FILL);
 		Device.Statistic->RenderCALC.Begin			();
 		r_pmask										(true,false);	// enable priority "0"
-		set_Recorder								(nullptr)		;
 		phase										= PHASE_SMAP;
 		render_main									(false,true)	;
 		r_pmask										(true,false);	// disable priority "1"
@@ -470,38 +483,17 @@ void CRender::Render		()
 		Target->phase_scene_prepare					();
 	}
 
-	//*******
-	// Sync point
-	Device.Statistic->RenderDUMP_Wait_S.Begin	();
-	if (1)
-	{
-		CTimer	T;							T.Start	();
-		BOOL	result						= FALSE;
-		HRESULT	hr							= S_FALSE;
-		//while	((hr=q_sync_point[q_sync_count]->GetData	(&result,sizeof(result),D3DGETDATA_FLUSH))==S_FALSE) {
-		while	((hr=GetData (q_sync_point[q_sync_count], &result,sizeof(result)))==S_FALSE) 
-		{
-			if (!SwitchToThread())			Sleep(ps_r2_wait_sleep);
-			if (T.GetElapsed_ms() > 500)	{
-				result	= FALSE;
-				break;
-			}
-		}
-	}
-	Device.Statistic->RenderDUMP_Wait_S.End		();
-	q_sync_count								= (q_sync_count+1) % 2;
-	//CHK_DX										(q_sync_point[q_sync_count]->Issue(D3DISSUE_END));
-	CHK_DX										(EndQuery(q_sync_point[q_sync_count]));
-
 	//******* Main calc - DEFERRER RENDERER
 	// Main calc
 	Device.Statistic->RenderCALC.Begin			();
 	r_pmask										(true,false,true);	// enable priority "0",+ capture wmarks
-	if (bSUN)									set_Recorder	(&main_coarse_structure);
-	else										set_Recorder	(nullptr);
 	phase										= PHASE_NORMAL;
+	{
+		PROF_EVENT("lights_spatial_move");
+		for (light* L : v_all_lights)
+			L->spatial_move();
+	}
 	render_main									(true);
-	set_Recorder								(nullptr);
 	r_pmask										(true,false);	// disable priority "1"
 	Device.Statistic->RenderCALC.End			();
 
@@ -510,9 +502,7 @@ void CRender::Render		()
 
 	rmNormal();
 
-	// Landshaft phase 
 	Target->u_setrt((u32)RCache.get_width(), (u32)RCache.get_height(), nullptr, nullptr, nullptr, RDepth);
-	r_dsgraph_render_landscape(0, false);
 
 	//******* Main render :: PART-0	-- first
 	if (!split_the_scene_to_minimize_wait)
@@ -524,7 +514,6 @@ void CRender::Render		()
 		r_dsgraph_render_graph					(0);
 		r_dsgraph_render_lods					(true,true);
 		if(Details)	Details->Render				();
-		r_dsgraph_render_landscape				(1, true);
 		Target->phase_scene_end					();
 	} 
 	else 
@@ -533,52 +522,71 @@ void CRender::Render		()
 		// level, SPLIT
 		Target->phase_scene_begin				();
 		r_dsgraph_render_graph					(0);
-		r_dsgraph_render_landscape				(1, true);
 		Target->disable_aniso					();
 	}
 
-	//******* Occlusion testing of volume-limited light-sources
-	Target->phase_occq							();
-	LP_normal.clear								();
-	LP_pending.clear							();
+	if(Lights.package.v_point.empty()&&Lights.package.v_spot.empty()&&Lights.package.v_shadowed.empty())
+		HWOCC.occq_refresh();
+	else
 	{
 		PIX_EVENT(DEFER_TEST_LIGHT_VIS);
-		// perform tests
-		size_t	count = 0;
-		light_Package&	LP	= Lights.package;
+		//******* Occlusion testing of volume-limited light-sources
+		Target->phase_occq							();
+		LP_normal.clear								();
+		LP_pending.clear							();
+		{
+			// perform tests
+			size_t	count = 0;
+			light_Package&	LP	= Lights.package;
 
-		// stats
-		stats.l_shadowed	= (u32)LP.v_shadowed.size();
-		stats.l_unshadowed	= (u32)(LP.v_point.size() + LP.v_spot.size());
-		stats.l_total		= stats.l_shadowed + stats.l_unshadowed;
+			// stats
+			stats.l_shadowed	= (u32)LP.v_shadowed.size();
+			stats.l_unshadowed	= (u32)(LP.v_point.size() + LP.v_spot.size());
+			stats.l_total		= stats.l_shadowed + stats.l_unshadowed;
 
-		// perform tests
-		count = std::max(count, LP.v_point.size());
-		count = std::max(count, LP.v_spot.size());
-		count = std::max(count, LP.v_shadowed.size());
-		for (size_t it = 0; it < count; it++)	{
-			if (it<LP.v_point.size())		{
-				light*	L			= LP.v_point	[it];
-				L->vis_prepare		();
-				if (L->vis.pending)	LP_pending.v_point.push_back	(L);
-				else				LP_normal.v_point.push_back		(L);
-			}
-			if (it<LP.v_spot.size())		{
-				light*	L			= LP.v_spot		[it];
-				L->vis_prepare		();
-				if (L->vis.pending)	LP_pending.v_spot.push_back		(L);
-				else				LP_normal.v_spot.push_back		(L);
-			}
-			if (it<LP.v_shadowed.size())	{
-				light*	L			= LP.v_shadowed	[it];
-				L->vis_prepare		();
-				if (L->vis.pending)	LP_pending.v_shadowed.push_back	(L);
-				else				LP_normal.v_shadowed.push_back	(L);
+			// perform tests
+			count = std::max(count, LP.v_point.size());
+			count = std::max(count, LP.v_spot.size());
+			count = std::max(count, LP.v_shadowed.size());
+			for (size_t it = 0; it < count; it++)	{
+				if (it<LP.v_point.size())		{
+					light*	L			= LP.v_point	[it];
+					if(L->flags.bOccq&&!L->flags.bHudMode)
+					{
+						L->vis_prepare		();
+						if (L->vis.pending)	LP_pending.v_point.push_back	(L);
+						else				LP_normal.v_point.push_back		(L);
+					}
+					else
+						LP_normal.v_point.push_back		(L);
+				}
+				if (it<LP.v_spot.size())		{
+					light*	L			= LP.v_spot		[it];
+					if(L->flags.bOccq&&!L->flags.bHudMode)
+					{
+						L->vis_prepare		();
+						if (L->vis.pending)	LP_pending.v_spot.push_back		(L);
+						else				LP_normal.v_spot.push_back		(L);
+					}
+					else
+						LP_normal.v_spot.push_back		(L);
+				}
+				if (it<LP.v_shadowed.size())	{
+					light*	L			= LP.v_shadowed	[it];
+					if(L->flags.bOccq&&!L->flags.bHudMode)
+					{
+						L->vis_prepare		();
+						if (L->vis.pending)	LP_pending.v_shadowed.push_back	(L);
+						else				LP_normal.v_shadowed.push_back	(L);
+					}
+					else
+						LP_normal.v_shadowed.push_back	(L);
+				}
 			}
 		}
+		LP_normal.sort							();
+		LP_pending.sort							();
 	}
-	LP_normal.sort							();
-	LP_pending.sort							();
 
    //******* Main render :: PART-1 (second)
 	if (split_the_scene_to_minimize_wait)	
@@ -593,11 +601,15 @@ void CRender::Render		()
 		Target->phase_scene_end					();
 	}
 
-	Target->u_setrt((u32)RCache.get_width(), (u32)RCache.get_height(), nullptr, nullptr, nullptr, nullptr);
-	ID3D11Resource* res;
-	RDepth->GetResource(&res);
+	{
+		PIX_EVENT(ZBUFFER_COPY);
+		RCache.set_ZB(NULL);
+		ID3D11Resource* res;
+		RDepth->GetResource(&res);
 
-	RContext->CopyResource(Target->rt_Position->pSurface, res);
+		RContext->CopyResource(Target->rt_Position->pSurface, res);
+		_RELEASE(res);
+	}
 
 	// Wall marks
 	if(Wallmarks)	
@@ -642,6 +654,8 @@ void CRender::Render		()
 		Target->increment_light_marker();
 	}
 
+	phase = PHASE_NORMAL;
+
 	{
 		PIX_EVENT(DEFER_SELF_ILLUM);
 		Target->phase_accumulator			();
@@ -665,7 +679,6 @@ void CRender::Render		()
 	{
 		PIX_EVENT(DEFER_LIGHT_NO_OCCQ);
 		Target->phase_accumulator				();
-		HOM.Disable								();
 		render_lights							(LP_normal);
 	}
 
@@ -675,6 +688,8 @@ void CRender::Render		()
 		render_lights							(LP_pending);
 	}
 
+	phase = PHASE_NORMAL;
+
 	// Postprocess
 	{
 		PIX_EVENT(DEFER_LIGHT_COMBINE);
@@ -682,6 +697,8 @@ void CRender::Render		()
 	}
 
 	VERIFY	(0==mapDistort.size());
+
+	//HWOCC.occq_stats();
 }
 
 void CRender::render_forward				()
@@ -692,13 +709,13 @@ void CRender::render_forward				()
 	//******* Main render - second order geometry (the one, that doesn't support deffering)
 	//.todo: should be done inside "combine" with estimation of of luminance, tone-mapping, etc.
 	{
-		HOM.Enable();
 		// level
 		r_pmask									(false,true);			// enable priority "1"
 		phase									= PHASE_NORMAL;
 		render_main								(false);//
 		//	Igor: we don't want to render old lods on next frame.
 		mapLOD.clear							();
+		CParticlesAsync::Wait();
 		r_dsgraph_render_graph					(1)	;					// normal level, secondary priority
 		PortalTraverser.fade_render				()	;					// faded-portals
 		r_dsgraph_render_sorted					()	;					// strict-sorted geoms

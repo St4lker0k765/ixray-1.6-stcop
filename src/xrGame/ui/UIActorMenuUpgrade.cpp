@@ -13,9 +13,9 @@
 #include "UICellItem.h"
 #include "../InventoryOwner.h"
 #include "../Inventory.h"
-#include "../actor.h"
-#include "../uigamesp.h"
-#include "UI3tButton.h"
+#include "../Actor.h"
+#include "../UIGameSP.h"
+#include "../../xrUI/Widgets/UI3tButton.h"
 
 #include "inventory_upgrade.h"
 #include "UITalkWnd.h"
@@ -52,7 +52,7 @@ void CUIActorMenu::DeInitUpgradeMode()
 
 	if(!CurrentGameUI())
 		return;
-	//только если находимся в режиме single
+	//С‚РѕР»СЊРєРѕ РµСЃР»Рё РЅР°С…РѕРґРёРјСЃСЏ РІ СЂРµР¶РёРјРµ single
 	CUIGameSP* pGameSP = smart_cast<CUIGameSP*>(CurrentGameUI());
 	if(!pGameSP) return;
 

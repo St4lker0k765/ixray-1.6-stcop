@@ -6,11 +6,12 @@
 #include "ui_main.h"
 #include "UI_ToolsCustom.h"
 
+#include "UIIConPicker.h"
 #include "UIEditLightAnim.h"
 #include "UIImageEditorForm.h"
 #include "UIMinimapEditorForm.h"
 #include "UISoundEditorForm.h"
-#include "d3dutils.h"
+#include "D3DUtils.h"
 #include "UIMoveToCamera.h"
 
 #include "Library.h"
@@ -102,7 +103,10 @@ CCommandVar 	ExecCommand	(u32 cmd, CCommandVar p1, CCommandVar p2)
 	VERIFY				(cmd<ECommands.size());
 	CCommandVar	res;
 	SECommand*	CMD 	= ECommands[cmd];
-	VERIFY				(CMD&&!CMD->command.empty());
+
+	if (CMD == nullptr || CMD->command.empty())
+		return 0;
+
 	//static int exec_level= 0;
 	if (bAllowLogCommands)
 	{
@@ -113,6 +117,7 @@ CCommandVar 	ExecCommand	(u32 cmd, CCommandVar p1, CCommandVar p2)
 		if (p2.IsString()) sp2 = ((sp2.find("\n") == sp2.npos) && (sp2.find("\r") == sp2.npos)) ? sp2 : "...";
 
 	}
+
 	res = CMD->command(p1,p2);
 	return res;
 }
@@ -249,7 +254,7 @@ CCommandVar 	TUI::CommandRenderResize(CCommandVar p1, CCommandVar p2)
 //------------------------------------------------------------------------------
 CCommandVar CommandInitialize(CCommandVar p1, CCommandVar p2)
 {
-	EDevice = xr_new< CEditorRenderDevice>();
+	EDevice = new CEditorRenderDevice();
 	DevicePtr = EDevice;
 	CCommandVar res		= TRUE;
 	{
@@ -258,10 +263,10 @@ CCommandVar CommandInitialize(CCommandVar p1, CCommandVar p2)
 		FS.update_path(fn, _local_root_, fn);
 		string_path 			si_name;
 		FS.update_path(si_name, "$game_config$", "system.ltx");
-		pSettings = xr_new<CInifile>(si_name, TRUE);// FALSE,TRUE,TRUE);
+		pSettings = new CInifile(si_name, TRUE);// FALSE,TRUE,TRUE);
 		string_path					fname;
 		FS.update_path(fname, "$game_config$", "game.ltx");
-		pGameIni = xr_new<CInifile>(fname, TRUE);
+		pGameIni = new CInifile(fname, TRUE);
 		CHECK_OR_EXIT(0 != pGameIni->section_count(), make_string<const char*>("Cannot find file %s.\nReinstalling application may fix this problem.", fname));
 	}
 	// make interface
@@ -275,7 +280,7 @@ CCommandVar CommandInitialize(CCommandVar p1, CCommandVar p2)
 		Lib.OnCreate	();
 		BOOL bWeather = psDeviceFlags.is(rsEnvironment);
 		psDeviceFlags.set(rsEnvironment, FALSE);
-		g_pGamePersistent= xr_new<XrGamePersistentEditors>();
+		g_pGamePersistent= new XrGamePersistentEditors();
 		if (Tools)
 		{
 			if (Tools->OnCreate())
@@ -320,7 +325,7 @@ CCommandVar CommandDestroy(CCommandVar p1, CCommandVar p2)
 	Tools->OnDestroy();
 	SndLib->OnDestroy();
 	xr_delete(SndLib);
-	// DU_impl.DestroyObjects();
+	DU_impl.DestroyObjects();
 	Lib.OnDestroy();
 	UI->OnDestroy();
 	{
@@ -382,7 +387,11 @@ CCommandVar 	CommandUseSimulatePositions(CCommandVar p1, CCommandVar p2)
 	return				TRUE;
 }
 
-
+CCommandVar 	CommandIconPicker(CCommandVar p1, CCommandVar p2)
+{
+	UIIconPicker::Show(p1);
+	return				TRUE;
+}
 
 CCommandVar 	CommandSetSettings(CCommandVar p1, CCommandVar p2)
 {
@@ -391,26 +400,38 @@ CCommandVar 	CommandSetSettings(CCommandVar p1, CCommandVar p2)
 }             
 CCommandVar 	CommandSoundEditor(CCommandVar p1, CCommandVar p2)
 {
-	UISoundEditorForm::Show();
+	UISoundEditorForm::Show(p1);
   //  TfrmSoundLib::EditLib(xr_string("Sound Editor"));
 	return				TRUE;
 }
-CCommandVar 	CommandSyncSounds(CCommandVar p1, CCommandVar p2)
+CCommandVar CommandSyncSounds(CCommandVar p1, CCommandVar p2)
 {
-   
-	if (ELog.DlgMsg(mtConfirmation,mbYes|mbNo,"Are you sure to synchronize sounds?")==mrYes)
-		SndLib->RefreshSounds(true);
-	return				TRUE;
+	if (ELog.DlgMsg(mtConfirmation, mbYes | mbNo, "Are you sure to synchronize sounds?") == mrYes)
+		SndLib->RefreshSounds(true, true);
+	return TRUE;
 }
+
+CCommandVar CommandSyncSoundsHard(CCommandVar p1, CCommandVar p2)
+{
+	if (ELog.DlgMsg(mtConfirmation, mbYes | mbNo, "Are you sure to synchronize sounds?") == mrYes)
+		SndLib->RefreshSounds(true, false);
+	return TRUE;
+}
+
 CCommandVar 	CommandImageEditor(CCommandVar p1, CCommandVar p2)
 {
 	UIImageEditorForm::Show(false);
 	return				TRUE;
 }
+CCommandVar 	CommandImageEditorSelect(CCommandVar p1, CCommandVar p2)
+{
+	UIImageEditorForm::FindInEditor((xr_string)p1, !!p2);
+	return TRUE;
+}
 CCommandVar 	CommandLightAnimEditor(CCommandVar p1, CCommandVar p2)
 {
 	UIEditLightAnim::Show();
-	return				TRUE;
+	return TRUE;
 }
 
 CCommandVar 	CommandMinimapEditor(CCommandVar p1, CCommandVar p2)
@@ -515,7 +536,6 @@ CCommandVar 	CommandToggleGrid(CCommandVar p1, CCommandVar p2)
 CCommandVar 	CommandUpdateGrid(CCommandVar p1, CCommandVar p2)
 {
 	DU_impl.UpdateGrid		(EPrefs->grid_cell_count,EPrefs->grid_cell_size);
-	UI->OutGridSize		();
 	UI->RedrawScene		();
 	return				TRUE;
 }
@@ -544,7 +564,7 @@ CCommandVar 	CommandGridSlotSize(CCommandVar p1, CCommandVar p2)
 }
 CCommandVar 	CommandCreateSoundLib(CCommandVar p1, CCommandVar p2)
 {
-	SndLib		= xr_new<CSoundManager>();
+	SndLib		= new CSoundManager();
 	return				TRUE;
 }
 CCommandVar 	CommandMuteSound(CCommandVar p1, CCommandVar p2)
@@ -710,7 +730,9 @@ void TUI::RegisterCommands()
 	REGISTER_CMD_S	    (COMMAND_SET_SETTINGS,			CommandSetSettings);
 	REGISTER_CMD_S	    (COMMAND_SOUND_EDITOR,   		CommandSoundEditor);
 	REGISTER_CMD_S	    (COMMAND_SYNC_SOUNDS,    		CommandSyncSounds);
+	REGISTER_CMD_S	    (COMMAND_SYNC_SOUNDS_HARD, 		CommandSyncSoundsHard);
 	REGISTER_CMD_S	    (COMMAND_IMAGE_EDITOR,   		CommandImageEditor); 
+	REGISTER_CMD_S	    (COMMAND_IMAGE_EDITOR_SELECT,	CommandImageEditorSelect);
 	REGISTER_CMD_S      (COMMAND_LIGHTANIM_EDITOR,      CommandLightAnimEditor);
 	REGISTER_CMD_S	    (COMMAND_MINIMAP_EDITOR,   		CommandMinimapEditor);
 	REGISTER_CMD_S	    (COMMAND_CHECK_TEXTURES,     	CommandCheckTextures);
@@ -721,6 +743,7 @@ void TUI::RegisterCommands()
 	REGISTER_CMD_S	    (COMMAND_EVICT_OBJECTS,      	CommandEvictObjects);
 	REGISTER_CMD_S	    (COMMAND_EVICT_TEXTURES,     	CommandEvictTextures);
 	REGISTER_CMD_S	    (COMMAND_CHECK_MODIFIED,     	CommandCheckModified);
+	REGISTER_CMD_S	    (COMMAND_ICON_PICKER,   		CommandIconPicker);
 	REGISTER_CMD_SE	    (COMMAND_SHOW_PROPERTIES,    	"Show Properties",		CommandShowProperties, false);
 	REGISTER_CMD_S	    (COMMAND_UPDATE_PROPERTIES,  	CommandUpdateProperties);
 	REGISTER_CMD_S	    (COMMAND_REFRESH_PROPERTIES, 	CommandRefreshProperties);

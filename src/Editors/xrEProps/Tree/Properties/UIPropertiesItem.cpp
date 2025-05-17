@@ -16,7 +16,8 @@ void UIPropertiesItem::Draw()
 	ImGui::TableNextColumn();
 	if (PItem&&PItem->m_Flags.test(PropItem::flShowCB))
 	{
-		if (ImGui::CheckboxFlags("##value", &PItem->m_Flags.flags, PropItem::flCBChecked))
+		const char* CheckName = make_string<const char*>("##value_%s", PItem->Key());
+		if (ImGui::CheckboxFlags(CheckName, &PItem->m_Flags.flags, PropItem::flCBChecked))
 		{
 			PItem->OnChange();
 			PropertiesFrom->Modified();
@@ -26,7 +27,23 @@ void UIPropertiesItem::Draw()
 	if (Items.size())
 	{
 		ImGuiTreeNodeFlags FloderFlags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_DefaultOpen;
+		if (IsSelect)
+		{
+			ImVec4 TextColor = ImGui::GetStyle().Colors[ImGuiCol_Text];
+			TextColor.x = 1;
+			TextColor.y = 0.1;
+			TextColor.z = 0.1;
+			TextColor.w = 0.7f;
+
+			ImGui::PushStyleColor(ImGuiCol_Text, TextColor);
+		}
+
 		bool open = ImGui::TreeNodeEx(Name.c_str(), FloderFlags);
+
+		if (IsSelect)
+		{
+			ImGui::PopStyleColor();
+		}
 		ImGui::TableNextColumn();
 		DrawItem();
 		if (open)
@@ -177,5 +194,5 @@ void UIPropertiesItem::DrawItem()
 
 UITreeItem* UIPropertiesItem::CreateItem(shared_str Name)
 {
-	return xr_new< UIPropertiesItem>(Name,PropertiesFrom);
+	return new UIPropertiesItem(Name,PropertiesFrom);
 }

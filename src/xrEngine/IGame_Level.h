@@ -3,10 +3,10 @@
 
 #pragma once
 
-#include "iinputreceiver.h"
+#include "IInputReceiver.h"
 #include "xr_object_list.h"
-#include "../xrcdb/xr_area.h"
-#include "../xrEngine/IGame_Patrol.h"
+#include "../xrCDB/xr_area.h"
+#include "IGame_Patrol.h"
 
 // refs
 class ENGINE_API CCameraManager;
@@ -61,7 +61,7 @@ protected:
 	CCameraManager*				m_pCameras;
 
 	// temporary
-	xr_vector<ISpatial*>		snd_ER;
+	xr_vector<ISpatialShared>	snd_ER;
 public:
 	CObjectList					Objects; 
 	CObjectSpace				ObjectSpace;
@@ -85,6 +85,7 @@ public:
 	virtual shared_str			name					() const = 0;
 	virtual void				GetLevelInfo			( CServerInfo* si ) = 0;
 
+	virtual u64					GetGameTime				() { return 0; };
 	virtual BOOL				net_Start				( LPCSTR op_server, LPCSTR op_client)	= 0;
 	virtual void				net_Load				( LPCSTR name )							= 0;
 	virtual void				net_Save				( LPCSTR name )							= 0;
@@ -122,6 +123,7 @@ public:
 
 	virtual	void				SpawnItem(LPCSTR section, const Fvector& position, u32 level_vertex_id, u16 parent_id) = 0;
 	virtual IGame_Patrol*		CreatePatrol(const char* patrol) = 0;
+	virtual void				LoadEditor(shared_str LevelName) {};
 };
 
 //-----------------------------------------------------------------------------------------------------------

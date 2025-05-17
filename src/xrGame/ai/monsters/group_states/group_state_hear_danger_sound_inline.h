@@ -4,7 +4,7 @@
 #include "../states/monster_state_home_point_danger.h"
 
 #include "../ai_monster_squad.h"
-#include "../../../entity.h"
+#include "../../../Entity.h"
 #include "../../../ai_object_location.h"
 
 #define TEMPLATE_SPECIALIZATION template <\
@@ -19,9 +19,9 @@
 TEMPLATE_SPECIALIZATION
 CStateGroupHearDangerousSoundAbstract::CStateGroupHearDangerousSound(_Object *obj) : inherited(obj)
 {
-	this->add_state	(eStateHearDangerousSound_Hide,				xr_new<CStateMonsterMoveToPointEx<_Object> >		(obj));
-	this->add_state	(eStateSquad,								xr_new<CStateMonsterMoveToPoint<_Object> >			(obj));
-	this->add_state	(eStateHearDangerousSound_Home,				xr_new<CStateMonsterDangerMoveToHomePoint<_Object> >(obj));
+	this->add_state	(eStateHearDangerousSound_Hide,				new CStateMonsterMoveToPointEx<_Object> 		(obj));
+	this->add_state	(eStateSquad,								new CStateMonsterMoveToPoint<_Object> 			(obj));
+	this->add_state	(eStateHearDangerousSound_Home,				new CStateMonsterDangerMoveToHomePoint<_Object> (obj));
 }
 
 TEMPLATE_SPECIALIZATION

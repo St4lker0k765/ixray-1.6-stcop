@@ -39,7 +39,7 @@ IC bool		InterpolateAndDither(float* alpha255,	u32 x, u32 y, u32 sx, u32 sy, u32
 }
 
 #ifndef _EDITOR
-#ifdef	DEBUG
+#if 0 //def	DEBUG
 //#include "../../Include/xrRender/DebugRender.h"
 #include "dxDebugRender.h"
 static void draw_obb		( const Fmatrix &matrix, const u32 &color )
@@ -65,7 +65,7 @@ bool det_render_debug = false;
 #endif
 #endif
 
-#include "../../xrEngine/gamemtllib.h"
+#include "../../xrEngine/GameMtlLib.h"
 
 static void correction_orientation(const Fvector &pos, const Fvector &dir, const Fvector &ground_normal, float& target_angle)
 {
@@ -75,16 +75,16 @@ static void correction_orientation(const Fvector &pos, const Fvector &dir, const
 	Fvector				position_on_plane;
 	Plane_.project		(position_on_plane, pos);
 
-	// находим проекцию точки, лежащей на векторе текущего направления
+	// РЅР°С…РѕРґРёРј РїСЂРѕРµРєС†РёСЋ С‚РѕС‡РєРё, Р»РµР¶Р°С‰РµР№ РЅР° РІРµРєС‚РѕСЂРµ С‚РµРєСѓС‰РµРіРѕ РЅР°РїСЂР°РІР»РµРЅРёСЏ
 	Fvector				dir_point, proj_point;
 	dir_point.mad		(position_on_plane, dir, 1.f);
 	Plane_.project		(proj_point,dir_point);
 
-	// получаем искомый вектор направления
+	// РїРѕР»СѓС‡Р°РµРј РёСЃРєРѕРјС‹Р№ РІРµРєС‚РѕСЂ РЅР°РїСЂР°РІР»РµРЅРёСЏ
 	Fvector				target_dir;
 	target_dir.sub		(proj_point,position_on_plane);
 
-	// изменяем текущий угол Эйлера
+	// РёР·РјРµРЅСЏРµРј С‚РµРєСѓС‰РёР№ СѓРіРѕР» Р­Р№Р»РµСЂР°
 	target_angle = target_dir.getP();
 }
 
@@ -144,7 +144,7 @@ void		CDetailManager::cache_Decompress(Slot* S)
 	u32			d_size		= iCeil	(dm_slot_size/density);
 	svector<int,dm_obj_in_slot>		selected;
 
-    u32 p_rnd	= D.sx*D.sz; // нужно для того чтобы убрать полосы(ряды)
+    u32 p_rnd	= D.sx*D.sz; // РЅСѓР¶РЅРѕ РґР»СЏ С‚РѕРіРѕ С‡С‚РѕР±С‹ СѓР±СЂР°С‚СЊ РїРѕР»РѕСЃС‹(СЂСЏРґС‹)
 	CRandom				r_selection	(0x12071980^p_rnd);
 	CRandom				r_jitter	(0x12071980^p_rnd);
 	CRandom				r_yaw		(0x12071980^p_rnd);
@@ -192,10 +192,12 @@ void		CDetailManager::cache_Decompress(Slot* S)
 			u32 index = selected[0];
 #endif
 
-			CDetail*	Dobj	= objects[DS.r_id(index)];
-			SlotItem*	ItemP	= poolSI.create();
-			SlotItem&	Item	= *ItemP;
-
+#ifndef _EDITOR 
+			const CDetail& Dobj	=	objects[DS.r_id(index)];
+#else
+			const CDetail& Dobj	=	*objects[DS.r_id(index)];
+#endif
+			CDetail::SlotItem	Item	= CDetail::SlotItem();
 			// Position (XZ)
 			float		rx = (float(x)/float(d_size))*dm_slot_size + D.vis.box.min.x;
 			float		rz = (float(z)/float(d_size))*dm_slot_size + D.vis.box.min.z;
@@ -235,17 +237,18 @@ RDEVICE.Statistic->TEST0.End		();
 				CDB::TRI&	T		= tris[xrc.r_begin()[tid].id];
 				SGameMtl* mtl		= GMLib.GetMaterialByIdx(T.material);
 
-				//Detect sector
-				Item.sector_id = T.sector;
-
 				if(mtl->Flags.test(SGameMtl::flPassable))	
 					continue;
 
-				CSector* sector = (CSector*)RImplementation.getSector(T.sector);
-				if(sector != RImplementation.pOutdoorSector)
+				//Detect sector
+				if(RImplementation.pOutdoorSector)
 				{
-					no_push = true;
-					continue;
+					CSector* sector = (CSector*)RImplementation.getSector(T.sector);
+					if (sector != RImplementation.pOutdoorSector)
+					{
+						no_push = true;
+						break;
+					}
 				}
 
 				Fvector		Tv[3]	= { verts[T.verts[0]],verts[T.verts[1]],verts[T.verts[2]] };
@@ -256,6 +259,7 @@ RDEVICE.Statistic->TEST0.End		();
 						if (y_test>y)	y = y_test;
 					}
 					normal.mknormal(verts[T.verts[0]], verts[T.verts[1]], verts[T.verts[2]]);
+					break;
 				}
 #endif
 			}
@@ -265,80 +269,57 @@ RDEVICE.Statistic->TEST0.End		();
 
 			// Angles and scale
 #ifndef		DBG_SWITCHOFF_RANDOMIZE
-			Item.scale	= r_scale.randF		(Dobj->m_fMinScale*0.5f,Dobj->m_fMaxScale*0.9f);
+			Item.scale	= r_scale.randF		(Dobj.m_fMinScale*0.5f,Dobj.m_fMaxScale*0.9f);
 #else
-			Item.scale	= (Dobj->m_fMinScale*0.5f+Dobj->m_fMaxScale*0.9f)/2;
+			Item.scale	= (Dobj.m_fMinScale*0.5f+Dobj.m_fMaxScale*0.9f)/2;
 			//Item.scale	= 0.1f;
 #endif
 			// X-Form BBox
 			Fmatrix		mScale,mXform;
 			Fbox		ItemBB;
-
+			Fmatrix mRotY;
 #ifndef		DBG_SWITCHOFF_RANDOMIZE
-			Item.mRotY.rotateY				(r_yaw.randF	(0,PI_MUL_2));
+			mRotY.rotateY				(r_yaw.randF	(0,PI_MUL_2));
 #else
-			Item.mRotY.rotateY				(0);
+			mRotY.rotateY				(0);
 #endif
-
-			Item.mRotY.translate_over		(Item_P);
+			Item.pos = Item_P;
+			mRotY.translate_over		(Item_P);
 			mScale.scale					(Item.scale,Item.scale,Item.scale);
-			mXform.mul_43					(Item.mRotY,mScale);
-			ItemBB.xform					(Dobj->bv_bb,mXform);
+			mXform.mul_43					(mRotY,mScale);
+			ItemBB.xform					(Dobj.bv_bb,mXform);
 			Bounds.merge					(ItemBB);
 
 #ifndef _EDITOR
-#ifdef		DEBUG
+#if 0 //def	DEBUG
 			if(det_render_debug)
 				draw_obb(  mXform, color_rgba		(255,0,0,255) );//Fmatrix().mul_43( mXform, Fmatrix().scale(5,5,5) )
 #endif
 #endif
 
-			// Color
-			/*
-			DetailPalette*	c_pal			= (DetailPalette*)&DS.color;
-			float gray255	[4];
-			gray255[0]						=	255.f*float(c_pal->a0)/15.f;
-			gray255[1]						=	255.f*float(c_pal->a1)/15.f;
-			gray255[2]						=	255.f*float(c_pal->a2)/15.f;
-			gray255[3]						=	255.f*float(c_pal->a3)/15.f;
-			*/
-			//float c_f						=	1.f;	//Interpolate		(gray255,x,z,d_size)+.5f;
-			//int c_dw						=	255;	//iFloor			(c_f);
-			//clamp							(c_dw,0,255);
-			//Item.C_dw						=	color_rgba		(c_dw,c_dw,c_dw,255);
-#if RENDER==R_R1
-			Item.c_rgb.x					=	DS.r_qclr	(DS.c_r,	15);
-			Item.c_rgb.y					=	DS.r_qclr	(DS.c_g,	15);
-			Item.c_rgb.z					=	DS.r_qclr	(DS.c_b,	15);
-#endif
-			Item.c_hemi						=	DS.r_qclr	(DS.c_hemi,	15);
-			Item.c_sun						=	DS.r_qclr	(DS.c_dir,	15);
-
-			//? hack: RGB = hemi
-			//? Item.c_rgb.add					(ps_r__Detail_rainbow_hemi*Item.c_hemi);
+			Item.c_hemi = DS.r_qclr(DS.c_hemi, 15)+EPS;
+			Item.c_hemi = DS.r_qclr(DS.c_dir, 15)>0.07f ? Item.c_hemi : -Item.c_hemi;
 
 			// Vis-sorting
 #ifndef		DBG_SWITCHOFF_RANDOMIZE
-			if (!UseVS())
-			{
-				// Always still on CPU pipe
-				Item.vis_ID	= 0;
-			} else {
-				if (Dobj->m_Flags.is(DO_NO_WAVING))	Item.vis_ID	= 0;
-				else
-				{
-					if (::Random.randI(0,3)==0)	Item.vis_ID	= 2;	// Second wave
-					else						Item.vis_ID = 1;	// First wave
-				}
-			}
+
+			if (Dobj.m_Flags.is(DO_NO_WAVING))
+				Item.vis_ID = 0;
+			else
+				Item.vis_ID = Random.randI(1, 3);
+
 #else
 			Item.vis_ID = 0;
 #endif
-			//чтобы (только) листики травы ложились на поверхность террейна
+			//С‡С‚РѕР±С‹ (С‚РѕР»СЊРєРѕ) Р»РёСЃС‚РёРєРё С‚СЂР°РІС‹ Р»РѕР¶РёР»РёСЃСЊ РЅР° РїРѕРІРµСЂС…РЅРѕСЃС‚СЊ С‚РµСЂСЂРµР№РЅР°
 			//	if (Item.vis_ID == 0)
-			ground_correction(Item.mRotY, normal);
+
+			ground_correction(mRotY, normal);
 			// Save it
-			D.G[index].items.push_back(ItemP);
+
+			mRotY.getHPB(Item.hpb);
+
+			D.G[index].items.emplace_back(xr_make_shared<CDetail::SlotItem>(Item));
 		}
 	}
 

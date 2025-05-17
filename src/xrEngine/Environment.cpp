@@ -2,12 +2,12 @@
 #pragma hdrstop
 
 #ifndef _EDITOR
-    #include "render.h"
+#include "Render.h"
 #endif
 
 #include "Environment.h"
 #include "xr_efflensflare.h"
-#include "rain.h"
+#include "Rain.h"
 #include "thunderbolt.h"
 #include "xrHemisphere.h"
 #include "perlin.h"
@@ -21,7 +21,7 @@
 #endif
 
 //#include "D3DUtils.h"
-#include "../xrcore/xrCore.h"
+#include "../xrCore/xrCore.h"
 
 #include "../Include/xrRender/EnvironmentRender.h"
 #include "../Include/xrRender/LensFlareRender.h"
@@ -498,7 +498,7 @@ void CEnvironment::lerp		(float& current_weight)
 
 	Fvector	view			= Device.vCameraPosition;
 	float	mpower			= 0;
-	for (xr_vector<CEnvModifier>::iterator mit=Modifiers.begin(); mit!=Modifiers.end(); mit++)
+	for (xr_list<CEnvModifier>::iterator mit=Modifiers.begin(); mit!=Modifiers.end(); mit++)
 		mpower				+= EM.sum(*mit,view);
 
 	// final lerp
@@ -507,6 +507,7 @@ void CEnvironment::lerp		(float& current_weight)
 
 void CEnvironment::OnFrame()
 {
+	PROF_EVENT("CEnvironment::OnFrame");
 	if (g_pGameLevel == nullptr && Device.IsEditorMode())
 	{
 		SetGameTime(fGameTime + Device.fTimeDelta * fTimeFactor, fTimeFactor);
@@ -539,7 +540,7 @@ void CEnvironment::OnFrame()
 	lerp					(current_weight);
 
 	// Igor. Dynamic sun position. 
-	bool isReadSunConfig = EngineExternal()[EEngineExternalEnvironment::ReadSunConfig];
+	const static bool isReadSunConfig = EngineExternal()[EEngineExternalEnvironment::ReadSunConfig];
 	if (!isReadSunConfig && !::Render->is_sun_static()) {
 		calculate_dynamic_sun_dir();
 	}

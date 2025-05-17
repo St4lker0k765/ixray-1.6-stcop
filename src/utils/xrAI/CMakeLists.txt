@@ -53,7 +53,10 @@ target_compile_definitions(xrAI PRIVATE "$<$<CONFIG:Release>:LUABIND_NO_ERROR_CH
 target_link_libraries(xrAI PUBLIC xrCDB)
 target_link_libraries(xrAI PUBLIC luabind)
 target_link_libraries(xrAI PUBLIC xrSE_Factory)
+target_link_libraries(xrAI PUBLIC xrAbstractions)
 target_link_libraries(xrAI PUBLIC imgui)
+
+target_link_libraries(xrAI PUBLIC "rpcrt4.lib")
 
 ## FreeImage
 target_include_directories(xrAI PUBLIC "${FREEIMAGE}/native/include/")

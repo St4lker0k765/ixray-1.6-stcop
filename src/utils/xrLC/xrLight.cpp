@@ -1,12 +1,12 @@
-#include "stdafx.h"
-#include "build.h"
+#include "StdAfx.h"
+#include "Build.h"
 
-#include "../xrlc_light/xrdeflector.h"
+#include "../xrLC_Light/xrDeflector.h"
 #include "../xrForms/xrThread.h"
 #include "../xrLC_Light/xrLC_GlobalData.h"
 #include "../xrLC_Light/xrLightVertex.h"
 
-#include "../../xrcore/xrSyncronize.h"
+#include "../../xrCore/xrSyncronize.h"
 
 #include "../xrLC_Light/mu_model_light.h"
 xrCriticalSection	task_CS
@@ -89,7 +89,7 @@ for(u32 dit = 0; dit<lc_global_data()->g_deflectors().size(); dit++)
 		const	u32	thNUM	= CPU::ID.n_threads - 2;
 
 		CTimer	start_time;	start_time.Start();				
-		for				(int L=0; L<thNUM; L++)	threads.start(xr_new<CLMThread> (L));
+		for				(int L=0; L<thNUM; L++)	threads.start(new CLMThread (L));
 		threads.wait	(500);
 		clMsg			("%f seconds",start_time.GetElapsed_sec());
 }

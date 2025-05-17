@@ -1,9 +1,9 @@
 ///////////////////////////////////////////////////////////////
 // DummyArtifact.cpp
-// DummyArtefact - артефакт пустышка
+// DummyArtefact - Р°СЂС‚РµС„Р°РєС‚ РїСѓСЃС‚С‹С€РєР°
 ///////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "DummyArtifact.h"
 #include "../xrPhysics/PhysicsShell.h"
 

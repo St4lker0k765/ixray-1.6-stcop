@@ -1,7 +1,6 @@
 #pragma once
 
-
-#include "UIStatic.h"
+#include "../../xrUI/Widgets/UIStatic.h"
 #include "../../xrScripts/script_export_space.h"
 
 class CUI3tButton;
@@ -15,7 +14,7 @@ public:
 				CUIMessageBox		();
 	virtual		~CUIMessageBox		();
 
-	//разновидности MessageBox
+	//СЂР°Р·РЅРѕРІРёРґРЅРѕСЃС‚Рё MessageBox
 	typedef enum {		
 		MESSAGEBOX_OK, 
 		MESSAGEBOX_INFO,

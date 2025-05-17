@@ -5,6 +5,8 @@ file(GLOB_RECURSE ELE_SOURCE_ALL_FILES CONFIGURE_DEPENDS "*.*")
 file(GLOB_RECURSE ELE_SOURCE_AI_FILES CONFIGURE_DEPENDS "AI/*.*")
 file(GLOB_RECURSE ELE_SOURCE_UI_FILES CONFIGURE_DEPENDS "UI/*.*")
 file(GLOB_RECURSE ELE_SOURCE_EDITOR_FILES CONFIGURE_DEPENDS "Editor/*.*")
+file(GLOB_RECURSE ELE_SOURCE_EDITOR_TOOLS_FILES CONFIGURE_DEPENDS "Editor/Tools/*.*")
+file(GLOB_RECURSE ELE_SOURCE_EDITOR_UTILS_FILES CONFIGURE_DEPENDS "Editor/Utils/*.*")
 file(GLOB_RECURSE ELE_SOURCE_ENGINE_FILES CONFIGURE_DEPENDS "Engine/*.*")
 
 file(GLOB_RECURSE ELE_SOURCE_RENDER_FILES CONFIGURE_DECORENDS
@@ -14,7 +16,9 @@ file(GLOB_RECURSE ELE_SOURCE_RENDER_FILES CONFIGURE_DECORENDS
 set(ELE_SRC_FILES)
 
 source_group("ai" FILES ${ELE_SOURCE_AI_FILES})
-source_group("editor" FILES ${ELE_SOURCE_EDITOR_FILES})
+source_group("editor/tools" FILES ${ELE_SOURCE_EDITOR_TOOLS_FILES})
+source_group("editor/utils" FILES ${ELE_SOURCE_EDITOR_UTILS_FILES})
+source_group("editor/core" FILES ${ELE_SOURCE_EDITOR_FILES})
 source_group("engine" FILES ${ELE_SOURCE_ENGINE_FILES})
 source_group("ui" FILES ${ELE_SOURCE_UI_FILES})
 source_group("render" FILES ${ELE_SOURCE_RENDER_FILES})
@@ -50,9 +54,6 @@ add_dependencies(LevelEditor xrSE_Factory)
 
 # Move precompiled header
 target_validate_pch(LevelEditor ${CMAKE_CURRENT_SOURCE_DIR})
-
-target_include_directories(LevelEditor PUBLIC "${CMAKE_BINARY_DIR}/packages/Microsoft.DXSDK.D3DX.9.29.952.8/build/native/include/")
-target_include_directories(LevelEditor PUBLIC "${CMAKE_BINARY_DIR}/packages/directxmesh_desktop_win10.2023.4.28.1/include/")
 
 ## LibOGG
 target_link_libraries(LevelEditor PRIVATE ${SND_OGG}native/lib/${CMAKE_VS_PLATFORM_NAME}/Release/libogg.lib)

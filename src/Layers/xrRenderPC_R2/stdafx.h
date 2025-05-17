@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <d3d9.h>
+
 #pragma warning(disable:4995)
 #include "../../xrEngine/stdafx.h"
 #pragma warning(disable:4714)
@@ -25,24 +27,21 @@
 #define		R_R4	4
 #define		RENDER	R_R2
 
-#include "../xrRender/resourcemanager.h"
+#include "../xrRender/ResourceManager.h"
 
 #include "../../xrEngine/vis_common.h"
-#include "../../xrEngine/render.h"
+#include "../../xrEngine/Render.h"
 #include "../../xrEngine/_d3d_extensions.h"
-#include "../../xrEngine/igame_level.h"
-#include "../xrRender/blenders\blender.h"
-#include "../xrRender/blenders\blender_clsid.h"
+#include "../../xrEngine/IGame_Level.h"
+#include "../xrRender/blenders/Blender.h"
+#include "../xrRender/blenders/Blender_CLSID.h"
 #include "../../xrParticles/psystem.h"
 #include "../xrRender/xrRender_console.h"
 #include "r2.h"
 #include "../xrRender/dxRenderDeviceRender.h"
 
-IC	void	jitter(CBlender_Compile& C)
-{
-	C.r_Sampler	("jitter0",	JITTER(0), true, D3DTADDRESS_WRAP, D3DTEXF_POINT, D3DTEXF_NONE, D3DTEXF_POINT);
-	C.r_Sampler	("jitter1",	JITTER(1), true, D3DTADDRESS_WRAP, D3DTEXF_POINT, D3DTEXF_NONE, D3DTEXF_POINT);
-	C.r_Sampler	("jitter2",	JITTER(2), true, D3DTADDRESS_WRAP, D3DTEXF_POINT, D3DTEXF_NONE, D3DTEXF_POINT);
-	C.r_Sampler	("jitter3",	JITTER(3), true, D3DTADDRESS_WRAP, D3DTEXF_POINT, D3DTEXF_NONE, D3DTEXF_POINT);
-	C.r_Sampler	("jitter4",	JITTER(4), true, D3DTADDRESS_WRAP, D3DTEXF_POINT, D3DTEXF_NONE, D3DTEXF_POINT);
+IC void jitter(CBlender_Compile& C) {
+	C.r_Sampler("jitter0", JITTER(0), true, D3DTADDRESS_WRAP, D3DTEXF_POINT, D3DTEXF_NONE, D3DTEXF_POINT);
+	C.r_Sampler("jitter1", JITTER(1), true, D3DTADDRESS_WRAP, D3DTEXF_POINT, D3DTEXF_NONE, D3DTEXF_POINT);
+	C.r_Sampler("jitter2", JITTER(2), true, D3DTADDRESS_WRAP, D3DTEXF_POINT, D3DTEXF_NONE, D3DTEXF_POINT);
 }

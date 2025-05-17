@@ -8,6 +8,9 @@
 
 #include "stdafx.h"
 #include "pch_script.h"
+#if USE_OLD_OBJECT_PLANNER
+#include "Legacy/object_handler_planner.h"
+#endif
 
 #ifdef DEBUG_DRAW
 #include "ai_stalker.h"
@@ -18,14 +21,12 @@
 #include "../../enemy_manager.h"
 #include "../../danger_manager.h"
 #include "../../item_manager.h"
-#include "../../actor.h"
-#include "../../stalker_planner.h"
+#include "../../Actor.h"
 #include "../../script_game_object.h"
 #include "../../stalker_animation_manager.h"
-#include "../../weapon.h"
+#include "../../Weapon.h"
 #include "../../sound_player.h"
-#include "../../inventory.h"
-#include "../../object_handler_planner.h"
+#include "../../Inventory.h"
 #include "../../stalker_movement_manager_smart_cover.h"
 #include "../../movement_manager_space.h"
 #include "../../patrol_path_manager.h"
@@ -34,7 +35,7 @@
 #include "../../detail_path_manager.h"
 #include "../../sight_manager.h"
 #include "../../ai_object_location.h"
-#include "../../entitycondition.h"
+#include "../../EntityCondition.h"
 #include "../ai_monsters_misc.h"
 #include "../../agent_manager.h"
 #include "../../agent_member_manager.h"
@@ -42,21 +43,22 @@
 #include "../../agent_corpse_manager.h"
 #include "../../agent_location_manager.h"
 #include "../../cover_point.h"
-#include "../../../xrEngine/camerabase.h"
+#include "../../../xrEngine/CameraBase.h"
 #include "../../mt_config.h"
-#include "../../weaponmagazined.h"
-#include "../../object_handler_space.h"
+#include "../../WeaponMagazined.h"
 #include "../../debug_renderer.h"
 #include "../../CharacterPhysicsSupport.h"
 #include "../../smart_cover_animation_selector.h"
 #include "../../animation_movement_controller.h"
-#include "../../phdebug.h"
+#include "../../PHDebug.h"
 #include "../../game_object_space.h"
 #include "../../aimers_weapon.h"
 #include "../../aimers_bone.h"
 #include "../../smart_cover_planner_target_selector.h"
-#include "../../ui_base.h"
+#include "../../../xrUI/ui_base.h"
 #include "../../doors_actor.h"
+
+#include "Legacy/StalkerPlanner/stalker_planner.h"
 
 CActor *g_debug_actor = 0;
 
@@ -69,7 +71,7 @@ void try_change_current_entity()
 	CFrustum							frustum;
 	frustum.CreateFromMatrix			(Device.mFullTransform,FRUSTUM_P_LRTB|FRUSTUM_P_FAR);
 
-	typedef xr_vector<ISpatial*>		OBJECTS;
+	typedef xr_vector<ISpatialShared>		OBJECTS;
 	OBJECTS								ISpatialResult;
 	g_SpatialSpace->q_frustum			(ISpatialResult, 0, STYPE_COLLIDEABLE, frustum);
 
@@ -79,7 +81,7 @@ void try_change_current_entity()
 	OBJECTS::const_iterator				I = ISpatialResult.begin();
 	OBJECTS::const_iterator				E = ISpatialResult.end();
 	for ( ; I != E; ++I) {
-		CCustomMonster					*current = smart_cast<CCustomMonster*>(*I);
+		CCustomMonster					*current = smart_cast<CCustomMonster*>((*I)->dcast_CObject());
 		if (!current)					continue;
 		if (Level().CurrentEntity()==current) continue;
 
@@ -480,6 +482,7 @@ void CAI_Stalker::debug_text			()
 	DBG_OutText	("%s%sitem to spawn       : %s",indent,indent,item_to_spawn().size() ? *item_to_spawn() : "no item to spawn");
 	DBG_OutText	("%s%sammo in box to spawn: %d",indent,indent,item_to_spawn().size() ? ammo_in_box_to_spawn() : 0);
 	
+#if USE_OLD_OBJECT_PLANNER
 	CWeaponMagazined					*weapon = smart_cast<CWeaponMagazined*>(inventory().ActiveItem());
 	if (weapon) {
 		CObjectHandlerPlanner			&planner = CObjectHandler::planner();
@@ -495,7 +498,7 @@ void CAI_Stalker::debug_text			()
 			).inertia_time()
 		);
 	}
-	
+#endif	
 	if (inventory().ActiveItem()) {
 		DBG_OutText	("%s%sactive item",indent,indent);
 		DBG_OutText	("%s%s%sobject         : %s",indent,indent,indent,inventory().ActiveItem() ? *inventory().ActiveItem()->object().cName() : "");
@@ -511,10 +514,11 @@ void CAI_Stalker::debug_text			()
 
 	string256							temp;
 
+#if USE_OLD_OBJECT_PLANNER
 	const CObjectHandlerPlanner			&objects = planner();
 	xr_strconcat(temp,indent,indent);
 	draw_planner						(objects,temp,indent,"root");
-
+#endif
 	DBG_TextOutSet		(330,up_indent);
 	
 	// brain

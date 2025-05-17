@@ -39,13 +39,13 @@ protected:
 	shared_str		EName;
 	// orientation
 	Fvector 		EPosition;
-	Fvector 		EPositionSaved;
 	Fvector 		EScale;
-	Fvector 		EScaleSaved;
 	Fvector 		ERotation;
-	Fvector 		ERotateSaved;
 	SAnimParams*	m_MotionParams;
 	COMotion*		m_Motion;
+
+	// For loading event 
+	volatile bool IsLoaded = false;
 
 	// private animation methods
 	void 			AnimationOnFrame	();
@@ -75,6 +75,7 @@ public:
 		flRT_Selected		= (1<<3),
 		flRT_Visible		= (1<<4),
 		flRT_SelectedLast	= (1<<5),
+		flRT_Locked			= (1<<6),
 		
 	};
 	Flags32			m_RT_Flags;
@@ -124,6 +125,8 @@ public:
 	void  	OnNumChangeRotation	(PropValue* sender);
 	void  	OnNumChangeScale	(PropValue* sender);
 
+	void	SetLoadedState();
+
 	virtual void	DeleteThis		(){m_RT_Flags.set(flRT_NeedSelfDelete,TRUE);}
 public:
 					CCustomObject	(LPVOID data, LPCSTR name);
@@ -134,6 +137,7 @@ public:
 	IC BOOL 		Motionable		()const {return m_CO_Flags.is(flMotion); 	}
 	IC BOOL 		Visible			()const {return m_RT_Flags.is(flRT_Visible);	}
 	IC BOOL 		Selected		()const {return m_RT_Flags.is(flRT_Selected);}
+	IC BOOL			Locked			()const {return m_CO_Flags.is(flRT_Locked);}
 	IC BOOL			Valid			()const {return m_RT_Flags.is(flRT_Valid);}
 	IC BOOL			IsDeleted		()const {return m_RT_Flags.is(flRT_NeedSelfDelete);}
 
@@ -145,6 +149,7 @@ public:
 
 	virtual void 	Select			(int  flag);
 	virtual void 	Show			(BOOL flag);
+	virtual void 	Lock			(BOOL flag);
 	void			SetValid		(BOOL flag)	{m_RT_Flags.set(flRT_Valid,flag);}
 	void			SetRenderIfSelected(BOOL flag){m_CO_Flags.set(flRenderAnyWayIfSelected,flag);}
 
@@ -189,11 +194,11 @@ public:
 	virtual void 	NumSetRotation	(const Fvector& rot)	{ SetRotation(rot);	}
 	virtual void 	NumSetScale		(const Fvector& scale)	{ SetScale(scale);	}
 	virtual void 	MoveTo			(const Fvector& pos, const Fvector& up);
-	virtual void 	Move			(Fvector& Position);
+	virtual void 	Move			(Fvector& amount);
 	virtual void 	RotateParent	(Fvector& axis, float angle );
 	virtual void 	RotateLocal		(Fvector& axis, float angle );
 	virtual void 	RotatePivot		(const Fmatrix& prev_inv, const Fmatrix& current);
-	virtual void 	Scale			(Fvector& NewScale);
+	virtual void 	Scale			(Fvector& amount);
 	virtual void 	ScalePivot		(const Fmatrix& prev_inv, const Fmatrix& current, Fvector& amount);
 
 	virtual bool 	LoadStream		(IReader&);
@@ -223,12 +228,6 @@ public:
 	IC const Fvector& _Position				(){return FPosition;}
 	IC const Fvector& _Rotation				(){return FRotation;}
 	IC const Fvector& _Scale				(){return FScale;}
-	IC void ScaleSave                       (){EScaleSaved = FScale;}
-	IC const Fvector& GetSaveScale          (){return EScaleSaved;}
-	IC void RotateSave                      (){ERotateSaved = FRotation;}
-	IC const Fvector& GetSaveRotate         (){return ERotateSaved;}
-	virtual void           PositionSave          () { EPositionSaved = FPosition; }
-	IC const Fvector& GetSavePosition       () { return EPositionSaved; }
 
 	ObjClassID		FClassID;
 	ESceneCustomOTool* FParentTools;

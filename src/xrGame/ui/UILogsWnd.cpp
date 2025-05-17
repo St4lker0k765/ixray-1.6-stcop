@@ -8,19 +8,19 @@
 #include "stdafx.h"
 #include "UILogsWnd.h"
 
-#include "UIXmlInit.h"
-#include "UIProgressBar.h"
-#include "UIFrameLineWnd.h"
-#include "UIFrameWindow.h"
-#include "UIScrollBar.h"
-#include "UIFixedScrollBar.h"
-#include "UIScrollView.h"
-#include "UICheckButton.h"
-#include "UIHelper.h"
+#include "../../xrUI/UIXmlInit.h"
+#include "../../xrUI/Widgets/UIProgressBar.h"
+#include "../../xrUI/Widgets/UIFrameLineWnd.h"
+#include "../../xrUI/Widgets/UIFrameWindow.h"
+#include "../../xrUI/Widgets/UIScrollBar.h"
+#include "../../xrUI/Widgets/UIFixedScrollBar.h"
+#include "../../xrUI/Widgets/UIScrollView.h"
+#include "../../xrUI/Widgets/UICheckButton.h"
+#include "../../xrUI/UIHelper.h"
 #include "UICharacterInfo.h"
 #include "UIInventoryUtilities.h"
 
-#include "../actor.h"
+#include "../Actor.h"
 #include "../game_news.h"
 #include "../alife_time_manager.h"
 #include "../alife_registry_wrappers.h"
@@ -28,11 +28,9 @@
 #include "UINewsItemWnd.h"
 #include "../../xrEngine/xr_input.h"
 
+#define PDA_LOGS_XML "pda_logs.xml"
 
-#define  PDA_LOGS_XML		"pda_logs.xml"
-
-//extern u64	generate_time	(u32 years, u32 months, u32 days, u32 hours, u32 minutes, u32 seconds, u32 milliseconds = 0);
-extern void	split_time		(u64 time, u32 &years, u32 &months, u32 &days, u32 &hours, u32 &minutes, u32 &seconds, u32 &milliseconds);
+extern ENGINE_API void split_time(u64 time, u32 &years, u32 &months, u32 &days, u32 &hours, u32 &minutes, u32 &seconds, u32 &milliseconds);
 
 u64 const day2ms			= u64( 24 * 60 * 60 * 1000 );
 

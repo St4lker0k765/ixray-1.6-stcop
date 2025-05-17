@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 
 #include "CharacterPhysicsSupport.h"
 #include "alife_space.h"
@@ -14,9 +14,9 @@
 
 
 #include "../xrPhysics/PhysicsShell.h"
-#include "../xrPhysics/iActivationShape.h"
+#include "../xrPhysics/IActivationShape.h"
 //#include "../xrPhysics/Extendedgeom.h"
-#include "../xrPhysics/geometry.h"
+#include "../xrPhysics/Geometry.h"
 //#include "../xrPhysics/phdynamicdata.h"
 #include "../xrPhysics/IPHCapture.h"
 //#include "../xrPhysics/ICollideValidator.h"
@@ -34,9 +34,9 @@
 #include "xrServer_Object_Base.h"
 #include "interactive_animation.h"
 #include "stalker_animation_manager.h"
-#include "inventoryowner.h"
+#include "InventoryOwner.h"
 #include "Inventory.h"
-#include "activatingcharcollisiondelay.h"
+#include "ActivatingCharCollisionDelay.h"
 #include "stalker_movement_manager_smart_cover.h"
 
 //const float default_hinge_friction = 5.f;//gray_wolf comment
@@ -1173,7 +1173,8 @@ void	CCharacterPhysicsSupport::	CreateShell						( CObject* who, Fvector& dp, Fv
 		//use exact integration for ragdolls in single
 		m_pPhysicsShell->SetPrefereExactIntegration();
 
-		if (!EngineExternal()[EEngineExternalPhysical::DeadBodyRagdoll]) {
+		const static bool isDeadBodyRagdoll = EngineExternal()[EEngineExternalPhysical::DeadBodyRagdoll];
+		if (!isDeadBodyRagdoll) {
 			m_pPhysicsShell->SetRemoveCharacterCollLADisable();
 		}
 	} else {

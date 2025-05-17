@@ -156,10 +156,15 @@ ID3DBaseTexture* CRender::texture_load(LPCSTR fRName, u32& ret_msize)
         goto _DDS;
     if (!FS.exist(fn, "$game_textures$", fname, ".dds") && strstr(fname, "_bump"))
         goto _BUMP_from_base;
-
+    if (FS.TryLoad(xr_string(fname) + ".dds"))
+    {
+        xr_string editor_name = xr_string(fname) + ".dds";
+        xr_strcpy(fn, editor_name.c_str());
+        goto _DDS;
+    }
     Msg("! Can't find texture '%s'", fname);
 
-#ifdef _EDITOR
+#if 0 //def _EDITOR
     return 0;
 #else
 
@@ -256,7 +261,7 @@ _DDS:
 _BUMP_from_base:
     {
         Msg("! auto-generated bump map: %s", fname);
-#ifndef _EDITOR
+#if 1 //ndef _EDITOR
         if (strstr(fname, "_bump#"))
         {
             R_ASSERT2(FS.exist(fn, "$game_textures$", "ed\\ed_dummy_bump#", ".dds"), "ed_dummy_bump#");

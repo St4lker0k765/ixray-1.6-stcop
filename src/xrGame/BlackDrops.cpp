@@ -1,9 +1,9 @@
 ///////////////////////////////////////////////////////////////
 // BlackDrops.cpp
-// BlackDrops - черные капли
+// BlackDrops - С‡РµСЂРЅС‹Рµ РєР°РїР»Рё
 ///////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "BlackDrops.h"
 #include "../xrPhysics/PhysicsShell.h"
 
