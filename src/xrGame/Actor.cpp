@@ -460,7 +460,7 @@ if(!g_dedicated_server)
 	}
 }
 
-	cam_Set(eacFirstEye);
+	cam_Set(eacLookAt);
 
 	// sheduler
 	shedule.t_min				= shedule.t_max = 1;
